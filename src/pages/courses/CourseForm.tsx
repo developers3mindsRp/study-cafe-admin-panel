@@ -7,6 +7,8 @@ import ImageUpload from "../../components/form/ImageUpload";
 import Button from "../../components/ui/button/Button";
 import ArticleEditor from "../../components/article-editor/ArticleEditor";
 import { ArrayEditor } from "./components/ArrayEditor";
+import IncludesInfoEditor, { type IncludesInfoItem } from "./components/IncludesInfoEditor";
+import CourseIncludesEditor, { type CourseIncludeItem } from "./components/CourseIncludesEditor";
 import { COURSE_PREVIEW_STATE_KEY, COURSE_RESTORE_STATE_KEY } from "./CoursePreview";
 import type { Course } from "../../api/courses";
 
@@ -29,11 +31,17 @@ export interface CourseFormData {
   taxable: boolean;
   keywords: string;
   faqs: any[];
-  includes_info: any[];
+  includes_info: IncludesInfoItem[];
+  course_includes: CourseIncludeItem[];
   feedback: any[];
   certifications: string;
   gateway: string;
   is_published: boolean;
+  author_user_id: string;
+  author_name: string;
+  author_role: string;
+  author_bio: string;
+  author_image: string;
 }
 
 const safeJsonParse = (str: string | null | undefined, fallback: any = []) => {
@@ -47,7 +55,15 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
   const restoredData = location.state?.[COURSE_RESTORE_STATE_KEY] as CourseFormData | undefined;
 
   const [form, setForm] = useState<CourseFormData>(() => {
-    if (restoredData) return restoredData;
+    const primaryAuthor = initial?.authors?.[0];
+    if (restoredData) {
+      return {
+        ...restoredData,
+        course_includes: Array.isArray(restoredData.course_includes)
+          ? restoredData.course_includes
+          : [],
+      };
+    }
     return {
       title: initial?.title ?? "",
       short_title: initial?.short_title ?? "",
@@ -67,11 +83,28 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
       taxable: initial?.taxable ?? false,
       keywords: initial?.keywords ?? "",
       faqs: safeJsonParse(initial?.faqs, []),
-      includes_info: safeJsonParse(initial?.includes_info, []),
+      includes_info: (safeJsonParse(initial?.includes_info, []) as any[]).map((item: any) => ({
+        image: item.image ?? item.icon ?? "",
+        title: item.title ?? "",
+        worth: item.worth ?? "",
+      })),
+      course_includes: (safeJsonParse(initial?.course_includes, []) as any[]).map((item: any) => ({
+        image: item.image ?? item.icon ?? "",
+        title: item.title ?? "",
+      })),
       feedback: safeJsonParse(initial?.feedback, []),
       certifications: initial?.certifications ?? "",
       gateway: initial?.gateway ?? "",
       is_published: initial?.is_published ?? false,
+      author_user_id: initial?.author_user_id != null
+        ? String(initial.author_user_id)
+        : primaryAuthor?.user_id != null
+          ? String(primaryAuthor.user_id)
+          : "",
+      author_name: initial?.author_name ?? primaryAuthor?.name ?? "",
+      author_role: initial?.author_role ?? primaryAuthor?.role ?? "",
+      author_bio: initial?.author_bio ?? primaryAuthor?.bio ?? "",
+      author_image: initial?.author_image ?? primaryAuthor?.image_url ?? "",
     };
   });
 
@@ -192,24 +225,21 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
           </div>
 
           <div>
-            <Label>Includes Information Menu</Label>
-            <ArrayEditor
+            <Label>Exclusive bonuses</Label>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+              Course page &quot;Exclusive bonuses&quot; block (icon, title, worth).
+            </p>
+            <IncludesInfoEditor
               value={form.includes_info}
               onChange={(v) => updateField('includes_info', v)}
-              defaultItem={{ icon: "star", title: "" }}
-              addButtonLabel="Add Include Item"
-              renderItem={(item: any, index, update) => (
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div>
-                    <Label>Icon ID (e.g. language, video)</Label>
-                    <Input value={item.icon || ''} onChange={e => update(index, { icon: e.target.value })} />
-                  </div>
-                  <div className="sm:col-span-2">
-                    <Label>Title</Label>
-                    <Input value={item.title || ''} onChange={e => update(index, { title: e.target.value })} />
-                  </div>
-                </div>
-              )}
+            />
+          </div>
+
+          <div>
+            <Label>This course includes (banner)</Label>
+            <CourseIncludesEditor
+              value={form.course_includes}
+              onChange={(v) => updateField('course_includes', v)}
             />
           </div>
 
@@ -312,6 +342,52 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
       <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] sm:p-6">
         <h3 className="mb-4 text-lg font-semibold text-gray-800 dark:text-white/90">Additional Info</h3>
         <div className="space-y-6">
+          <div>
+            {/* <Label>Author Profile</Label> */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+              <div>
+                <Label>Author User ID</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  value={form.author_user_id}
+                  onChange={(e) => updateField('author_user_id', e.target.value)}
+                  placeholder="Linked user id in users table"
+                />
+              </div>
+              <div>
+                <Label>Author Name</Label>
+                <Input
+                  value={form.author_name}
+                  onChange={(e) => updateField('author_name', e.target.value)}
+                />
+              </div>
+              <div>
+                <Label>Author Role</Label>
+                <Input
+                  value={form.author_role}
+                  onChange={(e) => updateField('author_role', e.target.value)}
+                  placeholder="e.g. CA, Tax Consultant"
+                />
+              </div>
+              <div>
+                <Label>Author Image URL</Label>
+                <Input
+                  value={form.author_image}
+                  onChange={(e) => updateField('author_image', e.target.value)}
+                />
+              </div>
+              <div className="md:col-span-2">
+                <Label>Author Bio</Label>
+                <TextArea
+                  rows={3}
+                  value={form.author_bio}
+                  onChange={(v) => updateField('author_bio', v)}
+                />
+              </div>
+            </div>
+          </div>
+
           <div>
             <Label>Requirements</Label>
             <TextArea rows={3} value={form.requirements} onChange={(v) => updateField('requirements', v)} />

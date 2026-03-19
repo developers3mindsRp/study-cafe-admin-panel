@@ -278,7 +278,8 @@ export default function CourseView() {
   const faqs = safeJsonParse(course.faqs, []);
   const feedback = safeJsonParse(course.feedback, []);
   const termsConditions = safeJsonParse(course.terms_conditions, []);
-  const includesInfo = safeJsonParse(course.includes_info, []);
+  const bonusesInfo = safeJsonParse(course.includes_info, []);
+  const courseIncludesBanner = safeJsonParse(course.course_includes, []);
 
   return (
     <>
@@ -403,14 +404,33 @@ export default function CourseView() {
           onRecordingUpdated={loadSessions}
         />
 
-        {/* Includes */}
-        {includesInfo.length > 0 && (
-          <Section title="This Course Includes">
-            <ul className="space-y-2">
-              {includesInfo.map((item: any, i: number) => (
-                <li key={i} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-                  <span className="text-brand-500">•</span>
-                  <span dangerouslySetInnerHTML={{ __html: item.title }} />
+        {courseIncludesBanner.length > 0 && (
+          <Section title="This course includes (banner)">
+            <ul className="space-y-3">
+              {courseIncludesBanner.map((item: any, i: number) => (
+                <li key={i} className="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
+                  {item.image && (
+                    <img src={item.image} alt="" className="w-8 h-8 object-contain flex-shrink-0" />
+                  )}
+                  <span dangerouslySetInnerHTML={{ __html: item.title || "" }} />
+                </li>
+              ))}
+            </ul>
+          </Section>
+        )}
+
+        {bonusesInfo.length > 0 && (
+          <Section title="Exclusive bonuses">
+            <ul className="space-y-3">
+              {bonusesInfo.map((item: any, i: number) => (
+                <li key={i} className="flex flex-wrap items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                  {item.image && (
+                    <img src={item.image} alt="" className="w-9 h-9 object-contain flex-shrink-0" />
+                  )}
+                  <span dangerouslySetInnerHTML={{ __html: item.title || "" }} />
+                  {item.worth && (
+                    <span className="text-green-600 font-semibold text-xs">Worth {item.worth}</span>
+                  )}
                 </li>
               ))}
             </ul>

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
-import MembershipForm, { type MembershipFormData } from "./MembershipForm";
+import MembershipForm, { type MembershipFormData, parseFeaturesToArray, arrayToFeaturesHtml } from "./MembershipForm";
 import { plansApi } from "../../api/plans";
 
 export default function MembershipEdit() {
@@ -30,8 +30,10 @@ export default function MembershipEdit() {
         currency: plan.currency,
         duration_days: plan.duration_days ?? 365,
         is_lifetime: plan.is_lifetime ?? false,
-        features: Array.isArray(plan.features) ? plan.features.join("\n") : "",
+        features: Array.isArray(plan.features) ? arrayToFeaturesHtml(plan.features) : "",
         is_active: plan.is_active,
+        is_popular: plan.is_popular ?? false,
+        sort_order: plan.sort_order ?? 0,
         course_ids: Array.isArray(plan.course_ids) ? plan.course_ids : [],
         course_cat_ids: Array.isArray(plan.course_cat_ids) ? plan.course_cat_ids : [],
       });
@@ -49,10 +51,12 @@ export default function MembershipEdit() {
       setSubmitting(true);
       const payload = {
         ...formData,
-        features: formData.features.split("\n").filter((f) => f.trim() !== ""),
+        features: parseFeaturesToArray(formData.features),
         price: Number(formData.price),
         duration_days: Number(formData.duration_days),
         is_lifetime: formData.is_lifetime,
+        is_popular: formData.is_popular,
+        sort_order: Number(formData.sort_order),
         course_ids: formData.course_ids,
         course_cat_ids: formData.course_cat_ids,
       };

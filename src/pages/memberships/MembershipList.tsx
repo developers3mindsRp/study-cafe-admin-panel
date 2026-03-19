@@ -12,6 +12,39 @@ import { PERM_MEMBERSHIPS_CREATE, PERM_MEMBERSHIPS_EDIT, PERM_MEMBERSHIPS_DELETE
 import { plansApi, type Plan } from "../../api/plans";
 import { withClientPagination } from "../../utils/dataTableUtils";
 
+function PopularToggle({ plan, onChanged }: { plan: Plan; onChanged: () => void }) {
+  const [toggling, setToggling] = useState(false);
+
+  async function handleToggle() {
+    setToggling(true);
+    try {
+      await plansApi.togglePopular(plan.id, !plan.is_popular);
+      onChanged();
+    } catch (err) {
+      console.error("Failed to toggle popular", err);
+    } finally {
+      setToggling(false);
+    }
+  }
+
+  return (
+    <button
+      onClick={handleToggle}
+      disabled={toggling}
+      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 ${
+        plan.is_popular ? "bg-brand-500" : "bg-gray-200 dark:bg-gray-700"
+      } ${toggling ? "opacity-50 cursor-wait" : "cursor-pointer"}`}
+      title={plan.is_popular ? "This plan is marked as Popular" : "Mark as Popular"}
+    >
+      <span
+        className={`inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
+          plan.is_popular ? "translate-x-6" : "translate-x-1"
+        }`}
+      />
+    </button>
+  );
+}
+
 const formatDuration = (days: number) => {
   if (days >= 365) return `${(days / 365).toFixed(1).replace(/\.0$/, '')} year${days >= 730 ? 's' : ''}`;
   if (days >= 30) return `${(days / 30).toFixed(1).replace(/\.0$/, '')} month${days >= 60 ? 's' : ''}`;
@@ -103,6 +136,18 @@ export default function MembershipList() {
         <Badge size="sm" color={row.is_active ? "success" : "error"}>
           {row.is_active ? "Active" : "Inactive"}
         </Badge>
+      ),
+    },
+    {
+      key: "is_popular",
+      header: "Popular",
+      sortable: false,
+      render: (row: Plan) => (
+        <RequirePermission permissions={[PERM_MEMBERSHIPS_EDIT]} fallback={
+          row.is_popular ? <Badge size="sm" color="warning">Popular</Badge> : <span className="text-gray-400">—</span>
+        }>
+          <PopularToggle plan={row} onChanged={() => dataTableRef.current?.refetch()} />
+        </RequirePermission>
       ),
     },
     {

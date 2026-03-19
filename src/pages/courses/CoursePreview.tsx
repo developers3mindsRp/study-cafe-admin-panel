@@ -41,7 +41,8 @@ export default function CoursePreview() {
     const faqs = data.faqs ?? [];
     const feedback = data.feedback ?? [];
     const termsConditions = data.terms_conditions ?? [];
-    const includesInfo = data.includes_info ?? [];
+    const bonusesInfo = data.includes_info ?? [];
+    const courseIncludesBanner = data.course_includes ?? [];
 
     return (
         <>
@@ -234,15 +235,33 @@ export default function CoursePreview() {
 
                     {/* Right: Sidebar */}
                     <aside className="w-full lg:w-80 space-y-6">
-                        {/* Course Includes */}
-                        {includesInfo.length > 0 && (
+                        {courseIncludesBanner.length > 0 && (
                             <div className="rounded-xl border border-gray-200 dark:border-gray-800 p-5">
                                 <h3 className="mb-4 text-lg font-semibold text-gray-800 dark:text-white/90">This course includes:</h3>
                                 <ul className="space-y-3">
-                                    {includesInfo.map((item: any, i: number) => (
-                                        <li key={i} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
-                                            <span className="text-brand-500">✓</span>
-                                            <span dangerouslySetInnerHTML={{ __html: item.title }} />
+                                    {courseIncludesBanner.map((item: any, i: number) => (
+                                        <li key={i} className="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
+                                            {item.image && (
+                                                <img src={item.image} alt="" className="w-7 h-7 object-contain flex-shrink-0" />
+                                            )}
+                                            <span dangerouslySetInnerHTML={{ __html: item.title || "" }} />
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+
+                        {bonusesInfo.length > 0 && (
+                            <div className="rounded-xl border border-amber-200 dark:border-amber-900/40 p-5 bg-amber-50/30 dark:bg-amber-950/20">
+                                <h3 className="mb-4 text-lg font-semibold text-gray-800 dark:text-white/90">Exclusive bonuses</h3>
+                                <ul className="space-y-3">
+                                    {bonusesInfo.map((item: any, i: number) => (
+                                        <li key={i} className="flex flex-wrap items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                                            {item.image && (
+                                                <img src={item.image} alt="" className="w-9 h-9 object-contain flex-shrink-0" />
+                                            )}
+                                            <span dangerouslySetInnerHTML={{ __html: item.title || "" }} />
+                                            {item.worth && <span className="text-green-600 font-semibold text-xs">Worth {item.worth}</span>}
                                         </li>
                                     ))}
                                 </ul>

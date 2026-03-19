@@ -37,6 +37,7 @@ const navItems: NavItem[] = [
     subItems: [
       { name: "List", path: "/articles", requiredPermission: ["articles:list", "articles:view"] },
       { name: "Create", path: "/articles/create", requiredPermission: ["articles:create"] },
+      { name: "Blog Categories", path: "/article-categories", requiredPermission: ["articles:list", "articles:view"] },
     ],
     requiredPermission: ["articles:list", "articles:view", "articles:create", "articles:edit", "articles:delete"],
   },
@@ -46,6 +47,7 @@ const navItems: NavItem[] = [
     subItems: [
       { name: "List", path: "/courses", requiredPermission: ["admin:access"] },
       { name: "Create", path: "/courses/create", requiredPermission: ["admin:access"] },
+      { name: "Categories", path: "/courses/categories", requiredPermission: ["admin:access"] },
       { name: "Page Settings", path: "/courses/settings", requiredPermission: ["admin:access"] },
     ],
     requiredPermission: ["admin:access"],

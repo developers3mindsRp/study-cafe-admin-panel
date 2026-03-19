@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router";
 import Label from "../../components/form/Label";
 import Input from "../../components/form/input/InputField";
@@ -19,6 +19,46 @@ export interface CourseCatOption {
   slug: string;
 }
 
+/**
+ * Convert a RichTextEditor HTML string into a clean string[] for the API.
+ * Handles <p>, <li>, <br>, plain newlines — strips all HTML tags.
+ */
+export function parseFeaturesToArray(html: string): string[] {
+  if (!html || !html.trim()) return [];
+
+  // Replace block-level closing tags with a newline sentinel before stripping
+  const withNewlines = html
+    .replace(/<\/p>/gi, "\n")
+    .replace(/<\/li>/gi, "\n")
+    .replace(/<br\s*\/?>/gi, "\n");
+
+  // Strip all remaining HTML tags
+  const plain = withNewlines.replace(/<[^>]+>/g, "");
+
+  // Decode common HTML entities
+  const decoded = plain
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&#39;/g, "'")
+    .replace(/&quot;/g, '"');
+
+  return decoded
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+}
+
+/**
+ * Convert a string[] (from API) back into HTML for the RichTextEditor.
+ * Each item becomes a <p> paragraph.
+ */
+export function arrayToFeaturesHtml(arr: string[]): string {
+  if (!arr || arr.length === 0) return "";
+  return arr.map((f) => `<p>${f}</p>`).join("");
+}
+
 export interface MembershipFormData {
   name: string;
   slug: string;
@@ -29,6 +69,8 @@ export interface MembershipFormData {
   is_lifetime: boolean;
   features: string; // Kept as string for textarea editing, split by newline
   is_active: boolean;
+  is_popular: boolean;
+  sort_order: number;
   course_ids: number[];
   course_cat_ids: number[];
 }
@@ -50,6 +92,8 @@ const emptyFormData: MembershipFormData = {
   is_lifetime: false,
   features: "",
   is_active: true,
+  is_popular: false,
+  sort_order: 0,
   course_ids: [],
   course_cat_ids: [],
 };
@@ -64,6 +108,11 @@ export default function MembershipForm({
     ...emptyFormData,
     ...defaultValues,
   });
+  // Tracks the last duration_days value before switching to lifetime,
+  // so we can restore it when the user unchecks the Lifetime checkbox.
+  const prevDurationRef = useRef<number>(
+    defaultValues?.is_lifetime ? 365 : (defaultValues?.duration_days ?? 365)
+  );
   const [courses, setCourses] = useState<CourseOption[]>([]);
   const [courseCats, setCourseCats] = useState<CourseCatOption[]>([]);
   const [optionsLoading, setOptionsLoading] = useState(false);
@@ -90,15 +139,21 @@ export default function MembershipForm({
     return () => { cancelled = true; };
   }, []);
 
-  // Effect to update state when defaultValues change (e.g. after data fetch)
+  // Effect to update state when defaultValues change (e.g. after async data fetch in edit mode).
+  // Serialise to JSON so the effect only re-runs when the actual values change,
+  // not on every parent re-render that produces a new object reference.
+  const defaultValuesJson = JSON.stringify(defaultValues);
   useEffect(() => {
     if (defaultValues) {
-      setFormData((prev) => ({
-        ...prev,
-        ...defaultValues,
-      }));
+      setFormData((prev) => ({ ...prev, ...defaultValues }));
+      // Keep prevDurationRef in sync: if the loaded plan is NOT lifetime,
+      // store the real duration so we can restore it if the user toggles.
+      if (!defaultValues.is_lifetime && defaultValues.duration_days) {
+        prevDurationRef.current = defaultValues.duration_days;
+      }
     }
-  }, [defaultValues]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [defaultValuesJson]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -208,13 +263,19 @@ export default function MembershipForm({
                 type="checkbox"
                 id="is_lifetime"
                 checked={formData.is_lifetime}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    is_lifetime: e.target.checked,
-                    ...(e.target.checked ? { duration_days: 3650 } : {}),
-                  }))
-                }
+                onChange={(e) => {
+                  const checked = e.target.checked;
+                  setFormData((prev) => {
+                    if (checked) {
+                      // Save the current duration before switching to lifetime
+                      prevDurationRef.current = prev.duration_days || 365;
+                      return { ...prev, is_lifetime: true, duration_days: 3650 };
+                    } else {
+                      // Restore the previously saved duration
+                      return { ...prev, is_lifetime: false, duration_days: prevDurationRef.current };
+                    }
+                  });
+                }}
                 className="rounded border-gray-300"
               />
               <Label htmlFor="is_lifetime" className="!mb-0">Lifetime plan</Label>
@@ -253,21 +314,46 @@ export default function MembershipForm({
               minHeight="120px"
             />
           </div>
-          <div>
-            <Label>Status</Label>
-            <select
-              value={formData.is_active ? "active" : "inactive"}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <Label>Status</Label>
+              <select
+                value={formData.is_active ? "active" : "inactive"}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    is_active: e.target.value === "active",
+                  }))
+                }
+                className="w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-800 dark:border-gray-800 dark:bg-white/[0.03] dark:text-white/90"
+              >
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </div>
+            <div>
+              <Label>Sort Order</Label>
+              <Input
+                type="number"
+                value={formData.sort_order}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, sort_order: Number(e.target.value) }))
+                }
+                placeholder="0"
+              />
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="is_popular"
+              checked={formData.is_popular}
               onChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  is_active: e.target.value === "active",
-                }))
+                setFormData((prev) => ({ ...prev, is_popular: e.target.checked }))
               }
-              className="w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-800 dark:border-gray-800 dark:bg-white/[0.03] dark:text-white/90"
-            >
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
+              className="rounded border-gray-300"
+            />
+            <Label htmlFor="is_popular" className="!mb-0">Mark as Most Popular</Label>
           </div>
         </div>
       </div>

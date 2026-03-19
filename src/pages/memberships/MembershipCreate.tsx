@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router";
-import MembershipForm, { type MembershipFormData } from "./MembershipForm";
+import MembershipForm, { type MembershipFormData, parseFeaturesToArray } from "./MembershipForm";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
 import { plansApi } from "../../api/plans";
@@ -15,10 +15,12 @@ export default function MembershipCreate() {
       // Transform form data to match API expectations
       const payload = {
         ...formData,
-        features: formData.features.split("\n").filter((f) => f.trim() !== ""),
+        features: parseFeaturesToArray(formData.features),
         price: Number(formData.price),
         duration_days: Number(formData.duration_days),
         is_lifetime: formData.is_lifetime,
+        is_popular: formData.is_popular,
+        sort_order: Number(formData.sort_order),
         course_ids: formData.course_ids,
         course_cat_ids: formData.course_cat_ids,
       };

@@ -22,12 +22,27 @@ export interface Course {
   faqs: string | null;
   feedback: string | null;
   includes_info: string | null;
+  /** JSON [{ image, title }] — banner "This course includes" */
+  course_includes: string | null;
   certifications: string | null;
   gateway: string | null;
   is_published: boolean;
   status: string;
   start_date: string | null;
   end_date: string | null;
+  authors?: Array<{
+    user_id: number;
+    sort_order: number;
+    name: string | null;
+    role: string | null;
+    bio: string | null;
+    image_url: string | null;
+  }>;
+  author_user_id?: number | null;
+  author_name?: string | null;
+  author_role?: string | null;
+  author_bio?: string | null;
+  author_image?: string | null;
   created_at?: string;
 }
 
@@ -35,6 +50,13 @@ export interface CourseCat {
   id: number;
   name: string;
   slug: string | null;
+  is_featured: boolean;
+}
+
+export interface CourseCatPayload {
+  name: string;
+  slug?: string;
+  is_featured?: boolean;
 }
 
 export async function fetchCourses(): Promise<Course[]> {
@@ -45,6 +67,20 @@ export async function fetchCourses(): Promise<Course[]> {
 export async function fetchCourseCats(): Promise<CourseCat[]> {
   const res = await api.get<CourseCat[]>("/admin/course-cats");
   return Array.isArray(res.data) ? res.data : [];
+}
+
+export async function createCourseCat(payload: CourseCatPayload): Promise<CourseCat> {
+  const { data } = await api.post("/admin/course-cats", payload);
+  return data.data ?? data;
+}
+
+export async function updateCourseCat(id: number, payload: Partial<CourseCatPayload>): Promise<CourseCat> {
+  const { data } = await api.put(`/admin/course-cats/${id}`, payload);
+  return data.data ?? data;
+}
+
+export async function deleteCourseCat(id: number): Promise<void> {
+  await api.delete(`/admin/course-cats/${id}`);
 }
 
 export async function fetchCourse(id: string): Promise<Course | null> {

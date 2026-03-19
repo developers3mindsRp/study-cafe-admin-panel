@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import Badge from "../../components/ui/badge/Badge";
@@ -28,6 +28,110 @@ function fmtDate(d: string | null) {
 function fmtDateTime(d: string | null) {
     if (!d) return "—";
     return new Date(d).toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+}
+
+/* ─── Searchable Course Select ────────────────────────────────────── */
+
+function CourseSearchSelect({
+    courses,
+    value,
+    onChange,
+    placeholder = "Select course...",
+    allowAll = false,
+}: {
+    courses: Course[];
+    value: string;
+    onChange: (val: string) => void;
+    placeholder?: string;
+    allowAll?: boolean;
+}) {
+    const [query, setQuery] = useState("");
+    const [open, setOpen] = useState(false);
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    const selectedCourse = courses.find((c) => String(c.id) === value);
+    const displayLabel = allowAll && value === "all"
+        ? "All Courses"
+        : selectedCourse?.title ?? "";
+
+    const filtered = courses.filter((c) =>
+        c.title.toLowerCase().includes(query.toLowerCase())
+    );
+
+    // Close on outside click
+    useEffect(() => {
+        function handleClick(e: MouseEvent) {
+            if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+                setOpen(false);
+                setQuery("");
+            }
+        }
+        document.addEventListener("mousedown", handleClick);
+        return () => document.removeEventListener("mousedown", handleClick);
+    }, []);
+
+    function select(val: string) {
+        onChange(val);
+        setOpen(false);
+        setQuery("");
+    }
+
+    return (
+        <div ref={containerRef} className="relative w-full">
+            {/* Trigger */}
+            <button
+                type="button"
+                onClick={() => setOpen((o) => !o)}
+                className="w-full flex items-center justify-between rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-left dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            >
+                <span className={displayLabel ? "text-gray-800 dark:text-white" : "text-gray-400"}>
+                    {displayLabel || placeholder}
+                </span>
+                <svg className={`w-4 h-4 text-gray-400 transition-transform ${open ? "rotate-180" : ""}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+            </button>
+
+            {/* Dropdown */}
+            {open && (
+                <div className="absolute z-50 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-600 dark:bg-gray-800">
+                    {/* Search input */}
+                    <div className="p-2 border-b border-gray-100 dark:border-gray-700">
+                        <input
+                            autoFocus
+                            value={query}
+                            onChange={(e) => setQuery(e.target.value)}
+                            placeholder="Search course..."
+                            className="w-full rounded-md border border-gray-200 px-2 py-1.5 text-xs outline-none focus:border-brand-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                        />
+                    </div>
+                    {/* Options list */}
+                    <ul className="max-h-52 overflow-y-auto py-1">
+                        {allowAll && (
+                            <li
+                                onClick={() => select("all")}
+                                className={`cursor-pointer px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 ${value === "all" ? "bg-brand-50 text-brand-600 dark:bg-brand-900/20 dark:text-brand-400 font-medium" : "text-gray-700 dark:text-gray-300"}`}
+                            >
+                                All Courses
+                            </li>
+                        )}
+                        {filtered.length === 0 && (
+                            <li className="px-3 py-2 text-xs text-gray-400 italic">No courses match</li>
+                        )}
+                        {filtered.map((c) => (
+                            <li
+                                key={c.id}
+                                onClick={() => select(String(c.id))}
+                                className={`cursor-pointer px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 ${String(c.id) === value ? "bg-brand-50 text-brand-600 dark:bg-brand-900/20 dark:text-brand-400 font-medium" : "text-gray-700 dark:text-gray-300"}`}
+                            >
+                                {c.title}
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            )}
+        </div>
+    );
 }
 
 /* ─── Create Batch Modal ──────────────────────────────────────────── */
@@ -70,13 +174,11 @@ function CreateBatchPanel({
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 <div>
                     <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Course *</label>
-                    <select value={courseId} onChange={(e) => setCourseId(e.target.value)} required
-                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white">
-                        <option value="">Select course...</option>
-                        {courses.map((c) => (
-                            <option key={c.id} value={c.id}>{c.title}</option>
-                        ))}
-                    </select>
+                    <CourseSearchSelect
+                        courses={courses}
+                        value={courseId}
+                        onChange={setCourseId}
+                    />
                 </div>
                 <div>
                     <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Start Date</label>
@@ -371,11 +473,14 @@ export default function LiveSessions() {
                             {filtered.length} batch{filtered.length !== 1 ? "es" : ""} · {totalSessions} sessions · {totalRecordings} recordings
                         </p>
                     </div>
-                    <select value={filterCourse} onChange={(e) => setFilterCourse(e.target.value)}
-                        className="rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white">
-                        <option value="all">All Courses</option>
-                        {courses.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}
-                    </select>
+                    <div className="w-64">
+                        <CourseSearchSelect
+                            courses={courses}
+                            value={filterCourse}
+                            onChange={setFilterCourse}
+                            allowAll
+                        />
+                    </div>
                 </div>
 
                 {/* Create batch */}

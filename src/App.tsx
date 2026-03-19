@@ -41,6 +41,9 @@ import ArticleCreate from "./pages/articles/ArticleCreate";
 import ArticleEdit from "./pages/articles/ArticleEdit";
 import ArticleView from "./pages/articles/ArticleView";
 import ArticlePreview from "./pages/articles/ArticlePreview";
+import CategoryList from "./pages/categories/CategoryList";
+import CategoryCreate from "./pages/categories/CategoryCreate";
+import CategoryEdit from "./pages/categories/CategoryEdit";
 import MembershipList from "./pages/memberships/MembershipList";
 import MembershipCreate from "./pages/memberships/MembershipCreate";
 import MembershipEdit from "./pages/memberships/MembershipEdit";
@@ -67,6 +70,9 @@ import CourseCreate from "./pages/courses/CourseCreate";
 import CourseEdit from "./pages/courses/CourseEdit";
 import CoursePageSettings from "./pages/courses/CoursePageSettings";
 import CoursePreview from "./pages/courses/CoursePreview";
+import CourseCatList from "./pages/courses/CourseCatList";
+import CourseCatCreate from "./pages/courses/CourseCatCreate";
+import CourseCatEdit from "./pages/courses/CourseCatEdit";
 import LiveSessions from "./pages/courses/LiveSessions";
 import OrderList from "./pages/orders/OrderList";
 import OrderView from "./pages/orders/OrderView";
@@ -119,6 +125,17 @@ const router = createBrowserRouter(
             <Route index element={<ArticleEdit />} />
           </Route>
 
+          {/* Blog Categories */}
+          <Route path="/article-categories" element={<RequirePermissionRoute permissions={["articles:list"]} />}>
+            <Route index element={<CategoryList />} />
+          </Route>
+          <Route path="/article-categories/create" element={<RequirePermissionRoute permissions={["articles:create"]} />}>
+            <Route index element={<CategoryCreate />} />
+          </Route>
+          <Route path="/article-categories/:id/edit" element={<RequirePermissionRoute permissions={["articles:edit"]} />}>
+            <Route index element={<CategoryEdit />} />
+          </Route>
+
           {/* SEO Metadata */}
           <Route path="/seo-metadata" element={<RequirePermissionRoute permissions={["seo:list"]} />}>
             <Route index element={<SEOMetadataList />} />
@@ -148,6 +165,15 @@ const router = createBrowserRouter(
           </Route>
           <Route path="/courses/settings" element={<RequirePermissionRoute permissions={["admin:access"]} />}>
             <Route index element={<CoursePageSettings />} />
+          </Route>
+          <Route path="/courses/categories" element={<RequirePermissionRoute permissions={["admin:access"]} />}>
+            <Route index element={<CourseCatList />} />
+          </Route>
+          <Route path="/courses/categories/create" element={<RequirePermissionRoute permissions={["admin:access"]} />}>
+            <Route index element={<CourseCatCreate />} />
+          </Route>
+          <Route path="/courses/categories/:id/edit" element={<RequirePermissionRoute permissions={["admin:access"]} />}>
+            <Route index element={<CourseCatEdit />} />
           </Route>
           <Route path="/courses/preview" element={<RequirePermissionRoute permissions={["admin:access"]} />}>
             <Route index element={<CoursePreview />} />

@@ -23,8 +23,8 @@ const defaultHero = {
 const defaultStats = {
   students: "12,847",
   courses: "48",
-  articles: "2,356",
-  others: "1,892",
+  certificatesIssued: "2,356",
+  successRate: "1,892",
 };
 
 export default function HomeContent() {
@@ -154,7 +154,7 @@ export default function HomeContent() {
           </p>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div>
-              <Label>Students</Label>
+              <Label>Active Students</Label>
               <Input
                 type="text"
                 value={stats.students}
@@ -176,23 +176,23 @@ export default function HomeContent() {
               />
             </div>
             <div>
-              <Label>Articles</Label>
+              <Label>Certificates Issued</Label>
               <Input
                 type="text"
-                value={stats.articles}
+                value={stats.certificatesIssued}
                 onChange={(e) =>
-                  setStats((prev) => ({ ...prev, articles: e.target.value }))
+                  setStats((prev) => ({ ...prev, certificatesIssued: e.target.value }))
                 }
                 placeholder="2,356"
               />
             </div>
             <div>
-              <Label>Others</Label>
+              <Label>Success Rate</Label>
               <Input
                 type="text"
-                value={stats.others}
+                value={stats.successRate}
                 onChange={(e) =>
-                  setStats((prev) => ({ ...prev, others: e.target.value }))
+                  setStats((prev) => ({ ...prev, successRate: e.target.value }))
                 }
                 placeholder="1,892"
               />

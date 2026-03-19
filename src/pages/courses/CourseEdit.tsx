@@ -43,10 +43,16 @@ export default function CourseEdit() {
         keywords: data.keywords || null,
         faqs: data.faqs?.length ? JSON.stringify(data.faqs) : null,
         includes_info: data.includes_info?.length ? JSON.stringify(data.includes_info) : null,
+        course_includes: data.course_includes?.length ? JSON.stringify(data.course_includes) : null,
         feedback: data.feedback?.length ? JSON.stringify(data.feedback) : null,
         certifications: data.certifications || null,
         gateway: data.gateway || null,
         is_published: data.is_published,
+        author_user_id: data.author_user_id ? Number(data.author_user_id) : null,
+        author_name: data.author_name || null,
+        author_role: data.author_role || null,
+        author_bio: data.author_bio || null,
+        author_image: data.author_image || null,
       });
       navigate("/courses");
     } catch (err) {
