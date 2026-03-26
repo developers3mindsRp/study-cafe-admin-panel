@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { uploadImage } from "../../api/uploads";
+import { getImageUrl } from "../../utils/image.utils";
 
 const IMAGE_ACCEPT = {
   "image/png": [".png"],
@@ -96,7 +97,7 @@ export default function ImageUpload({
         {value ? (
           <div className="relative flex min-h-[140px] items-center justify-center p-4">
             <img
-              src={value}
+              src={getImageUrl(value)}
               alt="Preview"
               className="max-h-40 max-w-full rounded-lg object-contain"
               referrerPolicy="no-referrer"

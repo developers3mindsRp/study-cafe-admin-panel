@@ -17,7 +17,7 @@ export interface CategoryRecord {
 
 const BASE_URL = "/admin/platform/article-categories";
 
-export const categoriesApi = createCrudApi<CategoryRecord>(BASE_URL);
+export const categoriesApi = createCrudApi<CategoryRecord>(BASE_URL)();
 
 /** Fetch all categories (unpaginated) for client-side DataTable */
 export async function fetchAllCategories(): Promise<CategoryRecord[]> {

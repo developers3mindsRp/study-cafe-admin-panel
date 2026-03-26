@@ -27,7 +27,7 @@ export type { PaginatedResponse } from "./apiFactory";
 // Base path for admin-accessible platform plans
 const BASE_URL = '/admin/platform/plans';
 
-export const plansApi = createCrudApi<Plan>(BASE_URL, {
+export const plansApi = createCrudApi<Plan>(BASE_URL)({
     async togglePopular(id: number, is_popular: boolean): Promise<Plan> {
         const { data } = await api.put<Plan>(`${BASE_URL}/${id}/popular`, { is_popular });
         return data;

@@ -46,6 +46,8 @@ export default function HomeContent() {
     return () => { cancelled = true; };
   }, []);
 
+  console.log("hero-->", hero);
+
   const handleSave = () => {
     setSaving(true);
     updateCmsPage(SLUG, { title: "Home", meta: { hero, stats } })

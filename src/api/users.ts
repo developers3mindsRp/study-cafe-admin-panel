@@ -9,42 +9,42 @@ import { createCrudApi } from "./apiFactory";
 import type { DataTableFetchParams, DataTableFetchResult } from "../components/tables/data-table";
 
 export interface User {
-    id: string;
-    name: string;
-    email: string;
-    phone?: string;
-    role?: string;
-    role_id?: number;
-    status?: string;
-    is_active?: boolean;
-    created_at?: string;
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  role?: string;
+  role_id?: number;
+  status?: string;
+  is_active?: boolean;
+  created_at?: string;
 
-    // Profile
-    first_name?: string;
-    last_name?: string;
-    display_name?: string;
-    profile_pic_url?: string;
+  // Profile
+  first_name?: string;
+  last_name?: string;
+  display_name?: string;
+  profile_pic_url?: string;
 
-    // Location
-    city?: string;
-    state?: string;
-    country?: string;
+  // Location
+  city?: string;
+  state?: string;
+  country?: string;
 
-    // Professional
-    profession?: string;
-    designation?: string;
-    company?: string;
+  // Professional
+  profession?: string;
+  designation?: string;
+  company?: string;
 
-    // Social
-    facebook?: string;
-    twitter?: string;
-    linkedin?: string;
-    instagram?: string;
-    youtube?: string;
+  // Social
+  facebook?: string;
+  twitter?: string;
+  linkedin?: string;
+  instagram?: string;
+  youtube?: string;
 
-    // Membership
-    membership?: string | null;
-    plan?: string;
+  // Membership
+  membership?: string | null;
+  plan?: string;
 }
 
 // Re-export ListQuery from factory for convenience
@@ -52,7 +52,7 @@ export type { ListQuery as ListParams } from "./apiFactory";
 
 const BASE_URL = "/users";
 
-export const usersApi = createCrudApi<User>(BASE_URL);
+export const usersApi = createCrudApi<User>(BASE_URL)();
 
 /** Server-side paginated list for DataTable. Adapts list() response to DataTable meta shape. */
 export async function fetchUsersPaginated(

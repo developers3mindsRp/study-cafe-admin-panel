@@ -4,7 +4,7 @@ import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import BackLink from "../../components/common/BackLink";
 import { ConfirmDeleteModal } from "../../components/ui/modal/ConfirmDeleteModal";
 import { useModal } from "../../hooks/useModal";
-import type { SEOMetadata } from "./SEOMetadataList";
+import type { SEOMetadata } from "../../api/seo";
 import { RequirePermission } from "../../components/auth/RequirePermission";
 import { PERM_SEO_EDIT, PERM_SEO_DELETE } from "../../constants/permissions";
 

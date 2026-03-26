@@ -68,7 +68,7 @@ export type { PaginatedResponse } from "./apiFactory";
 
 const BASE_URL = "/admin/platform/articles";
 
-export const articlesApi = createCrudApi<ArticleRecord>(BASE_URL);
+export const articlesApi = createCrudApi<ArticleRecord>(BASE_URL)();
 
 /** Server-side paginated list for DataTable */
 export async function fetchArticlesPaginated(
