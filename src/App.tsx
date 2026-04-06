@@ -76,6 +76,9 @@ import CourseCatEdit from "./pages/courses/CourseCatEdit";
 import LiveSessions from "./pages/courses/LiveSessions";
 import OrderList from "./pages/orders/OrderList";
 import OrderView from "./pages/orders/OrderView";
+import PromoCodeList from "./pages/promo-codes/PromoCodeList";
+import PromoCodeCreate from "./pages/promo-codes/PromoCodeCreate";
+import PromoCodeEdit from "./pages/promo-codes/PromoCodeEdit";
 
 function RootLayout() {
   return (
@@ -188,6 +191,17 @@ const router = createBrowserRouter(
           </Route>
           <Route path="/orders/:orderId" element={<RequirePermissionRoute permissions={["admin:access"]} />}>
             <Route index element={<OrderView />} />
+          </Route>
+
+          {/* Promo Codes */}
+          <Route path="/promo-codes" element={<RequirePermissionRoute permissions={["admin:access"]} />}>
+            <Route index element={<PromoCodeList />} />
+          </Route>
+          <Route path="/promo-codes/create" element={<RequirePermissionRoute permissions={["admin:access"]} />}>
+            <Route index element={<PromoCodeCreate />} />
+          </Route>
+          <Route path="/promo-codes/:id/edit" element={<RequirePermissionRoute permissions={["admin:access"]} />}>
+            <Route index element={<PromoCodeEdit />} />
           </Route>
 
           {/* Memberships */}
