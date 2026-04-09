@@ -48,6 +48,10 @@ export interface DataTableProps<T = Record<string, unknown>> {
   fetchData: DataTableFetchFn<T>;
   /** Initial page size */
   initialPageSize?: number;
+  /** Initial sort field */
+  initialSortBy?: string;
+  /** Initial sort direction */
+  initialSortOrder?: "ASC" | "DESC";
   /** Page size options for selector */
   pageSizeOptions?: number[];
   /** Enable search input */

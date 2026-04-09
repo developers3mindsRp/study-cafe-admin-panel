@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router";
 import Label from "../../components/form/Label";
 import Input from "../../components/form/input/InputField";
@@ -7,42 +7,107 @@ import Select from "../../components/form/Select";
 import DatePicker from "../../components/form/date-picker";
 import Button from "../../components/ui/button/Button";
 import type {
-  PromoCodeFormData,
-  PromoCodeTargetType,
+  CouponFormData,
+  CouponDiscountOn,
+  CouponType,
+  CouponStatus,
 } from "../../types/promoCode";
-import { PROMO_CODE_TARGET_TYPES } from "../../types/promoCode";
+import { COUPON_DISCOUNT_ON_OPTIONS } from "../../types/promoCode";
+import { checkCouponCodeExists } from "../../api/promoCodes";
 
-interface PromoCodeFormProps {
+interface CouponFormProps {
   mode: "create" | "edit";
-  defaultValues?: Partial<PromoCodeFormData>;
+  defaultValues?: Partial<CouponFormData>;
   loading?: boolean;
-  onSubmit: (data: PromoCodeFormData) => void;
+  onSubmit: (data: CouponFormData) => void;
+  excludeId?: string | number; // For edit mode, exclude this ID when checking code uniqueness
 }
 
-const emptyFormData: PromoCodeFormData = {
+const emptyFormData: CouponFormData = {
   code: "",
   description: "",
-  discount_type: "percentage",
-  discount_value: "0",
-  max_discount_amount: "",
-  min_cart_value: "",
-  target_type: "membership_plans",
-  active: true,
-  valid_from: "",
-  valid_to: "",
-  usage_limit: "",
+  type: "Percentage",
+  value: "0",
+  min_order: "",
+  max_discount: "",
+  discount_on: "Membership Only",
+  start_date: "",
+  expire_date: "",
+  status: "publish",
 };
 
-export default function PromoCodeForm({
+export default function CouponForm({
   mode,
   defaultValues,
   loading = false,
   onSubmit,
-}: PromoCodeFormProps) {
-  const [formData, setFormData] = useState<PromoCodeFormData>({
-    ...emptyFormData,
-    ...defaultValues,
-  });
+  excludeId,
+}: CouponFormProps) {
+  const [formData, setFormData] = useState<CouponFormData>(
+    Object.assign({}, emptyFormData, defaultValues),
+  );
+  const [originalCode, setOriginalCode] = useState<string>(
+    defaultValues?.code || "",
+  );
+  const [codeExists, setCodeExists] = useState(false);
+  const [checkingCode, setCheckingCode] = useState(false);
+  const [codeError, setCodeError] = useState<string | null>(null);
+
+  // Update original code when defaultValues change (for edit mode)
+  useEffect(() => {
+    if (defaultValues?.code) {
+      setOriginalCode(defaultValues.code);
+    }
+  }, [defaultValues?.code]);
+
+  // Debounced function to check coupon code existence
+  const checkCodeExistence = useCallback(
+    async (code: string) => {
+      if (!code.trim()) {
+        setCodeExists(false);
+        setCodeError(null);
+        return;
+      }
+
+      setCheckingCode(true);
+      try {
+        const exists = await checkCouponCodeExists(code, excludeId);
+        setCodeExists(exists);
+        setCodeError(
+          exists
+            ? "This coupon code already exists. Please choose a different code."
+            : null,
+        );
+      } catch (error) {
+        console.error("Error checking coupon code:", error);
+        setCodeExists(false);
+        setCodeError(null);
+      } finally {
+        setCheckingCode(false);
+      }
+    },
+    [excludeId],
+  );
+
+  // Debounced onKeyUp handler
+  useEffect(() => {
+    // Don't check if code is empty or same as original (for edit mode)
+    if (
+      !formData.code.trim() ||
+      (mode === "edit" && formData.code === originalCode)
+    ) {
+      setCodeExists(false);
+      setCodeError(null);
+      setCheckingCode(false);
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      checkCodeExistence(formData.code);
+    }, 500); // 500ms debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [formData.code, checkCodeExistence, mode, originalCode]);
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
@@ -58,8 +123,7 @@ export default function PromoCodeForm({
     setFormData((prev) => ({ ...prev, code: randomCode }));
   };
 
-  const submitLabel =
-    mode === "create" ? "Create Promo Code" : "Update Promo Code";
+  const submitLabel = mode === "create" ? "Create Coupon" : "Update Coupon";
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -67,19 +131,28 @@ export default function PromoCodeForm({
         <div className="space-y-4">
           <div>
             <Label>
-              Promo Code <span className="text-error-500">*</span>
+              Coupon Code <span className="text-error-500">*</span>
             </Label>
             <div className="grid w-full gap-2 sm:grid-cols-12">
               <div className="sm:col-span-10">
                 <Input
                   value={formData.code}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, code: e.target.value }))
-                  }
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\s/g, ""); // remove all spaces
+                    setFormData((prev) => ({ ...prev, code: value }));
+                  }}
                   placeholder="e.g. SPRING50"
                   className="w-full"
                   required
                 />
+                {/* {checkingCode && (
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    Checking code availability...
+                  </p>
+                )} */}
+                {codeError && (
+                  <p className="mt-1 text-xs text-error-500">{codeError}</p>
+                )}
               </div>
               <div className="sm:col-span-2">
                 <Button
@@ -103,26 +176,26 @@ export default function PromoCodeForm({
               onChange={(value) =>
                 setFormData((prev) => ({ ...prev, description: value }))
               }
-              placeholder="Optional details about the promo code"
+              placeholder="Optional details about the coupon"
             />
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <Label>
-                Discount Type <span className="text-error-500">*</span>
+                Coupon Type <span className="text-error-500">*</span>
               </Label>
               <Select
                 options={[
-                  { value: "percentage", label: "Percentage" },
-                  { value: "fixed", label: "Fixed Amount" },
+                  { value: "Percentage", label: "Percentage" },
+                  { value: "Amount", label: "Amount" },
                 ]}
-                placeholder="Select discount type"
-                defaultValue={formData.discount_type}
+                placeholder="Select coupon type"
+                defaultValue={formData.type}
                 onChange={(value) =>
                   setFormData((prev) => ({
                     ...prev,
-                    discount_type: value as "percentage" | "fixed",
+                    type: value as CouponType,
                   }))
                 }
               />
@@ -130,19 +203,19 @@ export default function PromoCodeForm({
 
             <div>
               <Label>
-                Promo Target <span className="text-error-500">*</span>
+                Discount On <span className="text-error-500">*</span>
               </Label>
               <Select
-                options={PROMO_CODE_TARGET_TYPES.map((item) => ({
+                options={COUPON_DISCOUNT_ON_OPTIONS.map((item) => ({
                   value: item.value,
                   label: item.label,
                 }))}
-                placeholder="Select promo target"
-                defaultValue={formData.target_type}
+                placeholder="Select discount target"
+                defaultValue={formData.discount_on}
                 onChange={(value) =>
                   setFormData((prev) => ({
                     ...prev,
-                    target_type: value as PromoCodeTargetType,
+                    discount_on: value as CouponDiscountOn,
                   }))
                 }
               />
@@ -156,106 +229,85 @@ export default function PromoCodeForm({
                 required
                 type="number"
                 min={0}
-                value={formData.discount_value}
+                value={formData.value}
                 onChange={(e) =>
                   setFormData((prev) => ({
                     ...prev,
-                    discount_value: e.target.value,
+                    value: e.target.value,
                   }))
                 }
                 placeholder="e.g. 20"
               />
             </div>
 
-            {formData.discount_type === "percentage" && (
-              <div>
-                <Label>Maximum Discount Amount (optional)</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  value={formData.max_discount_amount}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      max_discount_amount: e.target.value,
-                    }))
-                  }
-                  placeholder="e.g. 100"
-                />
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  Optional cap for percentage discounts. Leave empty for no cap.
-                </p>
-              </div>
-            )}
-
             <div>
-              <Label>Minimum Cart Value (optional)</Label>
+              <Label>
+                Maximum Discount <span className="text-error-500">*</span>
+              </Label>
               <Input
+                required
                 type="number"
                 min={0}
-                value={formData.min_cart_value}
+                value={formData.max_discount}
                 onChange={(e) =>
                   setFormData((prev) => ({
                     ...prev,
-                    min_cart_value: e.target.value,
+                    max_discount: e.target.value,
                   }))
                 }
                 placeholder="e.g. 500"
               />
               <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                Optional minimum cart value required to apply this promo code.
+                Optional maximum discount amount for this coupon.
+              </p>
+            </div>
+
+            <div>
+              <Label>Minimum Order Value (optional)</Label>
+              <Input
+                type="number"
+                min={0}
+                value={formData.min_order}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    min_order: e.target.value,
+                  }))
+                }
+                placeholder="e.g. 500"
+              />
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Optional minimum order value required to apply this coupon.
               </p>
             </div>
 
             <div>
               <Label>
-                Valid From <span className="text-error-500">*</span>
+                Start Date <span className="text-error-500">*</span>
               </Label>
               <DatePicker
-              required
-                id="promo-valid-from"
+                required
+                id="coupon-start-date"
                 placeholder="Select start date"
-                defaultDate={formData.valid_from || undefined}
+                defaultDate={formData.start_date || undefined}
                 onChange={(_, dateStr) =>
-                  setFormData((prev) => {
-                    const next = { ...prev, valid_from: dateStr };
-                    if (prev.valid_to && dateStr && prev.valid_to < dateStr) {
-                      next.valid_to = dateStr;
-                    }
-                    return next;
-                  })
+                  setFormData((prev) => ({ ...prev, start_date: dateStr }))
                 }
               />
             </div>
 
             <div>
               <Label>
-                Valid To <span className="text-error-500">*</span>
+                Expiry Date <span className="text-error-500">*</span>
               </Label>
               <DatePicker
-                id="promo-valid-to"
-                placeholder="Select end date"
-                defaultDate={formData.valid_to || undefined}
-                minDate={formData.valid_from || undefined}
+                id="coupon-expire-date"
+                placeholder="Select expiry date"
+                defaultDate={formData.expire_date || undefined}
+                minDate={formData.start_date || undefined}
                 onChange={(_, dateStr) =>
-                  setFormData((prev) => ({ ...prev, valid_to: dateStr }))
+                  setFormData((prev) => ({ ...prev, expire_date: dateStr }))
                 }
-              />
-            </div>
-
-            <div>
-              <Label>Usage Limit</Label>
-              <Input
-                type="number"
-                min={0}
-                value={formData.usage_limit}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    usage_limit: e.target.value,
-                  }))
-                }
-                placeholder="e.g. 100"
               />
             </div>
 
@@ -263,15 +315,15 @@ export default function PromoCodeForm({
               <Label>Status</Label>
               <Select
                 options={[
-                  { value: "active", label: "Active" },
-                  { value: "inactive", label: "Inactive" },
+                  { value: "publish", label: "Publish" },
+                  { value: "draft", label: "Draft" },
                 ]}
                 placeholder="Select status"
-                defaultValue={formData.active ? "active" : "inactive"}
+                defaultValue={formData.status}
                 onChange={(value) =>
                   setFormData((prev) => ({
                     ...prev,
-                    active: value === "active",
+                    status: value as CouponStatus,
                   }))
                 }
               />
@@ -283,12 +335,12 @@ export default function PromoCodeForm({
       <div className="flex gap-3">
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || codeExists || checkingCode}
           className="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-medium text-white transition bg-brand-500 shadow-theme-xs hover:bg-brand-600 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading ? "Saving..." : submitLabel}
         </button>
-        <Link to="/promo-codes">
+        <Link to="/coupons">
           <Button variant="outline" size="sm" disabled={loading}>
             Cancel
           </Button>
