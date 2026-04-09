@@ -81,6 +81,7 @@ const navItems: NavItem[] = [
     subItems: [
       { name: "List", path: "/memberships", requiredPermission: ["memberships:list", "memberships:view"] },
       { name: "Create", path: "/memberships/create", requiredPermission: ["memberships:create"] },
+      { name: "Comparison Features", path: "/memberships/comparison-features", requiredPermission: ["memberships:edit"] },
     ],
     requiredPermission: ["memberships:list", "memberships:view", "memberships:create", "memberships:edit", "memberships:delete"],
   },

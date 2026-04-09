@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import MembershipForm, { type MembershipFormData, parseFeaturesToArray, arrayToFeaturesHtml } from "./MembershipForm";
-import { plansApi } from "../../api/plans";
+import { plansApi, type MembershipFeatures } from "../../api/plans";
 
 export default function MembershipEdit() {
   const navigate = useNavigate();
@@ -22,15 +22,30 @@ export default function MembershipEdit() {
     try {
       setLoading(true);
       const plan = await plansApi.get(planId);
+
+      // Deserialize features: can be { mrp, included, excluded } object or legacy string[]
+      let mrp = 0;
+      let featuresIncludedHtml = "";
+
+      if (plan.features && !Array.isArray(plan.features) && typeof plan.features === "object") {
+        const feat = plan.features as MembershipFeatures;
+        mrp = feat.mrp ?? 0;
+        featuresIncludedHtml = arrayToFeaturesHtml(feat.included ?? []);
+      } else if (Array.isArray(plan.features) && plan.features.length > 0) {
+        // Legacy flat string[] — treat all as included
+        featuresIncludedHtml = arrayToFeaturesHtml(plan.features as string[]);
+      }
+
       setInitialData({
         name: plan.name,
         slug: plan.slug,
         description: plan.description,
         price: Number(plan.price),
+        mrp,
         currency: plan.currency,
         duration_days: plan.duration_days ?? 365,
         is_lifetime: plan.is_lifetime ?? false,
-        features: Array.isArray(plan.features) ? arrayToFeaturesHtml(plan.features) : "",
+        features_included: featuresIncludedHtml,
         is_active: plan.is_active,
         is_popular: plan.is_popular ?? false,
         sort_order: plan.sort_order ?? 0,
@@ -49,9 +64,12 @@ export default function MembershipEdit() {
     if (!id) return;
     try {
       setSubmitting(true);
+      const included = parseFeaturesToArray(formData.features_included);
       const payload = {
         ...formData,
-        features: parseFeaturesToArray(formData.features),
+        features: (included.length > 0 || formData.mrp > 0)
+          ? { mrp: formData.mrp, included, excluded: [] }
+          : [],
         price: Number(formData.price),
         duration_days: Number(formData.duration_days),
         is_lifetime: formData.is_lifetime,
@@ -60,6 +78,10 @@ export default function MembershipEdit() {
         course_ids: formData.course_ids,
         course_cat_ids: formData.course_cat_ids,
       };
+      // Remove form-only fields from payload
+      delete (payload as Record<string, unknown>).features_included;
+      delete (payload as Record<string, unknown>).mrp;
+
       await plansApi.update(id, payload);
       navigate("/memberships");
     } catch (err) {
@@ -78,7 +100,7 @@ export default function MembershipEdit() {
         title="Edit Membership | StudyCafe Admin"
         description="Edit membership plan"
       />
-      <PageBreadcrumb pageTitle="Edit Membership" />
+      <PageBreadcrumb items={[{ label: "Memberships", path: "/memberships" }]} pageTitle="Edit Membership" />
       <MembershipForm
         mode="edit"
         defaultValues={initialData}

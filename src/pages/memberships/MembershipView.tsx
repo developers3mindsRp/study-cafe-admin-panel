@@ -10,8 +10,59 @@ import {
   PERM_MEMBERSHIPS_EDIT,
   PERM_MEMBERSHIPS_DELETE,
 } from "../../constants/permissions";
-import { plansApi, type Plan } from "../../api/plans";
+import { plansApi, type Plan, type MembershipFeatures } from "../../api/plans";
 import { usersApi, type User } from "../../api/users";
+
+function FeaturesDisplay({ features }: { features: Plan["features"] }) {
+  let included: string[] = [];
+  let excluded: string[] = [];
+  let mrp = 0;
+
+  if (features && !Array.isArray(features) && typeof features === "object") {
+    const f = features as MembershipFeatures;
+    included = f.included ?? [];
+    excluded = f.excluded ?? [];
+    mrp = f.mrp ?? 0;
+  } else if (Array.isArray(features)) {
+    included = features as string[];
+  }
+
+  if (included.length === 0 && excluded.length === 0) {
+    return <p className="text-gray-500 italic text-sm">No features listed</p>;
+  }
+
+  return (
+    <div className="space-y-4">
+      {mrp > 0 && (
+        <p className="text-sm text-gray-600 dark:text-gray-300">
+          MRP: <span className="line-through text-gray-400">₹{mrp}</span>
+        </p>
+      )}
+      <div className="grid gap-4 sm:grid-cols-2">
+        {included.length > 0 && (
+          <div className="rounded-lg border border-green-100 bg-green-50 dark:border-green-900/40 dark:bg-green-900/10 p-4">
+            <p className="text-xs font-semibold text-green-700 dark:text-green-400 uppercase tracking-wide mb-2">
+              ✅ Included ({included.length})
+            </p>
+            <ol className="space-y-1 text-sm text-gray-800 dark:text-white/90 list-decimal pl-4">
+              {included.map((f, i) => <li key={i}>{f}</li>)}
+            </ol>
+          </div>
+        )}
+        {excluded.length > 0 && (
+          <div className="rounded-lg border border-red-100 bg-red-50 dark:border-red-900/40 dark:bg-red-900/10 p-4">
+            <p className="text-xs font-semibold text-red-600 dark:text-red-400 uppercase tracking-wide mb-2">
+              ❌ Excluded ({excluded.length})
+            </p>
+            <ol className="space-y-1 text-sm text-gray-500 dark:text-gray-400 list-decimal pl-4">
+              {excluded.map((f, i) => <li key={i}>{f}</li>)}
+            </ol>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 const formatDuration = (days: number) => {
   if (days >= 365)
@@ -245,23 +296,10 @@ export default function MembershipView() {
               </div>
             </div>
             <div>
-              <p className="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">
+              <p className="mb-3 text-sm font-medium text-gray-500 dark:text-gray-400">
                 Features
               </p>
-              {Array.isArray(membership.features) &&
-              membership.features.length > 0 ? (
-                <ul className="list-disc space-y-1  text-gray-800 dark:text-white/90">
-                  {membership.features.map((feature, i) => (
-                    <div
-                      key={i}
-                      className=""
-                      dangerouslySetInnerHTML={{ __html: feature }}
-                    />
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-gray-500 italic">No features listed</p>
-              )}
+              <FeaturesDisplay features={membership.features} />
             </div>
           </div>
         </div>

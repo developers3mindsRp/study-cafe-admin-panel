@@ -4,7 +4,6 @@ import Label from "../../components/form/Label";
 import Input from "../../components/form/input/InputField";
 import TextArea from "../../components/form/input/TextArea";
 import { ChipMultiSelect } from "../../components/form/ChipMultiSelect";
-import RichTextEditor from "../../components/form/RichTextEditor";
 import Button from "../../components/ui/button/Button";
 import { api } from "../../api/axios";
 
@@ -19,55 +18,34 @@ export interface CourseCatOption {
   slug: string;
 }
 
-/**
- * Convert a RichTextEditor HTML string into a clean string[] for the API.
- * Handles <p>, <li>, <br>, plain newlines — strips all HTML tags.
- */
-export function parseFeaturesToArray(html: string): string[] {
-  if (!html || !html.trim()) return [];
-
-  // Replace block-level closing tags with a newline sentinel before stripping
-  const withNewlines = html
-    .replace(/<\/p>/gi, "\n")
-    .replace(/<\/li>/gi, "\n")
-    .replace(/<br\s*\/?>/gi, "\n");
-
-  // Strip all remaining HTML tags
-  const plain = withNewlines.replace(/<[^>]+>/g, "");
-
-  // Decode common HTML entities
-  const decoded = plain
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&nbsp;/g, " ")
-    .replace(/&#39;/g, "'")
-    .replace(/&quot;/g, '"');
-
-  return decoded
+/** Convert a plain textarea string (one item per line) into a string[] for the API. */
+export function parseFeaturesToArray(text: string): string[] {
+  if (!text || !text.trim()) return [];
+  return text
     .split("\n")
     .map((line) => line.trim())
     .filter((line) => line.length > 0);
 }
 
-/**
- * Convert a string[] (from API) back into HTML for the RichTextEditor.
- * Each item becomes a <p> paragraph.
- */
-export function arrayToFeaturesHtml(arr: string[]): string {
+/** Convert a string[] (from API) back into a plain textarea string. */
+export function arrayToFeaturesText(arr: string[]): string {
   if (!arr || arr.length === 0) return "";
-  return arr.map((f) => `<p>${f}</p>`).join("");
+  return arr.join("\n");
 }
+
+// Keep old name as alias so MembershipEdit.tsx doesn't need changes
+export const arrayToFeaturesHtml = arrayToFeaturesText;
 
 export interface MembershipFormData {
   name: string;
   slug: string;
   description: string;
   price: number;
+  mrp: number;
   currency: string;
   duration_days: number;
   is_lifetime: boolean;
-  features: string; // Kept as string for textarea editing, split by newline
+  features_included: string;
   is_active: boolean;
   is_popular: boolean;
   sort_order: number;
@@ -87,10 +65,11 @@ const emptyFormData: MembershipFormData = {
   slug: "",
   description: "",
   price: 0,
+  mrp: 0,
   currency: "INR",
   duration_days: 30,
   is_lifetime: false,
-  features: "",
+  features_included: "",
   is_active: true,
   is_popular: false,
   sort_order: 0,
@@ -219,7 +198,7 @@ export default function MembershipForm({
               placeholder="Brief description of the membership"
             />
           </div>
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-4">
             <div>
               <Label>Price <span className="text-error-500">*</span></Label>
               <div className="relative">
@@ -233,6 +212,21 @@ export default function MembershipForm({
                   }
                   placeholder="0"
                   required
+                />
+              </div>
+            </div>
+            <div>
+              <Label>MRP (Strikethrough Price)</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-2.5 text-gray-500">₹</span>
+                <Input
+                  type="number"
+                  className="pl-8"
+                  value={formData.mrp}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, mrp: Number(e.target.value) }))
+                  }
+                  placeholder="0"
                 />
               </div>
             </div>
@@ -304,14 +298,15 @@ export default function MembershipForm({
             </div>
           )}
           <div>
-            <Label>Features (one per line)</Label>
-            <RichTextEditor
-              value={formData.features}
-              onChange={(html) =>
-                setFormData((prev) => ({ ...prev, features: html }))
+            <Label>Included Features</Label>
+            <textarea
+              rows={10}
+              value={formData.features_included}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, features_included: e.target.value }))
               }
-              placeholder="e.g. Certification Available, Access on mobile or Computer, Lifetime Validity…"
-              minHeight="120px"
+              placeholder={"Ad Free Content\nDownload Files\nCertificate Download\n..."}
+              className="w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-800 placeholder-gray-400 dark:border-gray-800 dark:bg-white/[0.03] dark:text-white/90 resize-y"
             />
           </div>
           <div className="grid gap-4 sm:grid-cols-2">

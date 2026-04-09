@@ -48,6 +48,7 @@ import MembershipList from "./pages/memberships/MembershipList";
 import MembershipCreate from "./pages/memberships/MembershipCreate";
 import MembershipEdit from "./pages/memberships/MembershipEdit";
 import MembershipView from "./pages/memberships/MembershipView";
+import ComparisonFeatures from "./pages/memberships/ComparisonFeatures";
 import TestimonialList from "./pages/testimonials/TestimonialList";
 import TestimonialCreate from "./pages/testimonials/TestimonialCreate";
 import TestimonialEdit from "./pages/testimonials/TestimonialEdit";
@@ -216,6 +217,9 @@ const router = createBrowserRouter(
           </Route>
           <Route path="/memberships/:id/edit" element={<RequirePermissionRoute permissions={["memberships:edit"]} />}>
             <Route index element={<MembershipEdit />} />
+          </Route>
+          <Route path="/memberships/comparison-features" element={<RequirePermissionRoute permissions={["memberships:edit"]} />}>
+            <Route index element={<ComparisonFeatures />} />
           </Route>
 
           {/* Testimonials */}

@@ -13,9 +13,12 @@ export default function MembershipCreate() {
     try {
       setLoading(true);
       // Transform form data to match API expectations
+      const included = parseFeaturesToArray(formData.features_included);
       const payload = {
         ...formData,
-        features: parseFeaturesToArray(formData.features),
+        features: (included.length > 0 || formData.mrp > 0)
+          ? { mrp: formData.mrp, included, excluded: [] }
+          : [],
         price: Number(formData.price),
         duration_days: Number(formData.duration_days),
         is_lifetime: formData.is_lifetime,
@@ -24,6 +27,9 @@ export default function MembershipCreate() {
         course_ids: formData.course_ids,
         course_cat_ids: formData.course_cat_ids,
       };
+      // Remove form-only fields from payload
+      delete (payload as Record<string, unknown>).features_included;
+      delete (payload as Record<string, unknown>).mrp;
 
       await plansApi.create(payload);
       navigate("/memberships");
