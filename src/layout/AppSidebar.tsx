@@ -68,10 +68,10 @@ const navItems: NavItem[] = [
   },
   {
     icon: <DollarLineIcon />,
-    name: "Promo Codes",
+    name: "Coupons",
     subItems: [
-      { name: "List", path: "/promo-codes", requiredPermission: ["admin:access"] },
-      { name: "Create", path: "/promo-codes/create", requiredPermission: ["admin:access"] },
+      { name: "List", path: "/coupons", requiredPermission: ["admin:access"] },
+      { name: "Create", path: "/coupons/create", requiredPermission: ["admin:access"] },
     ],
     requiredPermission: ["admin:access"],
   },

@@ -193,14 +193,14 @@ const router = createBrowserRouter(
             <Route index element={<OrderView />} />
           </Route>
 
-          {/* Promo Codes */}
-          <Route path="/promo-codes" element={<RequirePermissionRoute permissions={["admin:access"]} />}>
+          {/* Coupons */}
+          <Route path="/coupons" element={<RequirePermissionRoute permissions={["admin:access"]} />}>
             <Route index element={<PromoCodeList />} />
           </Route>
-          <Route path="/promo-codes/create" element={<RequirePermissionRoute permissions={["admin:access"]} />}>
+          <Route path="/coupons/create" element={<RequirePermissionRoute permissions={["admin:access"]} />}>
             <Route index element={<PromoCodeCreate />} />
           </Route>
-          <Route path="/promo-codes/:id/edit" element={<RequirePermissionRoute permissions={["admin:access"]} />}>
+          <Route path="/coupons/:id/edit" element={<RequirePermissionRoute permissions={["admin:access"]} />}>
             <Route index element={<PromoCodeEdit />} />
           </Route>
 

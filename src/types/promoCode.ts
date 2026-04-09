@@ -1,38 +1,39 @@
-export type PromoCodeTargetType = "membership_plans" | "courses";
+export type CouponDiscountOn = "Membership Only" | "Everything" | "All Courses";
 
-export const PROMO_CODE_TARGET_TYPES = [
-  { value: "membership_plans", label: "Membership Plans" },
-  { value: "courses", label: "Courses" },
+export const COUPON_DISCOUNT_ON_OPTIONS = [
+  { value: "Membership Only", label: "Membership Only" },
+  { value: "Everything", label: "Everything" },
+  { value: "All Courses", label: "All Courses" },
 ] as const;
 
-export interface PromoCode {
+export type CouponStatus = "publish" | "draft";
+export type CouponType = "Percentage" | "Amount";
+
+export interface Coupon {
   id: number | string;
+  wp_post_id?: number | string;
   code: string;
   description?: string;
-  discount_type?: "percentage" | "fixed";
-  discount_value?: number;
-  max_discount_amount?: number;
-  min_cart_value?: number;
-  target_type?: PromoCodeTargetType;
-  active?: boolean;
-  valid_from?: string;
-  valid_to?: string;
-  usage_limit?: number;
-  used_count?: number;
+  type?: CouponType;
+  value?: number;
+  min_order?: number;
+  max_discount?: number;
+  discount_on?: CouponDiscountOn;
+  start_date?: string;
+  expire_date?: string;
+  status?: CouponStatus;
   created_at?: string;
-  updated_at?: string;
 }
 
-export interface PromoCodeFormData {
+export interface CouponFormData {
   code: string;
   description: string;
-  discount_type: "percentage" | "fixed";
-  discount_value: string;
-  max_discount_amount: string;
-  min_cart_value: string;
-  target_type: PromoCodeTargetType;
-  active: boolean;
-  valid_from: string;
-  valid_to: string;
-  usage_limit: string;
+  type: CouponType;
+  value: string;
+  min_order: string;
+  max_discount: string;
+  discount_on: CouponDiscountOn;
+  start_date: string;
+  expire_date: string;
+  status: CouponStatus;
 }

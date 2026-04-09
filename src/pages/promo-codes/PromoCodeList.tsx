@@ -7,7 +7,7 @@ import { DataTable, type DataTableRef } from "../../components/tables/data-table
 import { PencilIcon, TrashBinIcon } from "../../icons";
 import { useModal } from "../../hooks/useModal";
 import { RequirePermission } from "../../components/auth/RequirePermission";
-import { fetchPromoCodesPaginated, deletePromoCode, type PromoCode } from "../../api/promoCodes";
+import { fetchCouponsPaginated, deleteCoupon, type Coupon } from "../../api/promoCodes";
 
 function getErrorMessage(error: unknown): string | undefined {
   if (error instanceof Error) return error.message;
@@ -16,15 +16,22 @@ function getErrorMessage(error: unknown): string | undefined {
   }
   return undefined;
 }
-
+function formatDate(dateStr?: string | null) {
+  if (!dateStr) return "—";
+  return new Date(dateStr).toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
 export default function PromoCodeList() {
-  const [deleteTarget, setDeleteTarget] = useState<PromoCode | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Coupon | null>(null);
   const [deleting, setDeleting] = useState(false);
   const { isOpen: isDeleteModalOpen, openModal: openDeleteModal, closeModal: closeDeleteModal } = useModal();
   const dataTableRef = useRef<DataTableRef>(null);
 
   const handleDeleteClick = useCallback(
-    (item: PromoCode) => {
+    (item: Coupon) => {
       setDeleteTarget(item);
       openDeleteModal();
     },
@@ -35,13 +42,13 @@ export default function PromoCodeList() {
     if (!deleteTarget) return;
     setDeleting(true);
     try {
-      await deletePromoCode(deleteTarget.id);
+      await deleteCoupon(deleteTarget.id);
       dataTableRef.current?.refetch();
       setDeleteTarget(null);
       closeDeleteModal();
     } catch (err: unknown) {
-      console.error("Failed to delete promo code", err);
-      alert(getErrorMessage(err) || "Failed to delete promo code");
+      console.error("Failed to delete coupon", err);
+      alert(getErrorMessage(err) || "Failed to delete coupon");
     } finally {
       setDeleting(false);
     }
@@ -57,7 +64,7 @@ export default function PromoCodeList() {
       key: "code",
       header: "Code",
       sortable: true,
-      render: (row: PromoCode) => (
+      render: (row: Coupon) => (
         <span className="font-medium text-gray-800 text-theme-sm dark:text-white/90">{row.code}</span>
       ),
     },
@@ -65,22 +72,22 @@ export default function PromoCodeList() {
       key: "discount",
       header: "Discount",
       sortable: false,
-      render: (row: PromoCode) => {
-        const value = row.discount_value ?? 0;
+      render: (row: Coupon) => {
+        const value = row.value ?? 0;
         return (
           <span className="text-gray-500 text-theme-sm dark:text-gray-400">
-            {row.discount_type === "percentage" ? `${value}%` : `₹${value}`}
+            {row.type === "Percentage" ? `${value}%` : `₹${value}`}
           </span>
         );
       },
     },
     {
-      key: "target_type",
-      header: "Target",
+      key: "discount_on",
+      header: "Discount On",
       sortable: true,
-      render: (row: PromoCode) => (
+      render: (row: Coupon) => (
         <span className="text-gray-500 text-theme-sm dark:text-gray-400">
-          {row.target_type === "courses" ? "Courses" : "Membership Plans"}
+          {row.discount_on ?? "—"}
         </span>
       ),
     },
@@ -88,19 +95,19 @@ export default function PromoCodeList() {
       key: "validity",
       header: "Validity",
       sortable: false,
-      render: (row: PromoCode) => (
+      render: (row: Coupon) => (
         <div className="text-gray-500 text-theme-sm dark:text-gray-400">
-          {row.valid_from || "—"} → {row.valid_to || "—"}
+          {formatDate(row.start_date)} → {formatDate(row.expire_date)}
         </div>
       ),
     },
     {
-      key: "active",
-      header: "Active",
+      key: "status",
+      header: "Status",
       sortable: true,
-      render: (row: PromoCode) => (
-        <span className={`rounded-full px-2 py-1 text-theme-xs font-semibold ${row.active ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-500 dark:bg-white/[0.05] dark:text-gray-400"}`}>
-          {row.active ? "Yes" : "No"}
+      render: (row: Coupon) => (
+        <span className={`rounded-full px-2 py-1 text-theme-xs font-semibold ${row.status === "publish" ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-500 dark:bg-white/[0.05] dark:text-gray-400"}`}>
+          {row.status === "publish" ? "Published" : "Draft"}
         </span>
       ),
     },
@@ -109,11 +116,11 @@ export default function PromoCodeList() {
       header: "Actions",
       align: "end" as const,
       sortable: false,
-      render: (row: PromoCode) => (
+      render: (row: Coupon) => (
         <div className="flex items-center justify-end gap-2">
           <RequirePermission permissions={["admin:access"]} fallback={null}>
             <Link
-              to={`/promo-codes/${row.id}/edit`}
+              to={`/coupons/${row.id}/edit`}
               className="inline-flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-2 text-sm text-gray-600 transition hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
               title="Edit"
             >
@@ -140,15 +147,15 @@ export default function PromoCodeList() {
   return (
     <>
       <PageMeta
-        title="Promo Codes | StudyCafe Admin"
-        description="Manage promo codes and discounts for the admin panel"
+        title="Coupons | StudyCafe Admin"
+        description="Manage coupons and discounts for the admin panel"
       />
       <PageBreadcrumb
-        pageTitle="Promo Codes"
+        pageTitle="Coupons"
         actions={
           <RequirePermission permissions={["admin:access"]} fallback={null}>
             <Link
-              to="/promo-codes/create"
+              to="/coupons/create"
               className="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-medium text-white transition bg-brand-500 shadow-theme-xs hover:bg-brand-600"
             >
               Create New
@@ -157,17 +164,19 @@ export default function PromoCodeList() {
         }
       />
       <div className="space-y-6">
-        <DataTable<PromoCode>
+        <DataTable<Coupon>
           ref={dataTableRef}
           columns={columns}
-          fetchData={fetchPromoCodesPaginated}
+          fetchData={fetchCouponsPaginated}
           initialPageSize={10}
+          initialSortBy="created_at"
+          initialSortOrder="DESC"
           pageSizeOptions={[10, 20, 50, 100]}
           enableSearch
           enableSorting
           enablePagination
-          searchPlaceholder="Search promo codes…"
-          emptyMessage="No promo codes found."
+          searchPlaceholder="Search coupons…"
+          emptyMessage="No coupons found."
         />
       </div>
 
@@ -175,7 +184,7 @@ export default function PromoCodeList() {
         isOpen={isDeleteModalOpen}
         onClose={handleDeleteCancel}
         onConfirm={handleDeleteConfirm}
-        title="Delete Promo Code"
+        title="Delete Coupon"
         itemName={deleteTarget?.code}
         isLoading={deleting}
       />

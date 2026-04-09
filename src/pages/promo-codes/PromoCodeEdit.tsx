@@ -2,10 +2,9 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
-import PromoCodeForm from "./PromoCodeForm";
-import type { PromoCodeFormData } from "../../types/promoCode";
-import { fetchPromoCode, updatePromoCode } from "../../api/promoCodes";
-import type { PromoCode } from "../../types/promoCode";
+import CouponForm from "./PromoCodeForm";
+import type { CouponFormData, Coupon } from "../../types/promoCode";
+import { fetchCoupon, updateCoupon } from "../../api/promoCodes";
 
 function getErrorMessage(error: unknown): string | undefined {
   if (error instanceof Error) return error.message;
@@ -20,7 +19,7 @@ export default function PromoCodeEdit() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [data, setData] = useState<PromoCode | null>(null);
+  const [data, setData] = useState<Coupon | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -28,12 +27,12 @@ export default function PromoCodeEdit() {
     const load = async () => {
       try {
         setLoading(true);
-        const promoCode = await fetchPromoCode(id);
-        setData(promoCode);
+        const coupon = await fetchCoupon(id);
+        setData(coupon);
       } catch (err) {
-        console.error("Failed to load promo code", err);
-        alert("Failed to load promo code or it does not exist.");
-        navigate("/promo-codes");
+        console.error("Failed to load coupon", err);
+        alert("Failed to load coupon or it does not exist.");
+        navigate("/coupons");
       } finally {
         setLoading(false);
       }
@@ -47,28 +46,22 @@ export default function PromoCodeEdit() {
 
     try {
       setSaving(true);
-      await updatePromoCode(id, {
+      await updateCoupon(id, {
         code: formData.code,
         description: formData.description,
-        discount_type: formData.discount_type,
-        discount_value: Number(formData.discount_value),
-        max_discount_amount: formData.max_discount_amount
-          ? Number(formData.max_discount_amount)
-          : undefined,
-        min_cart_value: formData.min_cart_value
-          ? Number(formData.min_cart_value)
-          : undefined,
-        active: formData.active,
-        valid_from: formData.valid_from || undefined,
-        valid_to: formData.valid_to || undefined,
-        usage_limit: formData.usage_limit
-          ? Number(formData.usage_limit)
-          : undefined,
+        type: formData.type,
+        value: Number(formData.value),
+        max_discount: formData.max_discount ? Number(formData.max_discount) : undefined,
+        min_order: formData.min_order ? Number(formData.min_order) : undefined,
+        discount_on: formData.discount_on,
+        start_date: formData.start_date || undefined,
+        expire_date: formData.expire_date || undefined,
+        status: formData.status,
       });
-      navigate("/promo-codes");
+      navigate("/coupons");
     } catch (err: unknown) {
-      console.error("Failed to update promo code", err);
-      alert(getErrorMessage(err) || "Failed to update promo code");
+      console.error("Failed to update coupon", err);
+      alert(getErrorMessage(err) || "Failed to update coupon");
     } finally {
       setSaving(false);
     }
@@ -77,7 +70,7 @@ export default function PromoCodeEdit() {
   if (loading) {
     return (
       <div className="flex items-center justify-center p-20">
-        <p className="text-gray-500">Loading promo code...</p>
+        <p className="text-gray-500">Loading coupon...</p>
       </div>
     );
   }
@@ -86,31 +79,32 @@ export default function PromoCodeEdit() {
     return null;
   }
 
-  const defaultValues: PromoCodeFormData = {
+  const defaultValues: CouponFormData = {
     code: data.code,
     description: data.description ?? "",
-    discount_type: data.discount_type ?? "percentage",
-    discount_value: data.discount_value != null ? String(data.discount_value) : "0",
-    max_discount_amount: data.max_discount_amount != null ? String(data.max_discount_amount) : "",
-    min_cart_value: data.min_cart_value != null ? String(data.min_cart_value) : "",
-    active: data.active ?? true,
-    valid_from: data.valid_from ?? "",
-    valid_to: data.valid_to ?? "",
-    usage_limit: data.usage_limit != null ? String(data.usage_limit) : "",
+    type: data.type ?? "Percentage",
+    value: data.value != null ? String(data.value) : "0",
+    max_discount: data.max_discount != null ? String(data.max_discount) : "",
+    min_order: data.min_order != null ? String(data.min_order) : "",
+    discount_on: data.discount_on ?? "Membership Only",
+    start_date: data.start_date ?? "",
+    expire_date: data.expire_date ?? "",
+    status: data.status ?? "publish",
   };
 
   return (
     <>
       <PageMeta
-        title="Edit Promo Code | StudyCafe Admin"
-        description="Edit an existing promo code for StudyCafe"
+        title="Edit Coupon | StudyCafe Admin"
+        description="Edit an existing coupon for StudyCafe"
       />
-      <PageBreadcrumb pageTitle="Edit Promo Code" compact />
-      <PromoCodeForm
+      <PageBreadcrumb pageTitle="Edit Coupon" compact />
+      <CouponForm
         mode="edit"
         defaultValues={defaultValues}
         loading={saving}
         onSubmit={handleSubmit}
+        excludeId={id}
       />
     </>
   );

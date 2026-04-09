@@ -25,6 +25,8 @@ function DataTableInner<T extends object>({
   searchPlaceholder = "Search…",
   className = "",
   emptyMessage = "No data.",
+  initialSortBy,
+  initialSortOrder,
 }: DataTableProps<T>, ref: React.Ref<DataTableRef>) {
   const sortableColumnKeys = useMemo(
     () => columns.filter((c) => c.sortable).map((c) => c.key),
@@ -48,8 +50,8 @@ function DataTableInner<T extends object>({
     refetch,
   } = useDataTable<T>(fetchData, {
     initialPageSize,
-    initialSortBy: defaultSortBy,
-    initialSortOrder: defaultSortOrder,
+    initialSortBy: initialSortBy ?? defaultSortBy,
+    initialSortOrder: initialSortOrder ?? defaultSortOrder,
   });
 
   useImperativeHandle(ref, () => ({ refetch }), [refetch]);
