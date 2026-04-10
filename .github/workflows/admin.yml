@@ -17,6 +17,18 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
+            # Load NVM (IMPORTANT)
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+
+            # Use Node version
+            nvm use 24
+
+            # Debug (optional, can remove later)
+            node -v
+            npm -v
+
+            # Deploy
             cd /var/www/html/study-cafe-admin-panel
             git pull origin main
             npm install
