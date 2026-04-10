@@ -9,6 +9,7 @@ import {
   deleteMediaAsset,
   type MediaAsset,
 } from "../../../api/mediaAssets";
+import { getImageUrl } from "../../../utils/image.utils";
 
 export interface IncludesInfoItem {
   image: string;
@@ -117,7 +118,7 @@ export function IconPicker({ value, onChange }: IconPickerProps) {
         className="flex items-center gap-3 w-full border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-white/[0.03] hover:border-brand-400 transition"
       >
         {value ? (
-          <img src={value} alt="selected" className="w-8 h-8 object-contain flex-shrink-0" />
+          <img src={getImageUrl(value)} alt="selected" className="w-8 h-8 object-contain flex-shrink-0" />
         ) : (
           <div className="w-8 h-8 rounded bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400 text-xs flex-shrink-0">
             ?
@@ -195,7 +196,7 @@ export function IconPicker({ value, onChange }: IconPickerProps) {
                               : "border-transparent hover:border-gray-300 hover:bg-gray-50 dark:hover:bg-white/[0.04]"
                           }`}
                         >
-                          <img src={asset.url} alt={asset.label ?? ""} className="w-8 h-8 object-contain" />
+                          <img src={getImageUrl(asset.url)} alt={asset.label ?? ""} className="w-8 h-8 object-contain" />
                           <span className="text-[8px] text-gray-500 dark:text-gray-400 text-center leading-tight line-clamp-2">
                             {asset.label || "—"}
                           </span>
@@ -286,7 +287,7 @@ export function IconPicker({ value, onChange }: IconPickerProps) {
                 {value && (
                   <div className="mt-2 flex items-center gap-3 p-2 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg">
                     <img
-                      src={value}
+                      src={getImageUrl(value)}
                       alt=""
                       className="w-10 h-10 object-contain"
                       onError={(e) => { (e.target as HTMLImageElement).style.opacity = "0.2"; }}
@@ -388,7 +389,7 @@ export default function IncludesInfoEditor({ value, onChange }: IncludesInfoEdit
           {(item.image || item.title) && (
             <div className="flex items-center gap-3 rounded-lg border border-dashed border-gray-300 dark:border-gray-600 bg-white dark:bg-white/[0.03] p-3">
               {item.image && (
-                <img src={item.image} alt="" className="w-9 h-9 object-contain flex-shrink-0" />
+                <img src={getImageUrl(item.image)} alt="" className="w-9 h-9 object-contain flex-shrink-0" />
               )}
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-gray-800 dark:text-white/90 truncate">

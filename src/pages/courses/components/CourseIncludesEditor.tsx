@@ -1,3 +1,4 @@
+import { getImageUrl } from "../../../utils/image.utils";
 import Label from "../../../components/form/Label";
 import Input from "../../../components/form/input/InputField";
 import Button from "../../../components/ui/button/Button";
@@ -70,7 +71,7 @@ export default function CourseIncludesEditor({ value, onChange }: CourseIncludes
           {(item.image || item.title) && (
             <div className="flex items-center gap-3 rounded-lg border border-dashed border-gray-300 dark:border-gray-600 bg-white dark:bg-white/[0.03] p-3">
               {item.image && (
-                <img src={item.image} alt="" className="w-7 h-7 object-contain flex-shrink-0" />
+                <img src={getImageUrl(item.image)} alt="" className="w-7 h-7 object-contain flex-shrink-0" />
               )}
               <span className="text-sm text-gray-800 dark:text-white/90">{item.title || <em className="text-gray-400">No label</em>}</span>
               <span className="text-[10px] text-gray-400 ml-auto">Banner preview</span>

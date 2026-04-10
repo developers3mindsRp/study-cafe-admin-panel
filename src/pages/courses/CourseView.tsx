@@ -11,6 +11,7 @@ import {
   type BatchRecord,
   type RecordingRecord,
 } from "../../api/courses";
+import { getImageUrl } from "../../utils/image.utils";
 
 const safeJsonParse = (str: string | null | undefined, fallback: any = []) => {
   if (!str) return fallback;
@@ -410,7 +411,7 @@ export default function CourseView() {
               {courseIncludesBanner.map((item: any, i: number) => (
                 <li key={i} className="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
                   {item.image && (
-                    <img src={item.image} alt="" className="w-8 h-8 object-contain flex-shrink-0" />
+                    <img src={getImageUrl(item.image)} alt="" className="w-8 h-8 object-contain flex-shrink-0" />
                   )}
                   <span dangerouslySetInnerHTML={{ __html: item.title || "" }} />
                 </li>
@@ -425,7 +426,7 @@ export default function CourseView() {
               {bonusesInfo.map((item: any, i: number) => (
                 <li key={i} className="flex flex-wrap items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
                   {item.image && (
-                    <img src={item.image} alt="" className="w-9 h-9 object-contain flex-shrink-0" />
+                    <img src={getImageUrl(item.image)} alt="" className="w-9 h-9 object-contain flex-shrink-0" />
                   )}
                   <span dangerouslySetInnerHTML={{ __html: item.title || "" }} />
                   {item.worth && (

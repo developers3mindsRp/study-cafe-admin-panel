@@ -1,6 +1,7 @@
 import { Link, useLocation, useNavigate } from "react-router";
 import PageMeta from "../../components/common/PageMeta";
 import type { CourseFormData } from "./CourseForm";
+import { getImageUrl } from "../../utils/image.utils";
 
 export const COURSE_PREVIEW_STATE_KEY = "previewCourse";
 export const COURSE_RESTORE_STATE_KEY = "restoreCourseFormData";
@@ -242,7 +243,7 @@ export default function CoursePreview() {
                                     {courseIncludesBanner.map((item: any, i: number) => (
                                         <li key={i} className="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
                                             {item.image && (
-                                                <img src={item.image} alt="" className="w-7 h-7 object-contain flex-shrink-0" />
+                                                <img src={getImageUrl(item.image)} alt="" className="w-7 h-7 object-contain flex-shrink-0" />
                                             )}
                                             <span dangerouslySetInnerHTML={{ __html: item.title || "" }} />
                                         </li>
@@ -258,7 +259,7 @@ export default function CoursePreview() {
                                     {bonusesInfo.map((item: any, i: number) => (
                                         <li key={i} className="flex flex-wrap items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
                                             {item.image && (
-                                                <img src={item.image} alt="" className="w-9 h-9 object-contain flex-shrink-0" />
+                                                <img src={getImageUrl(item.image)} alt="" className="w-9 h-9 object-contain flex-shrink-0" />
                                             )}
                                             <span dangerouslySetInnerHTML={{ __html: item.title || "" }} />
                                             {item.worth && <span className="text-green-600 font-semibold text-xs">Worth {item.worth}</span>}
