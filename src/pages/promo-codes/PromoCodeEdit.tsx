@@ -41,7 +41,7 @@ export default function PromoCodeEdit() {
     load();
   }, [id, navigate]);
 
-  const handleSubmit = async (formData: PromoCodeFormData) => {
+  const handleSubmit = async (formData: CouponFormData) => {
     if (!id) return;
 
     try {

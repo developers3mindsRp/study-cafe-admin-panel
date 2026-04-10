@@ -18,7 +18,7 @@ export default function PromoCodeCreate() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (formData: PromoCodeFormData) => {
+  const handleSubmit = async (formData: CouponFormData) => {
     try {
       setLoading(true);
       await createCoupon({
