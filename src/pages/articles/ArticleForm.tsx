@@ -25,6 +25,10 @@ export interface ArticleFormData {
   tags: string[];
   shareEnabled: boolean;
   status: "Draft" | "Published" | "Archived";
+  /** Who can read full HTML on the public blog (cafestudy-fe). */
+  blog_access_tier: "free" | "premium";
+  /** Downloadable asset URL (PDF / judgment) shown on the article page. */
+  rel_download_url?: string | null;
   /** Taxonomy IDs for backend */
   category_ids?: number[];
   tag_ids?: number[];
@@ -79,6 +83,8 @@ const emptyFormData: ArticleFormData = {
   tags: [],
   shareEnabled: true,
   status: "Draft",
+  blog_access_tier: "free",
+  rel_download_url: null,
   category_ids: [],
   tag_ids: [],
   article_type_ids: [],
@@ -104,7 +110,12 @@ export default function ArticleForm({
   const restoreAppliedRef = useRef(false);
 
   const [formData, setFormData] = useState<ArticleFormData>(() => {
-    const init = restoredData ?? { ...emptyFormData, ...defaultValues };
+    const raw = restoredData ?? { ...emptyFormData, ...defaultValues };
+    const init: ArticleFormData = {
+      ...emptyFormData,
+      ...raw,
+      blog_access_tier: raw.blog_access_tier === "premium" ? "premium" : "free",
+    };
     initialDataRef.current = init;
     if (restoredData) restoreAppliedRef.current = true;
     return init;
@@ -114,8 +125,13 @@ export default function ArticleForm({
   useEffect(() => {
     if (restoredData && !restoreAppliedRef.current) {
       restoreAppliedRef.current = true;
-      setFormData(restoredData);
-      initialDataRef.current = restoredData;
+      const init: ArticleFormData = {
+        ...emptyFormData,
+        ...restoredData,
+        blog_access_tier: restoredData.blog_access_tier === "premium" ? "premium" : "free",
+      };
+      setFormData(init);
+      initialDataRef.current = init;
     }
   }, [restoredData]);
 
@@ -485,6 +501,43 @@ export default function ArticleForm({
               <option value="Published">Published</option>
               <option value="Archived">Archived</option>
             </select>
+          </div>
+          <div>
+            <Label>Blog access</Label>
+            <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">
+              Premium: full article on the public site is for logged-in members (preview for others). Free: everyone
+              sees the full article.
+            </p>
+            <select
+              value={formData.blog_access_tier}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  blog_access_tier: e.target.value as ArticleFormData["blog_access_tier"],
+                }))
+              }
+              className="w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-800 dark:border-gray-800 dark:bg-white/[0.03] dark:text-white/90"
+            >
+              <option value="free">Free (public)</option>
+              <option value="premium">Premium (members)</option>
+            </select>
+          </div>
+          <div>
+            <Label>Download URL (PDF / Judgment)</Label>
+            <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">
+              Paste the full URL or upload path to the PDF. A "Download PDF" button will appear on the article page.
+              Premium articles: only paid members can download; others see the upgrade prompt.
+            </p>
+            <Input
+              value={formData.rel_download_url ?? ""}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  rel_download_url: e.target.value || null,
+                }))
+              }
+              placeholder="https://... or /api/uploads/..."
+            />
           </div>
         </div>
       </div>

@@ -96,9 +96,20 @@ export default function ArticleView() {
               <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">
                 Article Details
               </h3>
-              <Badge size="sm" color={statusColor(article.status)}>
-                {article.status}
-              </Badge>
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge size="sm" color={statusColor(article.status)}>
+                  {article.status}
+                </Badge>
+                {article.blog_access_tier === "premium" ? (
+                  <Badge size="sm" color="warning">
+                    Premium blog
+                  </Badge>
+                ) : (
+                  <Badge size="sm" color="light">
+                    Free blog
+                  </Badge>
+                )}
+              </div>
             </div>
             <div>
               <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Title</p>

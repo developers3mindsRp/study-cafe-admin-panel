@@ -12,6 +12,10 @@ function statusToForm(s: string): ArticleFormData["status"] {
   return "Draft";
 }
 
+function tierFromApi(t: string | undefined | null): ArticleFormData["blog_access_tier"] {
+  return t === "premium" ? "premium" : "free";
+}
+
 function statusToBackend(s: ArticleFormData["status"]) {
   if (s === "Published") return "publish";
   if (s === "Archived") return "archived";
@@ -69,6 +73,8 @@ export default function ArticleEdit() {
         tag_ids: formData.tag_ids ?? [],
         article_type_ids: formData.article_type_ids ?? [],
         court_ids: formData.court_ids ?? [],
+        blog_access_tier: formData.blog_access_tier,
+        rel_download_url: formData.rel_download_url || null,
       };
       await articlesApi.update(id, payload);
       navigate("/articles");
@@ -107,6 +113,8 @@ export default function ArticleEdit() {
     tags: [],
     shareEnabled: true,
     status: statusToForm(article.status),
+    blog_access_tier: tierFromApi(article.blog_access_tier),
+    rel_download_url: article.rel_download_url ?? null,
     category_ids: article.category_ids ?? [],
     tag_ids: article.tag_ids ?? [],
     article_type_ids: article.article_type_ids ?? [],

@@ -25,6 +25,8 @@ export interface ArticleRecord {
   author_name: string | null;
   sub_heading?: string | null;
   status: string;
+  /** Public site: `premium` uses member-gated full body on cafestudy-fe. */
+  blog_access_tier?: "free" | "premium";
   published_at: string | null;
   meta_title: string | null;
   meta_description: string | null;
@@ -39,6 +41,8 @@ export interface ArticleRecord {
   court_ids?: number[];
   /** Resolved from [related id="..."] in content (legacy shortcodes) */
   related_articles?: RelatedArticle[];
+  /** Downloadable PDF / judgment URL stored as rel_download_url on the backend. */
+  rel_download_url?: string | null;
 }
 
 export interface ArticleListParams {

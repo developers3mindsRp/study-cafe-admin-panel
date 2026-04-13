@@ -90,6 +90,21 @@ export const ArticlesTable = forwardRef<DataTableRef, ArticlesTableProps>(
         ),
       },
       {
+        key: "blog_access_tier",
+        header: "Blog",
+        sortable: false,
+        render: (row: ArticleRecord) =>
+          row.blog_access_tier === "premium" ? (
+            <Badge size="sm" color="warning">
+              Premium
+            </Badge>
+          ) : (
+            <Badge size="sm" color="light">
+              Free
+            </Badge>
+          ),
+      },
+      {
         key: "created_at",
         header: "Created At",
         sortable: true,
