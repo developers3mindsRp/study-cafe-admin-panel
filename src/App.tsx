@@ -23,7 +23,7 @@ import BasicTablesPage from "./components/tables/BasicTablesPage";
 import FormElements from "./components/form/FormElements";
 import AppLayout from "./layout/AppLayout";
 import { ScrollToTop } from "./components/common/ScrollToTop";
-import Home from "./pages/dashboard/Home";
+import Home from "./pages/Dashboard/Home";
 import HomeContent from "./pages/cms/HomeContent";
 import AboutContent from "./pages/cms/AboutContent";
 import ContactContent from "./pages/cms/ContactContent";
@@ -79,6 +79,8 @@ import OrderView from "./pages/orders/OrderView";
 import PromoCodeList from "./pages/promo-codes/PromoCodeList";
 import PromoCodeCreate from "./pages/promo-codes/PromoCodeCreate";
 import PromoCodeEdit from "./pages/promo-codes/PromoCodeEdit";
+import AffiliateHistory from "./pages/affiliate/AffiliateHistory";
+import WithdrawalRequests from "./pages/affiliate/WithdrawalRequests";
 
 function RootLayout() {
   return (
@@ -272,6 +274,14 @@ const router = createBrowserRouter(
           </Route>
           <Route path="/users/:id/edit" element={<RequirePermissionRoute permissions={["admin_users:edit"]} />}>
             <Route index element={<UserEdit />} />
+          </Route>
+          
+          {/* Affiliate */}
+          <Route path="/affiliate/history" element={<RequirePermissionRoute permissions={["admin:access"]} />}>
+            <Route index element={<AffiliateHistory />} />
+          </Route>
+          <Route path="/affiliate/withdrawals" element={<RequirePermissionRoute permissions={["admin:access"]} />}>
+            <Route index element={<WithdrawalRequests />} />
           </Route>
 
           {/* Forms */}

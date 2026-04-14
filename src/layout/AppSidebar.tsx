@@ -144,6 +144,15 @@ const navItems: NavItem[] = [
     ],
     requiredPermission: ["admin_users:list"],
   },
+  {
+    icon: <DollarLineIcon />,
+    name: "Affiliate",
+    subItems: [
+      { name: "Affiliate History", path: "/affiliate/history", requiredPermission: ["admin:access"] },
+      { name: "Withdrawal Requests", path: "/affiliate/withdrawals", requiredPermission: ["admin:access"] },
+    ],
+    requiredPermission: ["admin:access"],
+  },
 ];
 
 const othersItems: NavItem[] = [
