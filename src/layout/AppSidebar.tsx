@@ -121,7 +121,9 @@ const navItems: NavItem[] = [
   {
     icon: <MailIcon />,
     name: "Contact Inquiries",
-    path: "/contact-inquiries",
+    subItems: [
+      { name: "List", path: "/contact-inquiries", requiredPermission: ["admin:access"] },
+    ],
     requiredPermission: ["admin:access"],
   },
   {

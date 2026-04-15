@@ -1,6 +1,9 @@
+import { useRef } from "react";
+import { Link } from "react-router";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
-import { DataTable } from "../../components/tables/data-table/DataTable";
+import { DataTable, type DataTableRef } from "../../components/tables/data-table/DataTable";
+import { EyeIcon } from "../../icons";
 import { withClientPagination } from "../../utils/dataTableUtils";
 import { fetchContactInquiries, type ContactInquiry } from "../../api/contactInquiries";
 
@@ -33,6 +36,8 @@ function statusBadgeClasses(status?: string) {
 }
 
 export default function ContactInquiryList() {
+  const dataTableRef = useRef<DataTableRef>(null);
+
   const columns = [
     {
       key: "name",
@@ -86,6 +91,24 @@ export default function ContactInquiryList() {
         <span className="text-gray-500 text-theme-sm dark:text-gray-400">{formatDate(row.created_at)}</span>
       ),
     },
+    {
+      key: "actions",
+      header: "Actions",
+      align: "end" as const,
+      sortable: false,
+      render: (row: ContactInquiry) => (
+        <div className="flex items-center justify-end gap-2">
+          <Link
+            to={`/contact-inquiries/${row.id}`}
+            className="inline-flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-2 text-sm text-gray-600 transition hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
+            title="View"
+          >
+            <EyeIcon className="size-4 shrink-0 fill-current" />
+            View
+          </Link>
+        </div>
+      ),
+    },
   ];
 
   return (
@@ -97,6 +120,7 @@ export default function ContactInquiryList() {
       <PageBreadcrumb pageTitle="Contact Inquiries" />
       <div className="space-y-6">
         <DataTable<ContactInquiry>
+          ref={dataTableRef}
           columns={columns}
           fetchData={fetchContactInquiriesPaginated}
           initialPageSize={10}

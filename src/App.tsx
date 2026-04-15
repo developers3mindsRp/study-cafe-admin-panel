@@ -81,6 +81,7 @@ import PromoCodeList from "./pages/promo-codes/PromoCodeList";
 import PromoCodeCreate from "./pages/promo-codes/PromoCodeCreate";
 import PromoCodeEdit from "./pages/promo-codes/PromoCodeEdit";
 import ContactInquiryList from "./pages/contact-inquiries/ContactInquiryList";
+import ContactInquiryView from "./pages/contact-inquiries/ContactInquiryView";
 
 function RootLayout() {
   return (
@@ -254,6 +255,9 @@ const router = createBrowserRouter(
           {/* Contact Inquiries */}
           <Route path="/contact-inquiries" element={<RequirePermissionRoute permissions={["admin:access"]} />}>
             <Route index element={<ContactInquiryList />} />
+          </Route>
+          <Route path="/contact-inquiries/:id" element={<RequirePermissionRoute permissions={["admin:access"]} />}>
+            <Route index element={<ContactInquiryView />} />
           </Route>
 
           {/* Admin Users */}
