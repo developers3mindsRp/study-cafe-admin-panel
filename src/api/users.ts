@@ -34,6 +34,8 @@ export interface User {
   profession?: string;
   designation?: string;
   company?: string;
+  /** About / introduction (users.bio) */
+  bio?: string | null;
 
   // Social
   facebook?: string;

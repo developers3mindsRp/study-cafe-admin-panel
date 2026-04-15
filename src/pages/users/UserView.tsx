@@ -122,6 +122,16 @@ export default function UserView() {
                             <InfoBlock label="Last Name" value={user?.last_name} />
                             <InfoBlock label="Phone" value={user?.phone} />
                         </div>
+                        <div className="md:col-span-2 lg:col-span-4">
+                            <Label>Bio</Label>
+                            <div className="mt-1 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-800 dark:border-gray-700 dark:bg-white/[0.03] dark:text-gray-300 min-h-[80px] whitespace-pre-wrap">
+                                {user?.bio?.trim() ? (
+                                    <span>{user.bio}</span>
+                                ) : (
+                                    <span className="text-gray-400 italic">Not set</span>
+                                )}
+                            </div>
+                        </div>
                     </div>
 
                     <hr className="border-gray-200 dark:border-gray-700" />

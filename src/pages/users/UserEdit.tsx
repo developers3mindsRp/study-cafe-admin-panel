@@ -4,6 +4,7 @@ import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import Label from "../../components/form/Label";
 import Input from "../../components/form/input/InputField";
+import TextArea from "../../components/form/input/TextArea";
 import Button from "../../components/ui/button/Button";
 import { usersApi, type User } from "../../api/users";
 import { plansApi, type Plan } from "../../api/plans";
@@ -39,6 +40,7 @@ export default function UserEdit() {
         profession: "",
         designation: "",
         company: "",
+        bio: "",
 
         // Social
         facebook: "",
@@ -77,6 +79,7 @@ export default function UserEdit() {
                         profession: user.profession || "",
                         designation: user.designation || "",
                         company: user.company || "",
+                        bio: user.bio || "",
 
                         facebook: user.facebook || "",
                         twitter: user.twitter || "",
@@ -243,6 +246,15 @@ export default function UserEdit() {
                                     value={formData.phone || ""}
                                     onChange={handleChange}
                                     placeholder="+1 234 567 890"
+                                />
+                            </div>
+                            <div className="md:col-span-2 lg:col-span-3">
+                                <Label>Bio</Label>
+                                <TextArea
+                                    rows={4}
+                                    placeholder="Short introduction visible on the user profile"
+                                    value={formData.bio || ""}
+                                    onChange={(value) => setFormData((prev) => ({ ...prev, bio: value }))}
                                 />
                             </div>
                         </div>
