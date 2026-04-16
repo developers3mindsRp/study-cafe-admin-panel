@@ -23,7 +23,7 @@ import BasicTablesPage from "./components/tables/BasicTablesPage";
 import FormElements from "./components/form/FormElements";
 import AppLayout from "./layout/AppLayout";
 import { ScrollToTop } from "./components/common/ScrollToTop";
-import Home from "./pages/Dashboard/Home";
+import Home from "./pages/dashboard/Home";
 import HomeContent from "./pages/cms/HomeContent";
 import AboutContent from "./pages/cms/AboutContent";
 import ContactContent from "./pages/cms/ContactContent";
