@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router";
 
 import { useMemo } from "react";
-import { ChatIcon, ChevronDownIcon, DocsIcon, DollarLineIcon, FileIcon, FolderIcon, GridIcon, GroupIcon, HorizontaLDots, InfoIcon, PageIcon, UserIcon, VideoIcon } from "../icons";
+import { ChatIcon, ChevronDownIcon, DocsIcon, DollarLineIcon, FileIcon, FolderIcon, GridIcon, GroupIcon, HorizontaLDots, InfoIcon, MailIcon, PageIcon, UserIcon, VideoIcon } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
 import { useAuth } from "../context/AuthContext";
 
@@ -117,6 +117,14 @@ const navItems: NavItem[] = [
       { name: "Create", path: "/faq/create", requiredPermission: ["faq:create"] },
     ],
     requiredPermission: ["faq:list", "faq:view", "faq:create", "faq:edit", "faq:delete"],
+  },
+  {
+    icon: <MailIcon />,
+    name: "Contact Inquiries",
+    subItems: [
+      { name: "List", path: "/contact-inquiries", requiredPermission: ["admin:access"] },
+    ],
+    requiredPermission: ["admin:access"],
   },
   {
     icon: <DocsIcon />,

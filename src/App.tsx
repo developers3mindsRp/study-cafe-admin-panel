@@ -80,6 +80,8 @@ import OrderView from "./pages/orders/OrderView";
 import PromoCodeList from "./pages/promo-codes/PromoCodeList";
 import PromoCodeCreate from "./pages/promo-codes/PromoCodeCreate";
 import PromoCodeEdit from "./pages/promo-codes/PromoCodeEdit";
+import ContactInquiryList from "./pages/contact-inquiries/ContactInquiryList";
+import ContactInquiryView from "./pages/contact-inquiries/ContactInquiryView";
 import AffiliateHistory from "./pages/affiliate/AffiliateHistory";
 import WithdrawalRequests from "./pages/affiliate/WithdrawalRequests";
 
@@ -250,6 +252,14 @@ const router = createBrowserRouter(
           </Route>
           <Route path="/faq/:id/edit" element={<RequirePermissionRoute permissions={["faq:edit"]} />}>
             <Route index element={<FAQEdit />} />
+          </Route>
+
+          {/* Contact Inquiries */}
+          <Route path="/contact-inquiries" element={<RequirePermissionRoute permissions={["admin:access"]} />}>
+            <Route index element={<ContactInquiryList />} />
+          </Route>
+          <Route path="/contact-inquiries/:id" element={<RequirePermissionRoute permissions={["admin:access"]} />}>
+            <Route index element={<ContactInquiryView />} />
           </Route>
 
           {/* Admin Users */}
