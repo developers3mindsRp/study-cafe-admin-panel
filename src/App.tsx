@@ -82,6 +82,8 @@ import PromoCodeCreate from "./pages/promo-codes/PromoCodeCreate";
 import PromoCodeEdit from "./pages/promo-codes/PromoCodeEdit";
 import ContactInquiryList from "./pages/contact-inquiries/ContactInquiryList";
 import ContactInquiryView from "./pages/contact-inquiries/ContactInquiryView";
+import AffiliateHistory from "./pages/affiliate/AffiliateHistory";
+import WithdrawalRequests from "./pages/affiliate/WithdrawalRequests";
 
 function RootLayout() {
   return (
@@ -286,6 +288,14 @@ const router = createBrowserRouter(
           </Route>
           <Route path="/users/:id/edit" element={<RequirePermissionRoute permissions={["admin_users:edit"]} />}>
             <Route index element={<UserEdit />} />
+          </Route>
+          
+          {/* Affiliate */}
+          <Route path="/affiliate/history" element={<RequirePermissionRoute permissions={["admin:access"]} />}>
+            <Route index element={<AffiliateHistory />} />
+          </Route>
+          <Route path="/affiliate/withdrawals" element={<RequirePermissionRoute permissions={["admin:access"]} />}>
+            <Route index element={<WithdrawalRequests />} />
           </Route>
 
           {/* Forms */}

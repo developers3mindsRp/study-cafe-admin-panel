@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import Label from "../../components/form/Label";
 import Input from "../../components/form/input/InputField";
+import TextArea from "../../components/form/input/TextArea";
 import Button from "../../components/ui/button/Button";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
@@ -33,6 +34,7 @@ export default function UserCreate() {
         designation: "",
         company: "",
         profession: "",
+        bio: "",
         // Social
         linkedin: "",
         twitter: "",
@@ -196,6 +198,15 @@ export default function UserCreate() {
                                     value={formData.last_name || ""}
                                     onChange={handleChange}
                                     placeholder="Last Name"
+                                />
+                            </div>
+                            <div className="md:col-span-2 lg:col-span-3">
+                                <Label>Bio</Label>
+                                <TextArea
+                                    rows={4}
+                                    placeholder="Short introduction for the user profile"
+                                    value={formData.bio || ""}
+                                    onChange={(value) => setFormData((prev) => ({ ...prev, bio: value }))}
                                 />
                             </div>
                         </div>
