@@ -115,7 +115,10 @@ export interface SessionRecord {
   id: number;
   batch_id: number;
   day_number: number;
+  section_index: number;
   title: string | null;
+  section_title: string | null;
+  duration: number | null;
   scheduled_at: string | null;
   meet_link: string | null;
   recordings: RecordingRecord[];
@@ -181,6 +184,11 @@ export async function createBatch(courseId: string, payload: { name?: string | n
 
 export async function updateBatch(batchId: number, payload: Partial<{ name: string; start_date: string | null; end_date: string | null; meet_link: string | null }>): Promise<BatchRecord> {
   const res = await api.put<BatchRecord>(`/admin/batches/${batchId}`, payload);
+  return res.data;
+}
+
+export async function syncBatchSessions(batchId: number): Promise<BatchRecord> {
+  const res = await api.post<BatchRecord>(`/admin/batches/${batchId}/sync`);
   return res.data;
 }
 

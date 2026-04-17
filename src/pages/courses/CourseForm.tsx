@@ -70,7 +70,22 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
       slug: initial?.slug ?? "",
       brief_description: initial?.brief_description ?? "",
       description: initial?.description ?? "",
-      curriculum: safeJsonParse(initial?.curriculum, []),
+      curriculum: safeJsonParse(initial?.curriculum, []).map((day: any) => {
+        // Normalize old flat format → new sections array format
+        if (!Array.isArray(day.sections) || day.sections.length === 0) {
+          return {
+            title: day.title || "",
+            sections: [{
+              title: day.title || "",
+              description: day.description || "",
+              videoId: day.video || "",
+              duration: day.minutes || "",
+            }],
+            files: Array.isArray(day.files) ? day.files : [],
+          };
+        }
+        return day;
+      }),
       learn_outcomes: safeJsonParse(initial?.learn_outcomes, []),
       requirements: initial?.requirements ?? "",
       terms_conditions: safeJsonParse(initial?.terms_conditions, []),
@@ -248,40 +263,121 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
             <ArrayEditor
               value={form.curriculum}
               onChange={(v) => updateField('curriculum', v)}
-              defaultItem={{ title: "", minutes: "", description: "", video: "", files: [] }}
-              addButtonLabel="Add Curriculum Section"
-              renderItem={(item: any, index, update) => (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-                    <div className="sm:col-span-3">
-                      <Label>Section Title</Label>
-                      <Input value={item.title || ''} onChange={e => update(index, { title: e.target.value })} />
+              defaultItem={{ title: "", sections: [{ title: "", description: "", videoId: "", duration: "" }], files: [] }}
+              addButtonLabel="Add Day"
+              renderItem={(day: any, dayIndex, updateDay) => {
+                const sections: { title: string; description: string; videoId: string; duration: string }[] =
+                  Array.isArray(day.sections) && day.sections.length > 0
+                    ? day.sections
+                    : [{ title: "", description: "", videoId: "", duration: "" }];
+
+                const totalDuration = sections.reduce((sum: number, s: any) => sum + (Number(s.duration) || 0), 0);
+
+                const updateSections = (newSections: typeof sections) => {
+                  updateDay(dayIndex, { sections: newSections });
+                };
+
+                const updateSection = (sIdx: number, patch: Partial<typeof sections[0]>) => {
+                  const next = [...sections];
+                  next[sIdx] = { ...next[sIdx], ...patch };
+                  updateSections(next);
+                };
+
+                const addSection = () => {
+                  updateSections([...sections, { title: "", description: "", videoId: "", duration: "" }]);
+                };
+
+                const removeSection = (sIdx: number) => {
+                  if (sections.length <= 1) return;
+                  updateSections(sections.filter((_: any, i: number) => i !== sIdx));
+                };
+
+                return (
+                  <div className="space-y-4">
+                    {/* Day header */}
+                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                      <div className="sm:col-span-3">
+                        <Label>Day {dayIndex + 1} — Title</Label>
+                        <Input value={day.title || ''} onChange={e => updateDay(dayIndex, { title: e.target.value })} placeholder={`Day ${dayIndex + 1} title`} />
+                      </div>
+                      <div>
+                        <Label>Total Duration</Label>
+                        <div className="flex h-11 items-center rounded-lg border border-gray-300 bg-gray-100 px-3 text-sm text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                          {totalDuration > 0 ? `${totalDuration} min` : "0 min"}
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <Label>Minutes</Label>
-                      <Input value={item.minutes || ''} onChange={e => update(index, { minutes: e.target.value })} />
+
+                    {/* Sections list */}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Sections ({sections.length})</span>
+                        <button
+                          type="button"
+                          onClick={addSection}
+                          className="inline-flex items-center gap-1 rounded-md bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-600 transition hover:bg-brand-100 dark:bg-brand-500/10 dark:text-brand-400 dark:hover:bg-brand-500/20"
+                        >
+                          + Add Section
+                        </button>
+                      </div>
+                      {sections.map((sec: any, sIdx: number) => (
+                        <div key={sIdx} className="rounded-lg border border-gray-100 bg-white p-4 dark:border-gray-700 dark:bg-gray-900/50 space-y-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Section {sIdx + 1}</span>
+                            {sections.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => removeSection(sIdx)}
+                                className="p-1 text-gray-400 transition hover:text-error-500"
+                                title="Remove section"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                              </button>
+                            )}
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                            <div className="sm:col-span-3">
+                              <Input
+                                value={sec.title || ''}
+                                onChange={e => updateSection(sIdx, { title: e.target.value })}
+                                placeholder="Section title"
+                              />
+                            </div>
+                            <div>
+                              <Input
+                                type="number"
+                                min={0}
+                                value={sec.duration || ''}
+                                onChange={e => updateSection(sIdx, { duration: e.target.value })}
+                                placeholder="Minutes"
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <Input
+                              value={sec.videoId || ''}
+                              onChange={e => updateSection(sIdx, { videoId: e.target.value })}
+                              placeholder="Video ID (e.g. 538969956)"
+                            />
+                          </div>
+                          <div>
+                            <TextArea rows={2} value={sec.description || ''} onChange={v => updateSection(sIdx, { description: v })} placeholder="Section description" />
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <Label>Video ID (Vimeo)</Label>
-                      <Input value={item.video || ''} onChange={e => update(index, { video: e.target.value })} placeholder="e.g. 538969956" />
-                    </div>
+
                     <div>
                       <Label>File IDs (comma-separated)</Label>
-                      <Input value={Array.isArray(item.files) ? item.files.join(', ') : (item.files || '')} onChange={e => {
+                      <Input value={Array.isArray(day.files) ? day.files.join(', ') : (day.files || '')} onChange={e => {
                         const val = e.target.value;
                         const filesArr = val ? val.split(',').map((f: string) => f.trim()).filter(Boolean) : [];
-                        update(index, { files: filesArr });
+                        updateDay(dayIndex, { files: filesArr });
                       }} placeholder="e.g. 96620, 96621" />
                     </div>
                   </div>
-                  <div>
-                    <Label>Description</Label>
-                    <TextArea rows={2} value={item.description || ''} onChange={v => update(index, { description: v })} />
-                  </div>
-                </div>
-              )}
+                );
+              }}
             />
           </div>
 

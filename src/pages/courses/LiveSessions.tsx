@@ -11,23 +11,20 @@ import {
     deleteSession,
     addRecording,
     deleteRecording,
-    toggleRecordingVisibility,
+    syncBatchSessions,
     type Course,
     type BatchRecord,
     type SessionRecord,
-    type RecordingRecord,
     type BatchEnrollmentRecord,
 } from "../../api/courses";
+import { DataTablePagination } from "../../components/tables/data-table/DataTablePagination";
+import type { DataTableMeta } from "../../components/tables/data-table/DataTable.types";
 
 /* ─── helpers ─────────────────────────────────────────────────────── */
 
 function fmtDate(d: string | null) {
     if (!d) return "—";
     return new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
-}
-function fmtDateTime(d: string | null) {
-    if (!d) return "—";
-    return new Date(d).toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
 }
 
 /* ─── Searchable Course Select ────────────────────────────────────── */
@@ -203,109 +200,130 @@ function CreateBatchPanel({
 
 /* ─── Add Session Form (removed — sessions auto-created from curriculum) ── */
 
-/* ─── Add Recording Form ──────────────────────────────────────────── */
+/* ─── Section Row (1 section = 1 video) ──────────────────────────── */
 
-function AddRecordingForm({ sessionId, onCreated }: { sessionId: number; onCreated: () => void }) {
+function SectionItem({ session, onChanged }: { session: SessionRecord; onChanged: () => void }) {
     const [url, setUrl] = useState("");
     const [source, setSource] = useState("vimeo");
     const [saving, setSaving] = useState(false);
+    const [deleting, setDeleting] = useState(false);
+    const [deletingRec, setDeletingRec] = useState(false);
 
-    async function handleSubmit(e: React.FormEvent) {
+    const displayTitle = session.section_title || session.title || `Section ${(session.section_index ?? 0) + 1}`;
+    const recording = session.recordings?.[0] ?? null;
+
+    async function handleAdd(e: React.FormEvent) {
         e.preventDefault();
         if (!url.trim()) return;
         setSaving(true);
         try {
-            await addRecording(sessionId, { url: url.trim(), source: source || null, is_visible: false });
-            setUrl(""); onCreated();
+            await addRecording(session.id, { url: url.trim(), source: source || null, is_visible: true });
+            setUrl("");
+            onChanged();
         } catch { alert("Failed to add recording"); } finally { setSaving(false); }
     }
 
-    return (
-        <form onSubmit={handleSubmit} className="mt-2 flex items-end gap-2">
-            <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="Vimeo ID or URL"
-                className="flex-1 rounded border border-gray-300 px-2 py-1 text-xs dark:border-gray-600 dark:bg-gray-700 dark:text-white" required />
-            <select value={source} onChange={(e) => setSource(e.target.value)}
-                className="rounded border border-gray-300 px-2 py-1 text-xs dark:border-gray-600 dark:bg-gray-700 dark:text-white">
-                <option value="vimeo">Vimeo</option>
-                <option value="youtube">YouTube</option>
-                <option value="other">Other</option>
-            </select>
-            <button type="submit" disabled={saving}
-                className="rounded bg-green-500 px-2 py-1 text-xs font-medium text-white hover:bg-green-600 disabled:opacity-50">
-                {saving ? "..." : "+ Rec"}
-            </button>
-        </form>
-    );
-}
-
-/* ─── Recording Row ───────────────────────────────────────────────── */
-
-function RecordingItem({ rec, onChanged }: { rec: RecordingRecord; onChanged: () => void }) {
-    const [toggling, setToggling] = useState(false);
-    const [deleting, setDeleting] = useState(false);
-
-    async function handleToggle() {
-        setToggling(true);
-        try { await toggleRecordingVisibility(rec.id, !rec.is_visible); onChanged(); } finally { setToggling(false); }
-    }
-    async function handleDelete() {
-        if (!confirm("Delete this recording?")) return;
-        setDeleting(true);
-        try { await deleteRecording(rec.id); onChanged(); } finally { setDeleting(false); }
+    async function handleDeleteRecording() {
+        if (!recording) return;
+        if (!confirm("Remove video from this section?")) return;
+        setDeletingRec(true);
+        try { await deleteRecording(recording.id); onChanged(); } finally { setDeletingRec(false); }
     }
 
-    return (
-        <div className="flex items-center gap-2 rounded border border-gray-200 bg-white px-3 py-1.5 text-xs dark:border-gray-600 dark:bg-gray-700">
-            <span className="font-mono text-gray-600 dark:text-gray-300 truncate max-w-[200px]">{rec.url}</span>
-            {rec.source && <Badge color="info">{rec.source}</Badge>}
-            <button onClick={handleToggle} disabled={toggling}
-                className={`ml-auto rounded px-2 py-0.5 text-xs font-medium ${rec.is_visible ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"}`}>
-                {toggling ? "..." : rec.is_visible ? "✅ Visible" : "🔒 Hidden"}
-            </button>
-            <button onClick={handleDelete} disabled={deleting}
-                className="rounded bg-red-100 px-2 py-0.5 text-xs text-red-600 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400">
-                {deleting ? "..." : "×"}
-            </button>
-        </div>
-    );
-}
-
-/* ─── Session Row ─────────────────────────────────────────────────── */
-
-function SessionItem({ session, onChanged }: { session: SessionRecord; onChanged: () => void }) {
-    const [showAdd, setShowAdd] = useState(false);
-    const [deleting, setDeleting] = useState(false);
-
-    async function handleDelete() {
-        if (!confirm(`Delete session "${session.title}" and all its recordings?`)) return;
+    async function handleDeleteSection() {
+        if (!confirm(`Delete section "${displayTitle}"?`)) return;
         setDeleting(true);
         try { await deleteSession(session.id); onChanged(); } finally { setDeleting(false); }
     }
 
     return (
-        <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-gray-600 dark:bg-gray-800/50">
-            <div className="flex items-center gap-2">
-                <span className="inline-flex size-6 items-center justify-center rounded-full bg-brand-100 text-xs font-bold text-brand-600 dark:bg-brand-900/30 dark:text-brand-400">
-                    {session.day_number}
+        <div className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-4 py-2.5 dark:border-gray-600 dark:bg-gray-800/50">
+            {/* Section index badge */}
+            <span className="inline-flex size-5 shrink-0 items-center justify-center rounded bg-gray-200 text-[10px] font-bold text-gray-600 dark:bg-gray-600 dark:text-gray-300">
+                {(session.section_index ?? 0) + 1}
+            </span>
+
+            {/* Title & duration */}
+            <div className="flex items-center gap-2 min-w-[180px]">
+                <span className="font-medium text-sm text-gray-800 dark:text-white truncate max-w-[160px]">
+                    {displayTitle}
                 </span>
-                <span className="font-medium text-sm text-gray-800 dark:text-white">
-                    {session.title || `Day ${session.day_number}`}
-                </span>
-                {session.scheduled_at && <span className="text-xs text-gray-500 dark:text-gray-400">📅 {fmtDateTime(session.scheduled_at)}</span>}
-                {session.meet_link && <a href={session.meet_link} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 underline">🔗 Meet</a>}
-                <div className="ml-auto flex gap-1">
-                    <button onClick={() => setShowAdd(!showAdd)}
-                        className="rounded bg-blue-50 px-2 py-0.5 text-xs text-blue-600 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400">+ Recording</button>
-                    <button onClick={handleDelete} disabled={deleting}
-                        className="rounded bg-red-50 px-2 py-0.5 text-xs text-red-600 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-400">
-                        {deleting ? "..." : "Delete"}
-                    </button>
-                </div>
+                {session.duration != null && session.duration > 0 && (
+                    <span className="shrink-0 rounded bg-brand-50 px-1.5 py-0.5 text-xs font-medium text-brand-600 dark:bg-brand-500/10 dark:text-brand-400">
+                        {session.duration} min
+                    </span>
+                )}
             </div>
-            {session.recordings && session.recordings.length > 0 && (
-                <div className="mt-2 space-y-1">{session.recordings.map((r) => <RecordingItem key={r.id} rec={r} onChanged={onChanged} />)}</div>
-            )}
-            {showAdd && <AddRecordingForm sessionId={session.id} onCreated={() => { setShowAdd(false); onChanged(); }} />}
+
+            {/* Video: either show existing or add form */}
+            <div className="flex-1 flex items-center gap-2 min-w-0">
+                {recording ? (
+                    <>
+                        <span className="font-mono text-xs text-gray-600 dark:text-gray-300 truncate">{recording.url}</span>
+                        {recording.source && <Badge color="info">{recording.source}</Badge>}
+                        <button onClick={handleDeleteRecording} disabled={deletingRec}
+                            className="shrink-0 rounded bg-red-100 px-2 py-0.5 text-xs text-red-600 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400">
+                            {deletingRec ? "..." : "×"}
+                        </button>
+                    </>
+                ) : (
+                    <form onSubmit={handleAdd} className="flex items-center gap-2 flex-1">
+                        <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="Video ID or URL"
+                            className="flex-1 rounded border border-gray-300 px-2 py-1.5 text-xs dark:border-gray-600 dark:bg-gray-700 dark:text-white" required />
+                        <select value={source} onChange={(e) => setSource(e.target.value)}
+                            className="rounded border border-gray-300 px-2 py-1.5 text-xs dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+                            <option value="vimeo">Vimeo</option>
+                            <option value="youtube">YouTube</option>
+                            <option value="other">Other</option>
+                        </select>
+                        <button type="submit" disabled={saving}
+                            className="shrink-0 rounded bg-green-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-600 disabled:opacity-50 whitespace-nowrap">
+                            {saving ? "..." : "+ Add"}
+                        </button>
+                    </form>
+                )}
+            </div>
+
+            {/* Delete section */}
+            <button onClick={handleDeleteSection} disabled={deleting}
+                className="shrink-0 rounded bg-red-50 px-2 py-0.5 text-xs text-red-600 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-400">
+                {deleting ? "..." : "Delete"}
+            </button>
+        </div>
+    );
+}
+
+/* ─── Day Group (groups sections under a day) ────────────────────────── */
+
+function DayGroup({ dayNumber, dayTitle, sessions, onChanged }: { dayNumber: number; dayTitle: string; sessions: SessionRecord[]; onChanged: () => void }) {
+    const totalDuration = sessions.reduce((sum, s) => sum + (s.duration ?? 0), 0);
+    const videosAdded = sessions.filter((s) => s.recordings && s.recordings.length > 0).length;
+
+    return (
+        <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-600 dark:bg-gray-800/30">
+            <div className="flex items-center gap-2 mb-3 flex-wrap">
+                <span className="inline-flex size-7 items-center justify-center rounded-full bg-brand-100 text-xs font-bold text-brand-600 dark:bg-brand-900/30 dark:text-brand-400">
+                    {dayNumber}
+                </span>
+                <span className="font-semibold text-sm text-gray-800 dark:text-white">
+                    {dayTitle}
+                </span>
+                <span className="text-xs text-gray-400 dark:text-gray-500">
+                    {sessions.length} section{sessions.length !== 1 ? "s" : ""}
+                </span>
+                {totalDuration > 0 && (
+                    <span className="rounded bg-gray-200 px-1.5 py-0.5 text-xs text-gray-600 dark:bg-gray-700 dark:text-gray-300">{totalDuration} min total</span>
+                )}
+                <span className="text-xs text-gray-400 dark:text-gray-500">
+                    {videosAdded}/{sessions.length} video{sessions.length !== 1 ? "s" : ""} added
+                </span>
+            </div>
+            <div className="space-y-2 ml-9">
+                {sessions.length > 0
+                    ? sessions.map((s) => <SectionItem key={s.id} session={s} onChanged={onChanged} />)
+                    : <p className="text-xs text-gray-400 italic">No sections added</p>
+                }
+            </div>
         </div>
     );
 }
@@ -353,17 +371,44 @@ function BatchEnrollmentsPanel({ batchId }: { batchId: number }) {
 function BatchCard({ batch, courseName, onChanged }: { batch: BatchRecord; courseName: string; onChanged: () => void }) {
     const [showEnrollments, setShowEnrollments] = useState(false);
     const [deleting, setDeleting] = useState(false);
+    const [syncing, setSyncing] = useState(false);
 
-    const now = new Date();
+    // Group sessions by day_number
+    const dayGroups: { dayNumber: number; dayTitle: string; sessions: SessionRecord[] }[] = [];
+    const dayMap = new Map<number, SessionRecord[]>();
+    const dayTitleMap = new Map<number, string>();
+    for (const s of batch.sessions) {
+        const dn = s.day_number;
+        if (!dayMap.has(dn)) {
+            dayMap.set(dn, []);
+            dayTitleMap.set(dn, s.title || `Day ${dn}`);
+        }
+        dayMap.get(dn)!.push(s);
+    }
+    for (const [dayNumber, sessions] of dayMap) {
+        dayGroups.push({ dayNumber, dayTitle: dayTitleMap.get(dayNumber) || `Day ${dayNumber}`, sessions });
+    }
+    dayGroups.sort((a, b) => a.dayNumber - b.dayNumber);
 
-    // categorize sessions
-    const upcoming = batch.sessions.filter((s) => s.scheduled_at && new Date(s.scheduled_at) >= now);
-    const past = batch.sessions.filter((s) => !s.scheduled_at || new Date(s.scheduled_at) < now);
+    const totalSections = batch.sessions.length;
 
     async function handleDelete() {
         if (!confirm(`Delete batch "${batch.name}" and ALL sessions/recordings? This cannot be undone.`)) return;
         setDeleting(true);
         try { await deleteBatch(batch.id); onChanged(); } finally { setDeleting(false); }
+    }
+
+    async function handleSync() {
+        if (!confirm("Sync sections from curriculum? This will re-create all sessions from the current course curriculum. Existing recordings will be preserved where possible.")) return;
+        setSyncing(true);
+        try {
+            await syncBatchSessions(batch.id);
+            onChanged();
+        } catch (err: any) {
+            alert(err?.response?.data?.error || "Failed to sync sections");
+        } finally {
+            setSyncing(false);
+        }
     }
 
     return (
@@ -372,11 +417,15 @@ function BatchCard({ batch, courseName, onChanged }: { batch: BatchRecord; cours
                 <div className="flex items-center gap-3 flex-wrap">
                     <h3 className="font-semibold text-gray-800 dark:text-white">{batch.name}</h3>
                     <Badge color="primary">{courseName}</Badge>
-                    <span className="text-xs text-gray-500">{batch.sessions.length} session{batch.sessions.length !== 1 ? "s" : ""}</span>
+                    <span className="text-xs text-gray-500">{dayGroups.length} day{dayGroups.length !== 1 ? "s" : ""} · {totalSections} section{totalSections !== 1 ? "s" : ""}</span>
                     {batch.start_date && <span className="text-xs text-gray-400">{fmtDate(batch.start_date)} → {fmtDate(batch.end_date)}</span>}
                     {batch.created_at && <span className="text-xs text-gray-400 italic">Created: {fmtDate(batch.created_at)}</span>}
                 </div>
                 <div className="flex gap-2">
+                    <button onClick={handleSync} disabled={syncing}
+                        className="rounded bg-amber-50 px-3 py-1 text-xs font-medium text-amber-600 hover:bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400 disabled:opacity-50">
+                        {syncing ? "Syncing..." : "Sync Sections"}
+                    </button>
                     <button onClick={() => setShowEnrollments(!showEnrollments)}
                         className="rounded bg-blue-50 px-3 py-1 text-xs font-medium text-blue-600 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400">
                         👥 {showEnrollments ? "Hide" : "Enrollments"}
@@ -389,21 +438,15 @@ function BatchCard({ batch, courseName, onChanged }: { batch: BatchRecord; cours
             </div>
 
             <div className="p-4 space-y-3">
-                {/* Upcoming sessions */}
-                {upcoming.length > 0 && (
-                    <div>
-                        <p className="text-xs font-semibold text-green-600 dark:text-green-400 mb-1">📅 Upcoming ({upcoming.length})</p>
-                        <div className="space-y-2">{upcoming.map((s) => <SessionItem key={s.id} session={s} onChanged={onChanged} />)}</div>
-                    </div>
-                )}
-
-                {/* Past / unscheduled sessions */}
-                {past.length > 0 && (
-                    <div>
-                        {/* <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">📁 Past / Unscheduled ({past.length})</p> */}
-                        <div className="space-y-2">{past.map((s) => <SessionItem key={s.id} session={s} onChanged={onChanged} />)}</div>
-                    </div>
-                )}
+                {dayGroups.map((group) => (
+                    <DayGroup
+                        key={group.dayNumber}
+                        dayNumber={group.dayNumber}
+                        dayTitle={group.dayTitle}
+                        sessions={group.sessions}
+                        onChanged={onChanged}
+                    />
+                ))}
 
                 {batch.sessions.length === 0 && (
                     <p className="text-sm text-gray-400 italic">No sessions — course may be missing curriculum data.</p>
@@ -426,6 +469,8 @@ export default function LiveSessions() {
     const [allBatches, setAllBatches] = useState<{ courseId: number; courseName: string; batch: BatchRecord }[]>([]);
     const [loading, setLoading] = useState(true);
     const [filterCourse, setFilterCourse] = useState<string>("all");
+    const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(5);
 
     const loadAll = useCallback(async () => {
         setLoading(true);
@@ -459,6 +504,26 @@ export default function LiveSessions() {
     const totalSessions = filtered.reduce((t, b) => t + b.batch.sessions.length, 0);
     const totalRecordings = filtered.reduce((t, b) => t + b.batch.sessions.reduce((s, sess) => s + (sess.recordings?.length ?? 0), 0), 0);
 
+    // Pagination
+    const totalBatches = filtered.length;
+    const totalPages = Math.max(1, Math.ceil(totalBatches / pageSize));
+    const safePage = Math.min(page, totalPages);
+    const paginatedBatches = filtered.slice((safePage - 1) * pageSize, safePage * pageSize);
+    const paginationMeta: DataTableMeta = {
+        total: totalBatches,
+        page: safePage,
+        limit: pageSize,
+        totalPages,
+        hasNextPage: safePage < totalPages,
+        hasPreviousPage: safePage > 1,
+    };
+
+    // Reset to page 1 when filter changes
+    function handleFilterChange(val: string) {
+        setFilterCourse(val);
+        setPage(1);
+    }
+
     return (
         <>
             <PageMeta title="Live Sessions | StudyCafe Admin" description="Manage batches, sessions, recordings and enrollments across all courses" />
@@ -477,7 +542,7 @@ export default function LiveSessions() {
                         <CourseSearchSelect
                             courses={courses}
                             value={filterCourse}
-                            onChange={setFilterCourse}
+                            onChange={handleFilterChange}
                             allowAll
                         />
                     </div>
@@ -494,13 +559,25 @@ export default function LiveSessions() {
                 )}
 
                 {/* Batch cards */}
-                {!loading && filtered.map((item) => (
+                {!loading && paginatedBatches.map((item) => (
                     <BatchCard key={item.batch.id} batch={item.batch} courseName={item.courseName} onChanged={loadAll} />
                 ))}
 
                 {!loading && filtered.length === 0 && (
                     <div className="rounded-xl border-2 border-dashed border-gray-300 p-12 text-center dark:border-gray-600">
                         <p className="text-gray-500 dark:text-gray-400">No batches found. Create your first batch above.</p>
+                    </div>
+                )}
+
+                {/* Pagination */}
+                {!loading && filtered.length > 0 && (
+                    <div className="rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+                        <DataTablePagination
+                            meta={paginationMeta}
+                            pageSizeOptions={[5, 10, 20]}
+                            onPageChange={setPage}
+                            onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
+                        />
                     </div>
                 )}
             </div>
