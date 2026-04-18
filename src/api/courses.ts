@@ -134,6 +134,21 @@ export interface BatchRecord {
   sessions: SessionRecord[];
 }
 
+/** Batch row returned by GET /admin/batches (includes owning course). */
+export interface BatchRecordWithCourse extends BatchRecord {
+  course_id: number;
+  course_title: string;
+}
+
+export interface BatchesListMeta {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+}
+
 export interface BatchEnrollmentRecord {
   id: number;
   batch_id: number;
@@ -148,6 +163,42 @@ export async function fetchCourseSessions(courseId: string): Promise<BatchRecord
   } catch {
     return [];
   }
+}
+
+/** Paginated batches for Live Sessions admin (optional course filter). */
+export async function fetchBatchesList(params: {
+  courseId?: number;
+  page?: number;
+  limit?: number;
+}): Promise<{ rows: BatchRecordWithCourse[]; meta: BatchesListMeta }> {
+  const query: Record<string, number> = {
+    page: params.page ?? 1,
+    limit: params.limit ?? 10,
+  };
+  if (params.courseId != null && Number.isFinite(params.courseId)) {
+    query.course_id = params.courseId;
+  }
+  const res = await api.get("/admin/batches", { params: query });
+  const body = res.data as {
+    data: BatchRecordWithCourse[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+  };
+  return {
+    rows: Array.isArray(body.data) ? body.data : [],
+    meta: {
+      total: Number(body.total) || 0,
+      page: Number(body.page) || 1,
+      limit: Number(body.limit) || 10,
+      totalPages: Number(body.totalPages) || 0,
+      hasNextPage: Boolean(body.hasNextPage),
+      hasPreviousPage: Boolean(body.hasPreviousPage),
+    },
+  };
 }
 
 export async function updateRecording(recordingId: number, payload: { url?: string; source?: string | null; is_visible?: boolean }): Promise<RecordingRecord> {

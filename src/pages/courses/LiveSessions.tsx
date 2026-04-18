@@ -1,10 +1,10 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, Fragment } from "react";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import Badge from "../../components/ui/badge/Badge";
 import {
     fetchCourses,
-    fetchCourseSessions,
+    fetchBatchesList,
     fetchBatchEnrollments,
     createBatch,
     deleteBatch,
@@ -14,6 +14,7 @@ import {
     syncBatchSessions,
     type Course,
     type BatchRecord,
+    type BatchRecordWithCourse,
     type SessionRecord,
     type BatchEnrollmentRecord,
 } from "../../api/courses";
@@ -170,11 +171,12 @@ function CreateBatchPanel({
             <p className="text-xs text-gray-400 dark:text-gray-500">Sessions & recordings will be auto-created from the course curriculum.</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 <div>
-                    <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Course *</label>
+                    <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Course for new batch *</label>
                     <CourseSearchSelect
                         courses={courses}
                         value={courseId}
                         onChange={setCourseId}
+                        placeholder="Choose course…"
                     />
                 </div>
                 <div>
@@ -464,64 +466,93 @@ function BatchCard({ batch, courseName, onChanged }: { batch: BatchRecord; cours
 
 /* ─── Main Page ───────────────────────────────────────────────────── */
 
+function countSessions(b: BatchRecord) {
+    return b.sessions?.length ?? 0;
+}
+
+function countRecordings(b: BatchRecord) {
+    return (b.sessions ?? []).reduce((acc, s) => acc + (s.recordings?.length ?? 0), 0);
+}
+
 export default function LiveSessions() {
     const [courses, setCourses] = useState<Course[]>([]);
-    const [allBatches, setAllBatches] = useState<{ courseId: number; courseName: string; batch: BatchRecord }[]>([]);
+    const [tableRows, setTableRows] = useState<BatchRecordWithCourse[]>([]);
     const [loading, setLoading] = useState(true);
     const [filterCourse, setFilterCourse] = useState<string>("all");
     const [page, setPage] = useState(1);
-    const [pageSize, setPageSize] = useState(5);
+    const [pageSize, setPageSize] = useState(10);
+    const [expandedBatchId, setExpandedBatchId] = useState<number | null>(null);
+    const [paginationMeta, setPaginationMeta] = useState<DataTableMeta>({
+        total: 0,
+        page: 1,
+        limit: 10,
+        totalPages: 0,
+        hasNextPage: false,
+        hasPreviousPage: false,
+    });
 
-    const loadAll = useCallback(async () => {
-        setLoading(true);
+    const loadCourses = useCallback(async () => {
         const courseList = await fetchCourses();
         setCourses(courseList);
-
-        const results: { courseId: number; courseName: string; batch: BatchRecord }[] = [];
-        await Promise.all(
-            courseList.map(async (c) => {
-                const batches = await fetchCourseSessions(String(c.id));
-                for (const b of batches) {
-                    results.push({ courseId: c.id, courseName: c.title, batch: b });
-                }
-            })
-        );
-
-        // Sort: most recently created batches first
-        results.sort((a, b) => {
-            const da = a.batch.created_at ? new Date(a.batch.created_at).getTime() : 0;
-            const db = b.batch.created_at ? new Date(b.batch.created_at).getTime() : 0;
-            return db - da;
-        });
-
-        setAllBatches(results);
-        setLoading(false);
     }, []);
 
-    useEffect(() => { loadAll(); }, [loadAll]);
+    const loadBatchesTable = useCallback(async () => {
+        setLoading(true);
+        try {
+            const courseIdNum =
+                filterCourse === "all" ? undefined : Number(filterCourse);
+            const { rows, meta } = await fetchBatchesList({
+                courseId:
+                    courseIdNum != null && Number.isFinite(courseIdNum) && courseIdNum > 0
+                        ? courseIdNum
+                        : undefined,
+                page,
+                limit: pageSize,
+            });
+            setTableRows(rows);
+            setPaginationMeta({
+                total: meta.total,
+                page: meta.page,
+                limit: meta.limit,
+                totalPages: meta.totalPages,
+                hasNextPage: meta.hasNextPage,
+                hasPreviousPage: meta.hasPreviousPage,
+            });
+        } catch {
+            setTableRows([]);
+            setPaginationMeta((m) => ({ ...m, total: 0, totalPages: 0, hasNextPage: false, hasPreviousPage: false }));
+        } finally {
+            setLoading(false);
+        }
+    }, [filterCourse, page, pageSize]);
 
-    const filtered = filterCourse === "all" ? allBatches : allBatches.filter((b) => String(b.courseId) === filterCourse);
-    const totalSessions = filtered.reduce((t, b) => t + b.batch.sessions.length, 0);
-    const totalRecordings = filtered.reduce((t, b) => t + b.batch.sessions.reduce((s, sess) => s + (sess.recordings?.length ?? 0), 0), 0);
+    useEffect(() => {
+        void loadCourses();
+    }, [loadCourses]);
 
-    // Pagination
-    const totalBatches = filtered.length;
-    const totalPages = Math.max(1, Math.ceil(totalBatches / pageSize));
-    const safePage = Math.min(page, totalPages);
-    const paginatedBatches = filtered.slice((safePage - 1) * pageSize, safePage * pageSize);
-    const paginationMeta: DataTableMeta = {
-        total: totalBatches,
-        page: safePage,
-        limit: pageSize,
-        totalPages,
-        hasNextPage: safePage < totalPages,
-        hasPreviousPage: safePage > 1,
-    };
+    useEffect(() => {
+        void loadBatchesTable();
+    }, [loadBatchesTable]);
 
-    // Reset to page 1 when filter changes
+    useEffect(() => {
+        setExpandedBatchId(null);
+    }, [page, pageSize, filterCourse]);
+
+    const refreshAll = useCallback(async () => {
+        await loadCourses();
+        await loadBatchesTable();
+    }, [loadCourses, loadBatchesTable]);
+
+    const pageSessions = tableRows.reduce((t, b) => t + countSessions(b), 0);
+    const pageRecordings = tableRows.reduce((t, b) => t + countRecordings(b), 0);
+
     function handleFilterChange(val: string) {
         setFilterCourse(val);
         setPage(1);
+    }
+
+    function toggleExpand(batchId: number) {
+        setExpandedBatchId((id) => (id === batchId ? null : batchId));
     }
 
     return (
@@ -530,54 +561,115 @@ export default function LiveSessions() {
             <PageBreadcrumb pageTitle="Live Sessions" items={[{ label: "Courses", path: "/courses" }]} />
 
             <div className="space-y-6">
-                {/* Stats & filter */}
-                <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="flex flex-wrap items-start justify-between gap-4">
                     <div>
                         <h2 className="text-xl font-bold text-gray-800 dark:text-white">Live Sessions</h2>
                         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                            {filtered.length} batch{filtered.length !== 1 ? "es" : ""} · {totalSessions} sessions · {totalRecordings} recordings
+                            {paginationMeta.total} batch{paginationMeta.total !== 1 ? "es" : ""} total
+                            {filterCourse !== "all" ? " (filtered by course)" : ""}. This page: {pageSessions} sessions · {pageRecordings} recordings.
                         </p>
                     </div>
-                    <div className="w-64">
+                    <div className="w-full min-w-[220px] max-w-sm shrink-0">
+                        <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                            Show batches for course
+                        </label>
                         <CourseSearchSelect
                             courses={courses}
                             value={filterCourse}
                             onChange={handleFilterChange}
                             allowAll
+                            placeholder="All courses…"
                         />
                     </div>
                 </div>
 
-                {/* Create batch */}
-                <CreateBatchPanel courses={courses} onCreated={loadAll} />
+                <CreateBatchPanel courses={courses} onCreated={refreshAll} />
 
-                {/* Loading */}
                 {loading && (
                     <div className="flex h-32 items-center justify-center">
                         <div className="size-8 animate-spin rounded-full border-4 border-brand-500 border-t-transparent" />
                     </div>
                 )}
 
-                {/* Batch cards */}
-                {!loading && paginatedBatches.map((item) => (
-                    <BatchCard key={item.batch.id} batch={item.batch} courseName={item.courseName} onChanged={loadAll} />
-                ))}
+                {!loading && (
+                    <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                <thead className="bg-gray-50 dark:bg-gray-900/40">
+                                    <tr>
+                                        <th scope="col" className="w-12 px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400" />
+                                        <th scope="col" className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Course</th>
+                                        <th scope="col" className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Batch</th>
+                                        <th scope="col" className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Start</th>
+                                        <th scope="col" className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">End</th>
+                                        <th scope="col" className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Created</th>
+                                        <th scope="col" className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Sections</th>
+                                        <th scope="col" className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Videos</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                                    {tableRows.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={8} className="px-6 py-12 text-center text-sm text-gray-500 dark:text-gray-400">
+                                                No batches found. Pick a course above or create a batch.
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        tableRows.map((row) => (
+                                            <Fragment key={row.id}>
+                                                <tr className="hover:bg-gray-50/80 dark:hover:bg-gray-900/30">
+                                                    <td className="px-3 py-3 align-middle">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => toggleExpand(row.id)}
+                                                            className="inline-flex size-8 items-center justify-center rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                                                            aria-expanded={expandedBatchId === row.id}
+                                                            title={expandedBatchId === row.id ? "Collapse" : "Manage sessions & recordings"}
+                                                        >
+                                                            <span className="text-xs font-bold">{expandedBatchId === row.id ? "−" : "+"}</span>
+                                                        </button>
+                                                    </td>
+                                                    <td className="max-w-[200px] px-4 py-3 align-middle">
+                                                        <span className="line-clamp-2 text-sm font-medium text-gray-800 dark:text-white">{row.course_title || "—"}</span>
+                                                    </td>
+                                                    <td className="max-w-[220px] px-4 py-3 align-middle">
+                                                        <span className="line-clamp-2 text-sm text-gray-700 dark:text-gray-200">{row.name}</span>
+                                                    </td>
+                                                    <td className="whitespace-nowrap px-4 py-3 align-middle text-sm text-gray-600 dark:text-gray-300">{fmtDate(row.start_date)}</td>
+                                                    <td className="whitespace-nowrap px-4 py-3 align-middle text-sm text-gray-600 dark:text-gray-300">{fmtDate(row.end_date)}</td>
+                                                    <td className="whitespace-nowrap px-4 py-3 align-middle text-sm text-gray-500 dark:text-gray-400">{fmtDate(row.created_at)}</td>
+                                                    <td className="px-4 py-3 text-right align-middle text-sm tabular-nums text-gray-700 dark:text-gray-200">{countSessions(row)}</td>
+                                                    <td className="px-4 py-3 text-right align-middle text-sm tabular-nums text-gray-700 dark:text-gray-200">{countRecordings(row)}</td>
+                                                </tr>
+                                                {expandedBatchId === row.id && (
+                                                    <tr className="bg-gray-50/50 dark:bg-gray-900/20">
+                                                        <td colSpan={8} className="p-4 sm:p-5">
+                                                            <BatchCard
+                                                                batch={row}
+                                                                courseName={row.course_title}
+                                                                onChanged={refreshAll}
+                                                            />
+                                                        </td>
+                                                    </tr>
+                                                )}
+                                            </Fragment>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
 
-                {!loading && filtered.length === 0 && (
-                    <div className="rounded-xl border-2 border-dashed border-gray-300 p-12 text-center dark:border-gray-600">
-                        <p className="text-gray-500 dark:text-gray-400">No batches found. Create your first batch above.</p>
-                    </div>
-                )}
-
-                {/* Pagination */}
-                {!loading && filtered.length > 0 && (
-                    <div className="rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
-                        <DataTablePagination
-                            meta={paginationMeta}
-                            pageSizeOptions={[5, 10, 20]}
-                            onPageChange={setPage}
-                            onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
-                        />
+                        {paginationMeta.total > 0 && (
+                            <DataTablePagination
+                                meta={paginationMeta}
+                                pageSizeOptions={[5, 10, 20, 50]}
+                                onPageChange={setPage}
+                                onPageSizeChange={(size) => {
+                                    setPageSize(size);
+                                    setPage(1);
+                                }}
+                            />
+                        )}
                     </div>
                 )}
             </div>
