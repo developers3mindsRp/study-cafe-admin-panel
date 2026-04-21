@@ -1,6 +1,6 @@
 /**
  * Orders table using the reusable DataTable.
- * Client-side search (order_id, email); single fetch then client-side pagination.
+ * Server-side search and pagination — no more limit=500 bulk fetch.
  */
 
 import { Link } from "react-router";
@@ -16,38 +16,24 @@ function statusColor(s: string) {
   return "error";
 }
 
-function toMeta(total: number, page: number, limit: number): DataTableFetchResult<OrderRecord>["meta"] {
-  const totalPages = Math.max(1, Math.ceil(total / limit));
-  return {
-    total,
-    page,
-    limit,
-    totalPages,
-    hasNextPage: page < totalPages,
-    hasPreviousPage: page > 1,
-  };
-}
-
 async function fetchOrdersForTable(
   params: DataTableFetchParams
 ): Promise<DataTableFetchResult<OrderRecord>> {
-  const all = await fetchOrders({ limit: 500, offset: 0 });
-  const search = (params.search ?? "").trim().toLowerCase();
-  const filtered = search
-    ? all.filter(
-        (o) =>
-          (o.order_id && o.order_id.toLowerCase().includes(search)) ||
-          (o.buyer_email && o.buyer_email.toLowerCase().includes(search)) ||
-          (o.type && o.type.toLowerCase().includes(search)) ||
-          (String(o.user_id ?? "").includes(search))
-      )
-    : all;
-  const { page, limit } = params;
-  const start = (page - 1) * limit;
-  const data = filtered.slice(start, start + limit);
+  const { page, limit, search } = params;
+  const offset = (page - 1) * limit;
+  const result = await fetchOrders({ limit, offset, search: search ?? "" });
+  const total = result.total ?? result.orders.length;
+  const totalPages = Math.max(1, Math.ceil(total / limit));
   return {
-    data,
-    meta: toMeta(filtered.length, page, limit),
+    data: result.orders,
+    meta: {
+      total,
+      page,
+      limit,
+      totalPages,
+      hasNextPage: page < totalPages,
+      hasPreviousPage: page > 1,
+    },
   };
 }
 
@@ -66,7 +52,7 @@ const columns = [
     sortable: false,
     render: (row: OrderRecord) => (
       <div>
-        <span className="text-gray-800 dark:text-white/90">{row.user_id ?? "—"}</span>
+        <span className="text-gray-800 dark:text-white/90">{row.buyer_name || row.user_id || "—"}</span>
         {row.buyer_email && (
           <span className="mt-0.5 block text-theme-xs text-gray-500 dark:text-gray-400">
             {row.buyer_email}
