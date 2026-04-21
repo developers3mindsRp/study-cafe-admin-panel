@@ -57,6 +57,11 @@ import FAQList from "./pages/faq/FAQList";
 import FAQCreate from "./pages/faq/FAQCreate";
 import FAQEdit from "./pages/faq/FAQEdit";
 import FAQView from "./pages/faq/FAQView";
+import SubscribersList from "./pages/newsletter/SubscribersList";
+import TemplatesList from "./pages/newsletter/TemplatesList";
+import TemplateCreate from "./pages/newsletter/TemplateCreate";
+import TemplateEdit from "./pages/newsletter/TemplateEdit";
+import SendNewsletter from "./pages/newsletter/SendNewsletter";
 import AdminUserList from "./pages/admin-users/AdminUserList";
 import AdminUserView from "./pages/admin-users/AdminUserView";
 import AdminUserCreate from "./pages/admin-users/AdminUserCreate";
@@ -252,6 +257,23 @@ const router = createBrowserRouter(
           </Route>
           <Route path="/faq/:id/edit" element={<RequirePermissionRoute permissions={["faq:edit"]} />}>
             <Route index element={<FAQEdit />} />
+          </Route>
+
+          {/* Newsletter */}
+          <Route path="/newsletter/subscribers" element={<RequirePermissionRoute permissions={["newsletter:list"]} />}>
+            <Route index element={<SubscribersList />} />
+          </Route>
+          <Route path="/newsletter/templates" element={<RequirePermissionRoute permissions={["newsletter:list"]} />}>
+            <Route index element={<TemplatesList />} />
+          </Route>
+          <Route path="/newsletter/templates/create" element={<RequirePermissionRoute permissions={["newsletter:create"]} />}>
+            <Route index element={<TemplateCreate />} />
+          </Route>
+          <Route path="/newsletter/templates/:id/edit" element={<RequirePermissionRoute permissions={["newsletter:edit"]} />}>
+            <Route index element={<TemplateEdit />} />
+          </Route>
+          <Route path="/newsletter/send" element={<RequirePermissionRoute permissions={["newsletter:send"]} />}>
+            <Route index element={<SendNewsletter />} />
           </Route>
 
           {/* Contact Inquiries */}

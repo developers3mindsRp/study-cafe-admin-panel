@@ -44,6 +44,13 @@ export const PERM_FAQ_CREATE = "faq:create";
 export const PERM_FAQ_EDIT = "faq:edit";
 export const PERM_FAQ_DELETE = "faq:delete";
 
+// Newsletter
+export const PERM_NEWSLETTER_LIST = "newsletter:list";
+export const PERM_NEWSLETTER_CREATE = "newsletter:create";
+export const PERM_NEWSLETTER_EDIT = "newsletter:edit";
+export const PERM_NEWSLETTER_DELETE = "newsletter:delete";
+export const PERM_NEWSLETTER_SEND = "newsletter:send";
+
 // Admin (e.g. user management – future)
 export const PERM_ADMIN_ACCESS = "admin:access";
 
@@ -84,6 +91,11 @@ export const ALL_PERMISSIONS = [
   PERM_FAQ_CREATE,
   PERM_FAQ_EDIT,
   PERM_FAQ_DELETE,
+  PERM_NEWSLETTER_LIST,
+  PERM_NEWSLETTER_CREATE,
+  PERM_NEWSLETTER_EDIT,
+  PERM_NEWSLETTER_DELETE,
+  PERM_NEWSLETTER_SEND,
   PERM_ADMIN_ACCESS,
   PERM_ADMIN_USERS_LIST,
   PERM_ADMIN_USERS_VIEW,

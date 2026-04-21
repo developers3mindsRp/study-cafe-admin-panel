@@ -127,6 +127,16 @@ const navItems: NavItem[] = [
     requiredPermission: ["admin:access"],
   },
   {
+    icon: <MailIcon />,
+    name: "Newsletter",
+    subItems: [
+      { name: "Subscribers", path: "/newsletter/subscribers", requiredPermission: ["newsletter:list"] },
+      { name: "Templates", path: "/newsletter/templates", requiredPermission: ["newsletter:list"] },
+      { name: "Send", path: "/newsletter/send", requiredPermission: ["newsletter:send"] },
+    ],
+    requiredPermission: ["newsletter:list", "newsletter:create", "newsletter:edit", "newsletter:delete", "newsletter:send"],
+  },
+  {
     icon: <DocsIcon />,
     name: "SEO Metadata",
     subItems: [

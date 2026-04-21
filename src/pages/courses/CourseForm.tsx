@@ -11,6 +11,7 @@ import IncludesInfoEditor, { type IncludesInfoItem } from "./components/Includes
 import CourseIncludesEditor, { type CourseIncludeItem } from "./components/CourseIncludesEditor";
 import { COURSE_PREVIEW_STATE_KEY, COURSE_RESTORE_STATE_KEY } from "./CoursePreview";
 import type { Course } from "../../api/courses";
+import { adminUsersApi, type AdminPanelUser } from "../../api/adminUsers";
 
 export interface CourseFormData {
   title: string;
@@ -129,6 +130,20 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
       window.history.replaceState({}, '');
     }
   }, [restoredData]);
+
+  const [adminUsers, setAdminUsers] = useState<AdminPanelUser[]>([]);
+  useEffect(() => {
+    adminUsersApi.list().then(setAdminUsers).catch(() => {});
+  }, []);
+
+  const handleAuthorSelect = (userId: string) => {
+    updateField('author_user_id', userId);
+    const user = adminUsers.find((u) => String(u.id) === userId);
+    if (user) {
+      updateField('author_name', user.name || '');
+      updateField('author_role', user.role || '');
+    }
+  };
 
   const handlePreview = () => {
     const returnPath = location.pathname;
@@ -442,14 +457,19 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
             {/* <Label>Author Profile</Label> */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
               <div>
-                <Label>Author User ID</Label>
-                <Input
-                  type="number"
-                  min={1}
+                <Label>Author</Label>
+                <select
                   value={form.author_user_id}
-                  onChange={(e) => updateField('author_user_id', e.target.value)}
-                  placeholder="Linked user id in users table"
-                />
+                  onChange={(e) => handleAuthorSelect(e.target.value)}
+                  className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+                >
+                  <option value="">Select an author</option>
+                  {adminUsers.map((u) => (
+                    <option key={u.id} value={String(u.id)}>
+                      {u.name || u.email} — {u.role}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div>
                 <Label>Author Name</Label>
