@@ -10,8 +10,9 @@ import { ArrayEditor } from "./components/ArrayEditor";
 import IncludesInfoEditor, { type IncludesInfoItem } from "./components/IncludesInfoEditor";
 import CourseIncludesEditor, { type CourseIncludeItem } from "./components/CourseIncludesEditor";
 import { COURSE_PREVIEW_STATE_KEY, COURSE_RESTORE_STATE_KEY } from "./CoursePreview";
-import type { Course } from "../../api/courses";
+import { fetchCourseCats, type Course, type CourseCat } from "../../api/courses";
 import { adminUsersApi, type AdminPanelUser } from "../../api/adminUsers";
+import { CourseCatMultiSelect } from "./components/CourseCatMultiSelect";
 
 export interface CourseFormData {
   title: string;
@@ -43,6 +44,7 @@ export interface CourseFormData {
   author_role: string;
   author_bio: string;
   author_image: string;
+  course_cat_ids: number[];
 }
 
 const safeJsonParse = (str: string | null | undefined, fallback: any = []) => {
@@ -63,6 +65,7 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
         course_includes: Array.isArray(restoredData.course_includes)
           ? restoredData.course_includes
           : [],
+        course_cat_ids: Array.isArray(restoredData.course_cat_ids) ? restoredData.course_cat_ids : [],
       };
     }
     return {
@@ -121,6 +124,9 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
       author_role: initial?.author_role ?? primaryAuthor?.role ?? "",
       author_bio: initial?.author_bio ?? primaryAuthor?.bio ?? "",
       author_image: initial?.author_image ?? primaryAuthor?.image_url ?? "",
+      course_cat_ids:
+        initial?.course_cat_ids ??
+        (Array.isArray(initial?.categories) ? initial.categories.map((c) => c.id) : []),
     };
   });
 
@@ -132,8 +138,12 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
   }, [restoredData]);
 
   const [adminUsers, setAdminUsers] = useState<AdminPanelUser[]>([]);
+  const [courseCats, setCourseCats] = useState<CourseCat[]>([]);
   useEffect(() => {
     adminUsersApi.list().then(setAdminUsers).catch(() => {});
+  }, []);
+  useEffect(() => {
+    fetchCourseCats().then(setCourseCats).catch(() => {});
   }, []);
 
   const handleAuthorSelect = (userId: string) => {
@@ -181,6 +191,15 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
           <div>
             <Label>Slug</Label>
             <Input value={form.slug} onChange={(e) => updateField('slug', e.target.value)} />
+          </div>
+          <div className="md:col-span-2">
+            <Label>Categories</Label>
+            <CourseCatMultiSelect
+              categories={courseCats}
+              value={form.course_cat_ids}
+              onChange={(ids) => updateField("course_cat_ids", ids)}
+              placeholder="Select categories…"
+            />
           </div>
           <div className="md:col-span-2">
             <Label>Brief Description</Label>

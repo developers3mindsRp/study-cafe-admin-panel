@@ -44,6 +44,9 @@ export interface Course {
   author_bio?: string | null;
   author_image?: string | null;
   created_at?: string;
+  /** Admin internal: selected course category ids (course_cats). */
+  course_cat_ids?: number[];
+  categories?: Array<{ id: number; name: string; slug: string | null }>;
 }
 
 export interface CourseCat {

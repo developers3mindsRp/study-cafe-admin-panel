@@ -320,6 +320,26 @@ export default function CourseView() {
             {course.gateway && <Field label="Gateway">{course.gateway}</Field>}
             <Field label="Taxable">{course.taxable ? "Yes" : "No"}</Field>
             {course.created_at && <Field label="Created">{new Date(course.created_at).toLocaleDateString()}</Field>}
+            <div className="sm:col-span-2 lg:col-span-3">
+              <Field label="Categories">
+                {course.categories && course.categories.length > 0 ? (
+                  <ul className="mt-1 flex flex-wrap gap-2">
+                    {course.categories.map((c) => (
+                      <li key={c.id}>
+                        <Link
+                          to={`/courses/categories/${c.id}/edit`}
+                          className="inline-flex items-center rounded-md bg-gray-100 px-2.5 py-1 text-sm font-medium text-gray-800 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+                        >
+                          {c.name}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <span className="text-sm text-gray-500 dark:text-gray-400">None</span>
+                )}
+              </Field>
+            </div>
           </dl>
           {course.brief_description && (
             <div className="mt-4">

@@ -42,6 +42,7 @@ export default function CourseCreate() {
         author_role: data.author_role || null,
         author_bio: data.author_bio || null,
         author_image: data.author_image || null,
+        course_cat_ids: data.course_cat_ids?.length ? data.course_cat_ids : [],
       });
       navigate("/courses");
     } catch (err) {
