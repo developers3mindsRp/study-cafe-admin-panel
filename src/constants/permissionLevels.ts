@@ -248,7 +248,7 @@ export function levelAfterTurningActionOff(action: ModuleActionKey): ModuleLevel
 }
 
 export function maxModuleLevel(a: ModuleLevel, b: ModuleLevel): ModuleLevel {
-  const order: ModuleLevel[] = ["none", "view", "edit", "create", "delete"];
+  // const order: ModuleLevel[] = ["none", "view", "edit", "create", "delete"];
   return moduleLevelRank(a) >= moduleLevelRank(b) ? a : b;
 }
 
