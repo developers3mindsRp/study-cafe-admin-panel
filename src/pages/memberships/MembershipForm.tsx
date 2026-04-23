@@ -6,6 +6,7 @@ import TextArea from "../../components/form/input/TextArea";
 import { ChipMultiSelect } from "../../components/form/ChipMultiSelect";
 import Button from "../../components/ui/button/Button";
 import { api } from "../../api/axios";
+import { planIsLifetime } from "./membershipUtils";
 
 export interface CourseOption {
   id: number;
@@ -124,7 +125,11 @@ export default function MembershipForm({
   const defaultValuesJson = JSON.stringify(defaultValues);
   useEffect(() => {
     if (defaultValues) {
-      setFormData((prev) => ({ ...prev, ...defaultValues }));
+      const merged = { ...defaultValues };
+      if (planIsLifetime(merged as MembershipFormData)) {
+        merged.is_lifetime = true;
+      }
+      setFormData((prev) => ({ ...prev, ...merged }));
       // Keep prevDurationRef in sync: if the loaded plan is NOT lifetime,
       // store the real duration so we can restore it if the user toggles.
       if (!defaultValues.is_lifetime && defaultValues.duration_days) {
@@ -241,16 +246,21 @@ export default function MembershipForm({
               />
             </div>
             <div>
-              <Label>Duration (Days)</Label>
-              <Input
-                type="number"
-                value={formData.duration_days}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, duration_days: Number(e.target.value) }))
-                }
-                placeholder="e.g. 30, 365"
-                disabled={formData.is_lifetime}
-              />
+              <Label>Duration</Label>
+              {formData.is_lifetime ? (
+                <div className="flex min-h-[46px] items-center rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm font-medium text-gray-800 dark:border-gray-700 dark:bg-white/[0.03] dark:text-white/90">
+                  Lifetime
+                </div>
+              ) : (
+                <Input
+                  type="number"
+                  value={formData.duration_days}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, duration_days: Number(e.target.value) }))
+                  }
+                  placeholder="e.g. 30, 365"
+                />
+              )}
             </div>
             <div className="flex items-center gap-2">
               <input

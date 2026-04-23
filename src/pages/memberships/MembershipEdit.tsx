@@ -4,6 +4,7 @@ import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import MembershipForm, { type MembershipFormData, parseFeaturesToArray, arrayToFeaturesHtml } from "./MembershipForm";
 import { plansApi, type MembershipFeatures } from "../../api/plans";
+import { planIsLifetime } from "./membershipUtils";
 
 export default function MembershipEdit() {
   const navigate = useNavigate();
@@ -44,7 +45,7 @@ export default function MembershipEdit() {
         mrp,
         currency: plan.currency,
         duration_days: plan.duration_days ?? 365,
-        is_lifetime: plan.is_lifetime ?? false,
+        is_lifetime: planIsLifetime(plan),
         features_included: featuresIncludedHtml,
         is_active: plan.is_active,
         is_popular: plan.is_popular ?? false,

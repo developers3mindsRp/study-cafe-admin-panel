@@ -12,6 +12,7 @@ import {
 } from "../../constants/permissions";
 import { plansApi, type Plan, type MembershipFeatures } from "../../api/plans";
 import { usersApi, type User } from "../../api/users";
+import { planIsLifetime } from "./membershipUtils";
 
 function FeaturesDisplay({ features }: { features: Plan["features"] }) {
   let included: string[] = [];
@@ -289,9 +290,9 @@ export default function MembershipView() {
                   Duration
                 </p>
                 <p className="text-gray-800 dark:text-white/90">
-                  {membership.is_lifetime
+                  {planIsLifetime(membership)
                     ? "Lifetime"
-                    : formatDuration(membership.duration_days)}
+                    : formatDuration(Number(membership.duration_days) || 0)}
                 </p>
               </div>
             </div>
