@@ -1,6 +1,6 @@
 /**
  * Courses table using the reusable DataTable.
- * Client-side search (by title) and filters (category, price band, visibility).
+ * Client-side search (by title), filters (category, price band, visibility), and sort.
  */
 
 import { useCallback } from "react";
@@ -10,7 +10,7 @@ import Badge from "../ui/badge/Badge";
 import { EyeIcon, PencilIcon } from "../../icons";
 import { fetchCourses, type Course } from "../../api/courses";
 import type { DataTableFetchParams, DataTableFetchResult } from "./data-table/DataTable.types";
-import type { PriceRangeFilter, PublicationFilter } from "../../pages/courses/filterTypes";
+import type { CourseSortFilter, PriceRangeFilter, PublicationFilter } from "../../pages/courses/filterTypes";
 
 function courseListPrice(c: Course): number {
   const n = Number(c.price);
@@ -48,6 +48,42 @@ function matchesPublication(c: Course, publication: PublicationFilter): boolean 
   return !c.is_published;
 }
 
+function parseTimeMs(value: string | undefined): number {
+  if (!value) return 0;
+  const t = Date.parse(value);
+  return Number.isFinite(t) ? t : 0;
+}
+
+function sortCoursesList(list: Course[], sort: CourseSortFilter): Course[] {
+  if (!sort) return list;
+  const copy = [...list];
+  const idNum = (c: Course) => Number(c.id) || 0;
+  switch (sort) {
+    case "latest":
+      return copy.sort((a, b) => {
+        const d = parseTimeMs(b.updated_at) - parseTimeMs(a.updated_at);
+        return d !== 0 ? d : idNum(b) - idNum(a);
+      });
+    case "most_enrolled":
+      return copy.sort((a, b) => {
+        const d = (Number(b.enrolled_count) || 0) - (Number(a.enrolled_count) || 0);
+        return d !== 0 ? d : idNum(b) - idNum(a);
+      });
+    case "newest":
+      return copy.sort((a, b) => {
+        const d = parseTimeMs(b.created_at) - parseTimeMs(a.created_at);
+        return d !== 0 ? d : idNum(b) - idNum(a);
+      });
+    case "oldest":
+      return copy.sort((a, b) => {
+        const d = parseTimeMs(a.created_at) - parseTimeMs(b.created_at);
+        return d !== 0 ? d : idNum(a) - idNum(b);
+      });
+    default:
+      return list;
+  }
+}
+
 function toMeta(total: number, page: number, limit: number): DataTableFetchResult<Course>["meta"] {
   const totalPages = Math.max(1, Math.ceil(total / limit));
   return {
@@ -64,6 +100,7 @@ export interface CoursesTableProps {
   filterCategoryId?: string;
   filterPriceRange?: PriceRangeFilter;
   filterPublication?: PublicationFilter;
+  filterSortBy?: CourseSortFilter;
 }
 
 const columns = [
@@ -131,6 +168,7 @@ export function CoursesTable({
   filterCategoryId = "",
   filterPriceRange = "",
   filterPublication = "",
+  filterSortBy = "",
 }: CoursesTableProps) {
   const fetchCoursesForTable = useCallback(
     async (params: DataTableFetchParams): Promise<DataTableFetchResult<Course>> => {
@@ -154,6 +192,8 @@ export function CoursesTable({
           matchesPublication(c, filterPublication)
       );
 
+      filtered = sortCoursesList(filtered, filterSortBy);
+
       const { page, limit } = params;
       const start = (page - 1) * limit;
       const data = filtered.slice(start, start + limit);
@@ -162,10 +202,10 @@ export function CoursesTable({
         meta: toMeta(filtered.length, page, limit),
       };
     },
-    [filterCategoryId, filterPriceRange, filterPublication]
+    [filterCategoryId, filterPriceRange, filterPublication, filterSortBy]
   );
 
-  const filterKey = `${filterCategoryId}|${filterPriceRange}|${filterPublication}`;
+  const filterKey = `${filterCategoryId}|${filterPriceRange}|${filterPublication}|${filterSortBy}`;
 
   return (
     <DataTable<Course>
