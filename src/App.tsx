@@ -164,53 +164,53 @@ const router = createBrowserRouter(
           </Route>
 
           {/* Courses */}
-          <Route path="/courses" element={<RequirePermissionRoute permissions={["admin:access"]} />}>
+          <Route path="/courses" element={<RequirePermissionRoute permissions={["courses:list"]} />}>
             <Route index element={<CourseList />} />
           </Route>
-          <Route path="/courses/create" element={<RequirePermissionRoute permissions={["admin:access"]} />}>
+          <Route path="/courses/create" element={<RequirePermissionRoute permissions={["courses:create"]} />}>
             <Route index element={<CourseCreate />} />
           </Route>
-          <Route path="/courses/:id" element={<RequirePermissionRoute permissions={["admin:access"]} />}>
+          <Route path="/courses/:id" element={<RequirePermissionRoute permissions={["courses:view"]} />}>
             <Route index element={<CourseView />} />
           </Route>
-          <Route path="/courses/:id/edit" element={<RequirePermissionRoute permissions={["admin:access"]} />}>
+          <Route path="/courses/:id/edit" element={<RequirePermissionRoute permissions={["courses:edit"]} />}>
             <Route index element={<CourseEdit />} />
           </Route>
-          <Route path="/courses/settings" element={<RequirePermissionRoute permissions={["admin:access"]} />}>
+          <Route path="/courses/settings" element={<RequirePermissionRoute permissions={["courses:edit"]} />}>
             <Route index element={<CoursePageSettings />} />
           </Route>
-          <Route path="/courses/categories" element={<RequirePermissionRoute permissions={["admin:access"]} />}>
+          <Route path="/courses/categories" element={<RequirePermissionRoute permissions={["courses:list"]} />}>
             <Route index element={<CourseCatList />} />
           </Route>
-          <Route path="/courses/categories/create" element={<RequirePermissionRoute permissions={["admin:access"]} />}>
+          <Route path="/courses/categories/create" element={<RequirePermissionRoute permissions={["courses:create"]} />}>
             <Route index element={<CourseCatCreate />} />
           </Route>
-          <Route path="/courses/categories/:id/edit" element={<RequirePermissionRoute permissions={["admin:access"]} />}>
+          <Route path="/courses/categories/:id/edit" element={<RequirePermissionRoute permissions={["courses:edit"]} />}>
             <Route index element={<CourseCatEdit />} />
           </Route>
-          <Route path="/courses/preview" element={<RequirePermissionRoute permissions={["admin:access"]} />}>
+          <Route path="/courses/preview" element={<RequirePermissionRoute permissions={["courses:view"]} />}>
             <Route index element={<CoursePreview />} />
           </Route>
-          <Route path="/live-sessions" element={<RequirePermissionRoute permissions={["admin:access"]} />}>
+          <Route path="/live-sessions" element={<RequirePermissionRoute permissions={["live_sessions:list"]} />}>
             <Route index element={<LiveSessions />} />
           </Route>
 
           {/* Orders */}
-          <Route path="/orders" element={<RequirePermissionRoute permissions={["admin:access"]} />}>
+          <Route path="/orders" element={<RequirePermissionRoute permissions={["orders:list"]} />}>
             <Route index element={<OrderList />} />
           </Route>
-          <Route path="/orders/:orderId" element={<RequirePermissionRoute permissions={["admin:access"]} />}>
+          <Route path="/orders/:orderId" element={<RequirePermissionRoute permissions={["orders:view"]} />}>
             <Route index element={<OrderView />} />
           </Route>
 
           {/* Coupons */}
-          <Route path="/coupons" element={<RequirePermissionRoute permissions={["admin:access"]} />}>
+          <Route path="/coupons" element={<RequirePermissionRoute permissions={["coupons:list"]} />}>
             <Route index element={<PromoCodeList />} />
           </Route>
-          <Route path="/coupons/create" element={<RequirePermissionRoute permissions={["admin:access"]} />}>
+          <Route path="/coupons/create" element={<RequirePermissionRoute permissions={["coupons:create"]} />}>
             <Route index element={<PromoCodeCreate />} />
           </Route>
-          <Route path="/coupons/:id/edit" element={<RequirePermissionRoute permissions={["admin:access"]} />}>
+          <Route path="/coupons/:id/edit" element={<RequirePermissionRoute permissions={["coupons:edit"]} />}>
             <Route index element={<PromoCodeEdit />} />
           </Route>
 
@@ -277,10 +277,10 @@ const router = createBrowserRouter(
           </Route>
 
           {/* Contact Inquiries */}
-          <Route path="/contact-inquiries" element={<RequirePermissionRoute permissions={["admin:access"]} />}>
+          <Route path="/contact-inquiries" element={<RequirePermissionRoute permissions={["contact_inquiries:list"]} />}>
             <Route index element={<ContactInquiryList />} />
           </Route>
-          <Route path="/contact-inquiries/:id" element={<RequirePermissionRoute permissions={["admin:access"]} />}>
+          <Route path="/contact-inquiries/:id" element={<RequirePermissionRoute permissions={["contact_inquiries:view"]} />}>
             <Route index element={<ContactInquiryView />} />
           </Route>
 
@@ -313,10 +313,10 @@ const router = createBrowserRouter(
           </Route>
           
           {/* Affiliate */}
-          <Route path="/affiliate/history" element={<RequirePermissionRoute permissions={["admin:access"]} />}>
+          <Route path="/affiliate/history" element={<RequirePermissionRoute permissions={["affiliate:list"]} />}>
             <Route index element={<AffiliateHistory />} />
           </Route>
-          <Route path="/affiliate/withdrawals" element={<RequirePermissionRoute permissions={["admin:access"]} />}>
+          <Route path="/affiliate/withdrawals" element={<RequirePermissionRoute permissions={["affiliate:view"]} />}>
             <Route index element={<WithdrawalRequests />} />
           </Route>
 

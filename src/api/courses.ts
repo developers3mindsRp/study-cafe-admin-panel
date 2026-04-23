@@ -275,3 +275,31 @@ export async function addBatchEnrollment(batchId: number, userId: number): Promi
 export async function removeBatchEnrollment(enrollmentId: number): Promise<void> {
   await api.delete(`/admin/batch-enrollments/${enrollmentId}`);
 }
+
+export interface UserEnrollmentRecord {
+  enrollment_id: number;
+  batch_id: number;
+  batch_name: string | null;
+  course_id: number | null;
+  course_title: string | null;
+  enrolled_at: string | null;
+}
+
+export async function fetchUserEnrollments(userId: number): Promise<UserEnrollmentRecord[]> {
+  try {
+    const res = await api.get<UserEnrollmentRecord[]>(`/admin/users/${userId}/enrollments`);
+    return Array.isArray(res.data) ? res.data : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Fetch lightweight batch list for a specific course (id + name only). */
+export async function fetchCourseBatches(courseId: number): Promise<{ id: number; name: string }[]> {
+  try {
+    const result = await fetchBatchesList({ courseId, limit: 100 });
+    return result.rows.map((b) => ({ id: b.id, name: b.name }));
+  } catch {
+    return [];
+  }
+}

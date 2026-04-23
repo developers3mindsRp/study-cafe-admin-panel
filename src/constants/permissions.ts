@@ -51,7 +51,37 @@ export const PERM_NEWSLETTER_EDIT = "newsletter:edit";
 export const PERM_NEWSLETTER_DELETE = "newsletter:delete";
 export const PERM_NEWSLETTER_SEND = "newsletter:send";
 
-// Admin (e.g. user management – future)
+// Courses
+export const PERM_COURSES_LIST = "courses:list";
+export const PERM_COURSES_VIEW = "courses:view";
+export const PERM_COURSES_CREATE = "courses:create";
+export const PERM_COURSES_EDIT = "courses:edit";
+export const PERM_COURSES_DELETE = "courses:delete";
+
+// Orders
+export const PERM_ORDERS_LIST = "orders:list";
+export const PERM_ORDERS_VIEW = "orders:view";
+
+// Coupons
+export const PERM_COUPONS_LIST = "coupons:list";
+export const PERM_COUPONS_VIEW = "coupons:view";
+export const PERM_COUPONS_CREATE = "coupons:create";
+export const PERM_COUPONS_EDIT = "coupons:edit";
+export const PERM_COUPONS_DELETE = "coupons:delete";
+
+// Live Sessions
+export const PERM_LIVE_SESSIONS_LIST = "live_sessions:list";
+export const PERM_LIVE_SESSIONS_VIEW = "live_sessions:view";
+
+// Contact Inquiries
+export const PERM_CONTACT_INQUIRIES_LIST = "contact_inquiries:list";
+export const PERM_CONTACT_INQUIRIES_VIEW = "contact_inquiries:view";
+
+// Affiliate
+export const PERM_AFFILIATE_LIST = "affiliate:list";
+export const PERM_AFFILIATE_VIEW = "affiliate:view";
+
+// Admin (panel gate)
 export const PERM_ADMIN_ACCESS = "admin:access";
 
 // Admin users (CRUD for panel users)
@@ -96,6 +126,24 @@ export const ALL_PERMISSIONS = [
   PERM_NEWSLETTER_EDIT,
   PERM_NEWSLETTER_DELETE,
   PERM_NEWSLETTER_SEND,
+  PERM_COURSES_LIST,
+  PERM_COURSES_VIEW,
+  PERM_COURSES_CREATE,
+  PERM_COURSES_EDIT,
+  PERM_COURSES_DELETE,
+  PERM_ORDERS_LIST,
+  PERM_ORDERS_VIEW,
+  PERM_COUPONS_LIST,
+  PERM_COUPONS_VIEW,
+  PERM_COUPONS_CREATE,
+  PERM_COUPONS_EDIT,
+  PERM_COUPONS_DELETE,
+  PERM_LIVE_SESSIONS_LIST,
+  PERM_LIVE_SESSIONS_VIEW,
+  PERM_CONTACT_INQUIRIES_LIST,
+  PERM_CONTACT_INQUIRIES_VIEW,
+  PERM_AFFILIATE_LIST,
+  PERM_AFFILIATE_VIEW,
   PERM_ADMIN_ACCESS,
   PERM_ADMIN_USERS_LIST,
   PERM_ADMIN_USERS_VIEW,

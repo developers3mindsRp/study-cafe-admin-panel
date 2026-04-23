@@ -94,6 +94,71 @@ export const MODULE_LEVELS: ModuleConfig[] = [
       { value: "delete", label: "Delete / Full", permissions: ["admin_users:list", "admin_users:view", "admin_users:edit", "admin_users:create", "admin_users:delete"] },
     ],
   },
+  {
+    key: "newsletter",
+    name: "Newsletter",
+    levels: [
+      { value: "none", label: "None", permissions: [] },
+      { value: "view", label: "View only", permissions: ["newsletter:list"] },
+      { value: "edit", label: "Edit (includes view)", permissions: ["newsletter:list", "newsletter:edit"] },
+      { value: "create", label: "Create (includes view, edit)", permissions: ["newsletter:list", "newsletter:edit", "newsletter:create"] },
+      { value: "delete", label: "Delete / Full", permissions: ["newsletter:list", "newsletter:edit", "newsletter:create", "newsletter:delete"] },
+    ],
+  },
+  {
+    key: "courses",
+    name: "Courses",
+    levels: [
+      { value: "none", label: "None", permissions: [] },
+      { value: "view", label: "View only", permissions: ["courses:list", "courses:view"] },
+      { value: "edit", label: "Edit (includes view)", permissions: ["courses:list", "courses:view", "courses:edit"] },
+      { value: "create", label: "Create (includes view, edit)", permissions: ["courses:list", "courses:view", "courses:edit", "courses:create"] },
+      { value: "delete", label: "Delete / Full", permissions: ["courses:list", "courses:view", "courses:edit", "courses:create", "courses:delete"] },
+    ],
+  },
+  {
+    key: "orders",
+    name: "Orders",
+    levels: [
+      { value: "none", label: "None", permissions: [] },
+      { value: "view", label: "View only", permissions: ["orders:list", "orders:view"] },
+    ],
+  },
+  {
+    key: "coupons",
+    name: "Coupons",
+    levels: [
+      { value: "none", label: "None", permissions: [] },
+      { value: "view", label: "View only", permissions: ["coupons:list", "coupons:view"] },
+      { value: "edit", label: "Edit (includes view)", permissions: ["coupons:list", "coupons:view", "coupons:edit"] },
+      { value: "create", label: "Create (includes view, edit)", permissions: ["coupons:list", "coupons:view", "coupons:edit", "coupons:create"] },
+      { value: "delete", label: "Delete / Full", permissions: ["coupons:list", "coupons:view", "coupons:edit", "coupons:create", "coupons:delete"] },
+    ],
+  },
+  {
+    key: "live_sessions",
+    name: "Live Sessions",
+    levels: [
+      { value: "none", label: "None", permissions: [] },
+      { value: "view", label: "View only", permissions: ["live_sessions:list", "live_sessions:view"] },
+    ],
+  },
+  {
+    key: "contact_inquiries",
+    name: "Contact Inquiries",
+    levels: [
+      { value: "none", label: "None", permissions: [] },
+      { value: "view", label: "View only", permissions: ["contact_inquiries:list", "contact_inquiries:view"] },
+    ],
+  },
+  {
+    key: "affiliate",
+    name: "Affiliate",
+    levels: [
+      { value: "none", label: "None", permissions: [] },
+      { value: "view", label: "View only", permissions: ["affiliate:list", "affiliate:view"] },
+    ],
+  },
 ];
 
 /** Get the effective level for a module from a list of permissions (e.g. from API). */
@@ -116,4 +181,84 @@ export function getModulePermissionKeys(moduleKey: string): string[] {
   const keys = new Set<string>();
   config.levels.forEach((l) => l.permissions.forEach((p) => keys.add(p)));
   return [...keys];
+}
+
+/** UI columns: View (list+view), Edit, Add (create), Delete — in privilege order. */
+export type ModuleActionKey = "view" | "edit" | "add" | "delete";
+
+const LEVEL_RANK: Record<ModuleLevel, number> = {
+  none: 0,
+  view: 1,
+  edit: 2,
+  create: 3,
+  delete: 4,
+};
+
+/** Which actions exist for this module (from MODULE_LEVELS). */
+export function getModuleAvailableActions(moduleKey: string): ModuleActionKey[] {
+  const config = MODULE_LEVELS.find((m) => m.key === moduleKey);
+  if (!config) return [];
+  const levelValues = new Set(config.levels.map((l) => l.value));
+  const out: ModuleActionKey[] = [];
+  if (levelValues.has("view")) out.push("view");
+  if (levelValues.has("edit")) out.push("edit");
+  if (levelValues.has("create")) out.push("add");
+  if (levelValues.has("delete")) out.push("delete");
+  return out;
+}
+
+export function maxLevelForModule(moduleKey: string): ModuleLevel {
+  const config = MODULE_LEVELS.find((m) => m.key === moduleKey);
+  if (!config) return "none";
+  const ranked = config.levels.filter((l) => l.value !== "none");
+  const last = ranked[ranked.length - 1];
+  return (last?.value ?? "none") as ModuleLevel;
+}
+
+export function moduleLevelRank(level: ModuleLevel): number {
+  return LEVEL_RANK[level] ?? 0;
+}
+
+/** Map UI action to the MODULE_LEVELS level that turns that action on. */
+export function actionToModuleLevel(action: ModuleActionKey): ModuleLevel {
+  switch (action) {
+    case "view":
+      return "view";
+    case "edit":
+      return "edit";
+    case "add":
+      return "create";
+    case "delete":
+      return "delete";
+  }
+}
+
+/** Level to step down to when turning an action off (clears that action and stronger). */
+export function levelAfterTurningActionOff(action: ModuleActionKey): ModuleLevel {
+  switch (action) {
+    case "delete":
+      return "create";
+    case "add":
+      return "edit";
+    case "edit":
+      return "view";
+    case "view":
+      return "none";
+  }
+}
+
+export function maxModuleLevel(a: ModuleLevel, b: ModuleLevel): ModuleLevel {
+  const order: ModuleLevel[] = ["none", "view", "edit", "create", "delete"];
+  return moduleLevelRank(a) >= moduleLevelRank(b) ? a : b;
+}
+
+/** Whether an action column is on for the current module level. */
+export function isActionChecked(
+  moduleKey: string,
+  action: ModuleActionKey,
+  level: ModuleLevel
+): boolean {
+  const available = getModuleAvailableActions(moduleKey);
+  if (!available.includes(action)) return false;
+  return moduleLevelRank(level) >= moduleLevelRank(actionToModuleLevel(action));
 }

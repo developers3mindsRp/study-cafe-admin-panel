@@ -99,12 +99,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const stored = getStoredAuth();
-    if (stored) {
-      setToken(stored.token);
-      setUser(stored.user);
+    if (!stored) {
+      setIsInitialized(true);
+      setIsLoading(false);
+      return;
     }
-    setIsInitialized(true);
-    setIsLoading(false);
+    // Restore token immediately so axios interceptor can attach it
+    setToken(stored.token);
+    // Re-fetch fresh user + permissions from server on every app load
+    authApi
+      .getMe()
+      .then((freshUser) => {
+        const user = {
+          ...freshUser,
+          id: String(freshUser.id),
+          permissions: freshUser.permissions ?? [],
+        };
+        setStoredAuth({ token: stored.token, user, expiresAt: stored.expiresAt });
+        setUser(user);
+      })
+      .catch(() => {
+        // Token invalid/expired — clear and force re-login
+        clearStoredAuth();
+        setToken(null);
+        setUser(null);
+      })
+      .finally(() => {
+        setIsInitialized(true);
+        setIsLoading(false);
+      });
   }, []);
 
   const value = useMemo<AuthContextValue>(

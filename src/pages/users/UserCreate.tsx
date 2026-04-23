@@ -8,6 +8,9 @@ import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
 import { usersApi, type User } from "../../api/users";
 import { plansApi, type Plan } from "../../api/plans";
+import { fetchCourses, addBatchEnrollment } from "../../api/courses";
+import { useAssignCoursesState } from "./hooks/useAssignCoursesState";
+import { CourseBatchAssignSection } from "./components/CourseBatchAssignSection";
 
 type UserPayload = Partial<User>;
 
@@ -15,6 +18,17 @@ export default function UserCreate() {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const [plans, setPlans] = useState<Plan[]>([]);
+
+    const {
+        courses,
+        setCourses,
+        selectedCourseIds,
+        batchesMap,
+        selectedBatches,
+        batchesLoading,
+        handleCourseSelectionChange,
+        onBatchChange,
+    } = useAssignCoursesState();
 
     // Form state
     const [formData, setFormData] = useState<UserPayload>({
@@ -44,20 +58,23 @@ export default function UserCreate() {
     });
 
     useEffect(() => {
-        const fetchPlans = async () => {
+        const init = async () => {
             try {
-                const res = await plansApi.list();
-                const activePlans = res.data.filter(p => p.is_active);
+                const [plansRes, coursesData] = await Promise.all([
+                    plansApi.list(),
+                    fetchCourses(),
+                ]);
+                const activePlans = plansRes.data.filter(p => p.is_active);
                 setPlans(activePlans);
-                // Set default membership if none selected and plans exist
                 if (activePlans.length > 0 && !formData.membership) {
                     setFormData(prev => ({ ...prev, membership: activePlans[0].slug }));
                 }
+                setCourses(coursesData);
             } catch (err) {
-                console.error("Failed to fetch plans", err);
+                console.error("Failed to fetch initial data", err);
             }
         };
-        fetchPlans();
+        init();
     }, []); // Run once on mount
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -69,7 +86,18 @@ export default function UserCreate() {
         e.preventDefault();
         try {
             setLoading(true);
-            await usersApi.create(formData);
+            const createdUser = await usersApi.create(formData);
+            const userId = Number(createdUser.id);
+
+            const enrollPromises = Object.entries(selectedBatches)
+                .filter(([, batchId]) => Number(batchId) > 0)
+                .map(([, batchId]) =>
+                    addBatchEnrollment(Number(batchId), userId).catch((err) =>
+                        console.error(`Failed to enroll in batch ${batchId}:`, err),
+                    ),
+                );
+            await Promise.all(enrollPromises);
+
             navigate("/users");
         } catch (err) {
             console.error("Failed to create user", err);
@@ -358,6 +386,19 @@ export default function UserCreate() {
                         </div>
                     </div>
 
+
+                    <hr className="border-gray-200 dark:border-gray-700" />
+
+                    <CourseBatchAssignSection
+                        courses={courses}
+                        selectedCourseIds={selectedCourseIds}
+                        onCourseSelectionChange={handleCourseSelectionChange}
+                        batchesMap={batchesMap}
+                        selectedBatches={selectedBatches}
+                        onBatchChange={onBatchChange}
+                        batchesLoading={batchesLoading}
+                        description="Search and pick one or more courses, choose a batch for each, then create the user — enrollments run right after the account is created."
+                    />
 
                     <div className="flex justify-end gap-4">
                         <Button

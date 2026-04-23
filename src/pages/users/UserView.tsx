@@ -3,7 +3,8 @@ import { useNavigate, useParams } from "react-router";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import Label from "../../components/form/Label";
-import { usersApi, type User } from "../../api/users";
+import { usersApi, fetchUserMemberships, type User, type UserMembership } from "../../api/users";
+import { fetchUserEnrollments, type UserEnrollmentRecord } from "../../api/courses";
 import Badge from "../../components/ui/badge/Badge";
 import Button from "../../components/ui/button/Button";
 import { PencilIcon } from "../../icons";
@@ -14,10 +15,16 @@ export default function UserView() {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [enrollments, setEnrollments] = useState<UserEnrollmentRecord[]>([]);
+    const [enrollmentsLoading, setEnrollmentsLoading] = useState(false);
+    const [memberships, setMemberships] = useState<UserMembership[]>([]);
+    const [membershipsLoading, setMembershipsLoading] = useState(false);
 
     useEffect(() => {
         if (id) {
             loadUser(id);
+            loadEnrollments(id);
+            loadMemberships(id);
         }
     }, [id]);
 
@@ -32,6 +39,35 @@ export default function UserView() {
             setLoading(false);
         }
     };
+
+    const loadEnrollments = async (userId: string) => {
+        try {
+            setEnrollmentsLoading(true);
+            const data = await fetchUserEnrollments(Number(userId));
+            setEnrollments(data);
+        } catch {
+            // silently fail — not critical
+        } finally {
+            setEnrollmentsLoading(false);
+        }
+    };
+
+    const loadMemberships = async (userId: string) => {
+        try {
+            setMembershipsLoading(true);
+            const data = await fetchUserMemberships(userId);
+            setMemberships(data);
+        } catch {
+            // silently fail — not critical
+        } finally {
+            setMembershipsLoading(false);
+        }
+    };
+
+    const now = new Date();
+
+    const activeMemberships = memberships.filter((m) => new Date(m.expires_at) > now);
+    const expiredMemberships = memberships.filter((m) => new Date(m.expires_at) <= now);
 
     if (loading) return <div className="p-6 text-center">Loading...</div>;
     if (!user && !loading) return <div className="p-6 text-center">User not found</div>;
@@ -87,10 +123,23 @@ export default function UserView() {
                     <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
                         <div>
                             <Label>Membership</Label>
-                            <div className="mt-2">
-                                <span className="inline-flex rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-700 dark:bg-gray-800 dark:text-gray-300 capitalize">
-                                    {user?.membership || "Free"}
-                                </span>
+                            <div className="mt-2 flex flex-wrap gap-1.5">
+                                {membershipsLoading ? (
+                                    <span className="text-sm text-gray-400">Loading…</span>
+                                ) : activeMemberships.length > 0 ? (
+                                    activeMemberships.map((m) => (
+                                        <span
+                                            key={m.id}
+                                            className="inline-flex rounded-full bg-success-100 px-3 py-1 text-sm font-medium capitalize text-success-700 dark:bg-success-500/10 dark:text-success-400"
+                                        >
+                                            {m.membership_type}
+                                        </span>
+                                    ))
+                                ) : (
+                                    <span className="inline-flex rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+                                        Free
+                                    </span>
+                                )}
                             </div>
                         </div>
                         <div>
@@ -178,6 +227,124 @@ export default function UserView() {
                         </div>
                     </div>
 
+
+                    <hr className="border-gray-200 dark:border-gray-700" />
+
+                    {/* Memberships */}
+                    <div>
+                        <h4 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                            Memberships
+                        </h4>
+                        {membershipsLoading ? (
+                            <p className="text-sm text-gray-400">Loading memberships…</p>
+                        ) : memberships.length === 0 ? (
+                            <p className="text-sm italic text-gray-400">No membership records. User is on Free plan.</p>
+                        ) : (
+                            <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+                                <table className="w-full text-sm">
+                                    <thead className="bg-gray-50 dark:bg-white/[0.03]">
+                                        <tr>
+                                            <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">#</th>
+                                            <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">Plan</th>
+                                            <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">Status</th>
+                                            <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">Starts</th>
+                                            <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">Expires</th>
+                                            <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">Order ID</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                                        {memberships.map((m, idx) => {
+                                            const isActive = new Date(m.expires_at) > now;
+                                            return (
+                                                <tr key={m.id} className="hover:bg-gray-50 dark:hover:bg-white/[0.02]">
+                                                    <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{idx + 1}</td>
+                                                    <td className="px-4 py-3 font-medium capitalize text-gray-900 dark:text-white">
+                                                        {m.membership_type}
+                                                    </td>
+                                                    <td className="px-4 py-3">
+                                                        <Badge size="sm" color={isActive ? "success" : "error"}>
+                                                            {isActive ? "Active" : "Expired"}
+                                                        </Badge>
+                                                    </td>
+                                                    <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
+                                                        {new Date(m.starts_at).toLocaleDateString("en-IN", {
+                                                            day: "2-digit",
+                                                            month: "short",
+                                                            year: "numeric",
+                                                        })}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
+                                                        {new Date(m.expires_at).toLocaleDateString("en-IN", {
+                                                            day: "2-digit",
+                                                            month: "short",
+                                                            year: "numeric",
+                                                        })}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
+                                                        {m.order_id ?? <span className="italic">—</span>}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                                {expiredMemberships.length > 0 && activeMemberships.length === 0 && (
+                                    <div className="border-t border-gray-200 px-4 py-3 text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
+                                        All memberships have expired. User currently has no active plan.
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+
+                    <hr className="border-gray-200 dark:border-gray-700" />
+
+                    {/* Enrolled Courses */}
+                    <div>
+                        <h4 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                            Enrolled Courses
+                        </h4>
+                        {enrollmentsLoading ? (
+                            <p className="text-sm text-gray-400">Loading enrollments...</p>
+                        ) : enrollments.length === 0 ? (
+                            <p className="text-sm text-gray-400 italic">No courses enrolled yet.</p>
+                        ) : (
+                            <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+                                <table className="w-full text-sm">
+                                    <thead className="bg-gray-50 dark:bg-white/[0.03]">
+                                        <tr>
+                                            <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">#</th>
+                                            <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">Course</th>
+                                            <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">Batch</th>
+                                            <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">Enrolled On</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                                        {enrollments.map((enrollment, idx) => (
+                                            <tr key={enrollment.enrollment_id} className="hover:bg-gray-50 dark:hover:bg-white/[0.02]">
+                                                <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{idx + 1}</td>
+                                                <td className="px-4 py-3 text-gray-900 dark:text-white font-medium">
+                                                    {enrollment.course_title ?? <span className="italic text-gray-400">Unknown</span>}
+                                                </td>
+                                                <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
+                                                    {enrollment.batch_name ?? <span className="italic text-gray-400">—</span>}
+                                                </td>
+                                                <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
+                                                    {enrollment.enrolled_at
+                                                        ? new Date(enrollment.enrolled_at).toLocaleDateString("en-IN", {
+                                                            day: "2-digit",
+                                                            month: "short",
+                                                            year: "numeric",
+                                                        })
+                                                        : "—"}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </div>
 
                     <div className="flex justify-end gap-4 pt-6">
                         <Button

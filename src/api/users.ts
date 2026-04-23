@@ -6,6 +6,7 @@
  */
 
 import { createCrudApi } from "./apiFactory";
+import { api } from "./axios";
 import type { DataTableFetchParams, DataTableFetchResult } from "../components/tables/data-table";
 
 export interface User {
@@ -49,12 +50,31 @@ export interface User {
   plan?: string;
 }
 
+export interface UserMembership {
+  id: number;
+  user_id: number;
+  membership_type: string;
+  order_id: string | null;
+  starts_at: string;
+  expires_at: string;
+}
+
 // Re-export ListQuery from factory for convenience
 export type { ListQuery as ListParams } from "./apiFactory";
 
 const BASE_URL = "/users";
 
 export const usersApi = createCrudApi<User>(BASE_URL)();
+
+/** Fetch all membership records for a user from the admin API. */
+export async function fetchUserMemberships(userId: string | number): Promise<UserMembership[]> {
+  try {
+    const { data } = await api.get<UserMembership[]>(`/admin/users/${userId}/memberships`);
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
+}
 
 /** Server-side paginated list for DataTable. Adapts list() response to DataTable meta shape. */
 export async function fetchUsersPaginated(

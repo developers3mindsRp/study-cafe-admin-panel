@@ -8,6 +8,9 @@ import TextArea from "../../components/form/input/TextArea";
 import Button from "../../components/ui/button/Button";
 import { usersApi, type User } from "../../api/users";
 import { plansApi, type Plan } from "../../api/plans";
+import { fetchCourses, addBatchEnrollment, fetchUserEnrollments } from "../../api/courses";
+import { useAssignCoursesState } from "./hooks/useAssignCoursesState";
+import { CourseBatchAssignSection } from "./components/CourseBatchAssignSection";
 
 type UserPayload = Partial<User>;
 
@@ -19,6 +22,18 @@ export default function UserEdit() {
     const [error, setError] = useState<string | null>(null);
     const [submitting, setSubmitting] = useState(false);
     const [plans, setPlans] = useState<Plan[]>([]);
+
+    const {
+        courses,
+        setCourses,
+        selectedCourseIds,
+        batchesMap,
+        selectedBatches,
+        batchesLoading,
+        handleCourseSelectionChange,
+        onBatchChange,
+        hydrateFromEnrollments,
+    } = useAssignCoursesState();
 
     const [formData, setFormData] = useState<UserPayload>({
         name: "",
@@ -60,7 +75,15 @@ export default function UserEdit() {
                 setPlans(activePlans);
 
                 if (id) {
-                    const user = await usersApi.get(id);
+                    const numericId = Number(id);
+                    const [user, coursesData, enrollments] = await Promise.all([
+                        usersApi.get(id),
+                        fetchCourses(),
+                        fetchUserEnrollments(numericId),
+                    ]);
+                    setCourses(coursesData);
+                    await hydrateFromEnrollments(enrollments);
+
                     setFormData({
                         name: user.name || "",
                         email: user.email || "",
@@ -111,6 +134,15 @@ export default function UserEdit() {
         setError(null);
         try {
             await usersApi.update(id, formData);
+            const userId = Number(id);
+            const enrollPromises = Object.entries(selectedBatches)
+                .filter(([, batchId]) => Number(batchId) > 0)
+                .map(([, batchId]) =>
+                    addBatchEnrollment(Number(batchId), userId).catch((err) =>
+                        console.error(`Failed to enroll in batch ${batchId}:`, err),
+                    ),
+                );
+            await Promise.all(enrollPromises);
             navigate("/users");
         } catch (err: any) {
             console.error("Update failed", err);
@@ -405,6 +437,19 @@ export default function UserEdit() {
                             </div>
                         </div>
                     </div>
+
+                    <hr className="border-gray-200 dark:border-gray-700" />
+
+                    <CourseBatchAssignSection
+                        courses={courses}
+                        selectedCourseIds={selectedCourseIds}
+                        onCourseSelectionChange={handleCourseSelectionChange}
+                        batchesMap={batchesMap}
+                        selectedBatches={selectedBatches}
+                        onBatchChange={onBatchChange}
+                        batchesLoading={batchesLoading}
+                        description="Search and select courses, pick a batch for each, then save — new or updated batch enrollments are applied after the profile is saved."
+                    />
 
                     <div className="flex justify-end gap-4">
                         <Button

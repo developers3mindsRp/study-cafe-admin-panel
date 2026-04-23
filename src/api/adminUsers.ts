@@ -1,6 +1,5 @@
 import { api } from "./axios";
-
-const AUTH_BASE = "/auth";
+import { adminUsersApiPaths } from "../pages/admin-users/routes";
 
 export interface AdminPanelUser {
   id: number;
@@ -40,31 +39,37 @@ export interface UpdateAdminUserPayload {
 
 export const adminUsersApi = {
   async getRoles(): Promise<Role[]> {
-    const { data } = await api.get<Role[]>(`${AUTH_BASE}/admin/roles`);
+    const { data } = await api.get<Role[]>(adminUsersApiPaths.roles);
+    return data;
+  },
+
+  /** POST /auth/admin/role — create a custom role (name). */
+  async createRole(name: string): Promise<Role> {
+    const { data } = await api.post<Role>(adminUsersApiPaths.createRole, { name });
     return data;
   },
 
   async list(): Promise<AdminPanelUser[]> {
-    const { data } = await api.get<AdminPanelUser[]>(`${AUTH_BASE}/admin/users`);
+    const { data } = await api.get<AdminPanelUser[]>(adminUsersApiPaths.users);
     return data;
   },
 
   async getOne(id: number): Promise<AdminPanelUserDetail> {
-    const { data } = await api.get<AdminPanelUserDetail>(`${AUTH_BASE}/admin/users/${id}`);
+    const { data } = await api.get<AdminPanelUserDetail>(adminUsersApiPaths.user(id));
     return data;
   },
 
   async create(payload: CreateAdminUserPayload): Promise<AdminPanelUserDetail> {
-    const { data } = await api.post<AdminPanelUserDetail>(`${AUTH_BASE}/admin/users`, payload);
+    const { data } = await api.post<AdminPanelUserDetail>(adminUsersApiPaths.users, payload);
     return data;
   },
 
   async update(id: number, payload: UpdateAdminUserPayload): Promise<AdminPanelUserDetail> {
-    const { data } = await api.patch<AdminPanelUserDetail>(`${AUTH_BASE}/admin/users/${id}`, payload);
+    const { data } = await api.patch<AdminPanelUserDetail>(adminUsersApiPaths.user(id), payload);
     return data;
   },
 
   async delete(id: number): Promise<void> {
-    await api.delete(`${AUTH_BASE}/admin/users/${id}`);
+    await api.delete(adminUsersApiPaths.user(id));
   },
 };

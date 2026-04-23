@@ -45,35 +45,35 @@ const navItems: NavItem[] = [
     icon: <FolderIcon />,
     name: "Courses",
     subItems: [
-      { name: "List", path: "/courses", requiredPermission: ["admin:access"] },
-      { name: "Create", path: "/courses/create", requiredPermission: ["admin:access"] },
-      { name: "Categories", path: "/courses/categories", requiredPermission: ["admin:access"] },
-      { name: "Page Settings", path: "/courses/settings", requiredPermission: ["admin:access"] },
+      { name: "List", path: "/courses", requiredPermission: ["courses:list", "courses:view"] },
+      { name: "Create", path: "/courses/create", requiredPermission: ["courses:create"] },
+      { name: "Categories", path: "/courses/categories", requiredPermission: ["courses:list", "courses:view"] },
+      { name: "Page Settings", path: "/courses/settings", requiredPermission: ["courses:edit"] },
     ],
-    requiredPermission: ["admin:access"],
+    requiredPermission: ["courses:list", "courses:view", "courses:create", "courses:edit", "courses:delete"],
   },
   {
     icon: <VideoIcon />,
     name: "Live Sessions",
     path: "/live-sessions",
-    // requiredPermission: ["admin:access"],
+    requiredPermission: ["live_sessions:list", "live_sessions:view"],
   },
   {
     icon: <DollarLineIcon />,
     name: "Orders",
     subItems: [
-      { name: "List", path: "/orders", requiredPermission: ["admin:access"] },
+      { name: "List", path: "/orders", requiredPermission: ["orders:list", "orders:view"] },
     ],
-    requiredPermission: ["admin:access"],
+    requiredPermission: ["orders:list", "orders:view"],
   },
   {
     icon: <DollarLineIcon />,
     name: "Coupons",
     subItems: [
-      { name: "List", path: "/coupons", requiredPermission: ["admin:access"] },
-      { name: "Create", path: "/coupons/create", requiredPermission: ["admin:access"] },
+      { name: "List", path: "/coupons", requiredPermission: ["coupons:list", "coupons:view"] },
+      { name: "Create", path: "/coupons/create", requiredPermission: ["coupons:create"] },
     ],
-    requiredPermission: ["admin:access"],
+    requiredPermission: ["coupons:list", "coupons:view", "coupons:create", "coupons:edit", "coupons:delete"],
   },
   {
     icon: <GroupIcon />,
@@ -122,9 +122,9 @@ const navItems: NavItem[] = [
     icon: <MailIcon />,
     name: "Contact Inquiries",
     subItems: [
-      { name: "List", path: "/contact-inquiries", requiredPermission: ["admin:access"] },
+      { name: "List", path: "/contact-inquiries", requiredPermission: ["contact_inquiries:list", "contact_inquiries:view"] },
     ],
-    requiredPermission: ["admin:access"],
+    requiredPermission: ["contact_inquiries:list", "contact_inquiries:view"],
   },
   {
     icon: <MailIcon />,
@@ -167,10 +167,10 @@ const navItems: NavItem[] = [
     icon: <DollarLineIcon />,
     name: "Affiliate",
     subItems: [
-      { name: "Affiliate History", path: "/affiliate/history", requiredPermission: ["admin:access"] },
-      { name: "Withdrawal Requests", path: "/affiliate/withdrawals", requiredPermission: ["admin:access"] },
+      { name: "Affiliate History", path: "/affiliate/history", requiredPermission: ["affiliate:list", "affiliate:view"] },
+      { name: "Withdrawal Requests", path: "/affiliate/withdrawals", requiredPermission: ["affiliate:list", "affiliate:view"] },
     ],
-    requiredPermission: ["admin:access"],
+    requiredPermission: ["affiliate:list", "affiliate:view"],
   },
 ];
 

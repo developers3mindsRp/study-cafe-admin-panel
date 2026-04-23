@@ -1,9 +1,16 @@
+import { useState } from "react";
 import { Link } from "react-router";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import { CoursesTable } from "../../components/tables";
+import { CourseListFilters } from "./components/CourseListFilters";
+import type { PriceRangeFilter, PublicationFilter } from "./filterTypes";
 
 export default function CourseList() {
+  const [categoryId, setCategoryId] = useState("");
+  const [priceRange, setPriceRange] = useState<PriceRangeFilter>("");
+  const [publication, setPublication] = useState<PublicationFilter>("");
+
   return (
     <>
       <PageMeta title="Courses | StudyCafe Admin" description="Manage courses" />
@@ -19,7 +26,19 @@ export default function CourseList() {
         }
       />
       <div className="space-y-6">
-        <CoursesTable />
+        <CourseListFilters
+          categoryId={categoryId}
+          onCategoryIdChange={setCategoryId}
+          priceRange={priceRange}
+          onPriceRangeChange={setPriceRange}
+          publication={publication}
+          onPublicationChange={setPublication}
+        />
+        <CoursesTable
+          filterCategoryId={categoryId}
+          filterPriceRange={priceRange}
+          filterPublication={publication}
+        />
       </div>
     </>
   );
