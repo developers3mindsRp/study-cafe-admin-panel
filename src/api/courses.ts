@@ -30,6 +30,9 @@ export interface Course {
   status: string;
   start_date: string | null;
   end_date: string | null;
+  /** From admin list API — for sorting / display. */
+  enrolled_count?: number;
+  updated_at?: string;
   authors?: Array<{
     user_id: number;
     sort_order: number;

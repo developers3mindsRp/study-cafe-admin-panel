@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { fetchCourseCats, type CourseCat } from "../../../api/courses";
-import type { PriceRangeFilter, PublicationFilter } from "../filterTypes";
+import type { CourseSortFilter, PriceRangeFilter, PublicationFilter } from "../filterTypes";
 
 const selectClass =
   "min-w-[160px] rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 transition focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white/90";
@@ -12,6 +12,8 @@ export interface CourseListFiltersProps {
   onPriceRangeChange: (value: PriceRangeFilter) => void;
   publication: PublicationFilter;
   onPublicationChange: (value: PublicationFilter) => void;
+  sortBy: CourseSortFilter;
+  onSortByChange: (value: CourseSortFilter) => void;
 }
 
 export function CourseListFilters({
@@ -21,6 +23,8 @@ export function CourseListFilters({
   onPriceRangeChange,
   publication,
   onPublicationChange,
+  sortBy,
+  onSortByChange,
 }: CourseListFiltersProps) {
   const [cats, setCats] = useState<CourseCat[]>([]);
 
@@ -38,12 +42,13 @@ export function CourseListFilters({
     };
   }, []);
 
-  const hasFilters = Boolean(categoryId || priceRange || publication);
+  const hasFilters = Boolean(categoryId || priceRange || publication || sortBy);
 
   const clearAll = () => {
     onCategoryIdChange("");
     onPriceRangeChange("");
     onPublicationChange("");
+    onSortByChange("");
   };
 
   return (
@@ -96,6 +101,23 @@ export function CourseListFilters({
           <option value="">All</option>
           <option value="published">Published</option>
           <option value="draft">Draft</option>
+        </select>
+      </div>
+      <div className="flex min-w-[180px] flex-col gap-1.5">
+        <label htmlFor="course-filter-sort" className="text-theme-xs font-medium text-gray-600 dark:text-gray-400">
+          Sort by
+        </label>
+        <select
+          id="course-filter-sort"
+          className={selectClass}
+          value={sortBy}
+          onChange={(e) => onSortByChange(e.target.value as CourseSortFilter)}
+        >
+          <option value="">Default</option>
+          <option value="latest">Latest</option>
+          <option value="most_enrolled">Most enrolled</option>
+          <option value="newest">Newest</option>
+          <option value="oldest">Oldest</option>
         </select>
       </div>
       {hasFilters && (
