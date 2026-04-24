@@ -11,6 +11,7 @@ import { RequirePermission } from "../../components/auth/RequirePermission";
 import { PERM_MEMBERSHIPS_CREATE, PERM_MEMBERSHIPS_EDIT, PERM_MEMBERSHIPS_DELETE } from "../../constants/permissions";
 import { plansApi, type Plan } from "../../api/plans";
 import { withClientPagination } from "../../utils/dataTableUtils";
+import { planIsLifetime } from "./membershipUtils";
 
 function PopularToggle({ plan, onChanged }: { plan: Plan; onChanged: () => void }) {
   const [toggling, setToggling] = useState(false);
@@ -124,7 +125,7 @@ export default function MembershipList() {
       sortable: true,
       render: (row: Plan) => (
         <span className="text-gray-500 dark:text-gray-400">
-          {formatDuration(row.duration_days)}
+          {planIsLifetime(row) ? "Lifetime" : formatDuration(Number(row.duration_days) || 0)}
         </span>
       ),
     },
