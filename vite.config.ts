@@ -20,6 +20,8 @@ export default defineConfig({
       "/api": {
         target: "http://localhost:3000",
         changeOrigin: true,
+        /** Avoid proxy abort while gateway waits on slow DB / downstream services */
+        proxyTimeout: 120_000,
       },
     },
   },

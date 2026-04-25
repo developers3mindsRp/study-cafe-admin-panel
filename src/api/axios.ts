@@ -8,7 +8,8 @@ const baseURL =
 
 export const api = axios.create({
   baseURL,
-  timeout: 30_000,
+  /** Slow DB / cold connections (e.g. remote MySQL); avoid false timeouts on admin lists */
+  timeout: 120_000,
   headers: {
     "Content-Type": "application/json",
   },

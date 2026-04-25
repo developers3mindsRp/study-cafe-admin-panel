@@ -172,6 +172,15 @@ const navItems: NavItem[] = [
     ],
     requiredPermission: ["affiliate:list", "affiliate:view"],
   },
+  {
+    icon: <FolderIcon />,
+    name: "Downloads",
+    subItems: [
+      { name: "Files", path: "/downloads/files", requiredPermission: ["downloads:list", "downloads:view"] },
+      { name: "Categories", path: "/downloads/categories", requiredPermission: ["downloads:list", "downloads:view"] },
+    ],
+    requiredPermission: ["downloads:list", "downloads:view", "downloads:create", "downloads:edit", "downloads:delete"],
+  },
 ];
 
 const othersItems: NavItem[] = [

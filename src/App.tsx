@@ -89,6 +89,8 @@ import ContactInquiryList from "./pages/contact-inquiries/ContactInquiryList";
 import ContactInquiryView from "./pages/contact-inquiries/ContactInquiryView";
 import AffiliateHistory from "./pages/affiliate/AffiliateHistory";
 import WithdrawalRequests from "./pages/affiliate/WithdrawalRequests";
+import FilesPage from "./pages/downloads/FilesPage";
+import CategoriesPage from "./pages/downloads/CategoriesPage";
 
 function RootLayout() {
   return (
@@ -318,6 +320,14 @@ const router = createBrowserRouter(
           </Route>
           <Route path="/affiliate/withdrawals" element={<RequirePermissionRoute permissions={["affiliate:view"]} />}>
             <Route index element={<WithdrawalRequests />} />
+          </Route>
+
+          {/* Downloads */}
+          <Route path="/downloads/files" element={<RequirePermissionRoute permissions={["downloads:list"]} />}>
+            <Route index element={<FilesPage />} />
+          </Route>
+          <Route path="/downloads/categories" element={<RequirePermissionRoute permissions={["downloads:list"]} />}>
+            <Route index element={<CategoriesPage />} />
           </Route>
 
           {/* Forms */}

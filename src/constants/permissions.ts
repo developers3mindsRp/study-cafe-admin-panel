@@ -81,6 +81,13 @@ export const PERM_CONTACT_INQUIRIES_VIEW = "contact_inquiries:view";
 export const PERM_AFFILIATE_LIST = "affiliate:list";
 export const PERM_AFFILIATE_VIEW = "affiliate:view";
 
+// Downloads
+export const PERM_DOWNLOADS_LIST = "downloads:list";
+export const PERM_DOWNLOADS_VIEW = "downloads:view";
+export const PERM_DOWNLOADS_CREATE = "downloads:create";
+export const PERM_DOWNLOADS_EDIT = "downloads:edit";
+export const PERM_DOWNLOADS_DELETE = "downloads:delete";
+
 // Admin (panel gate)
 export const PERM_ADMIN_ACCESS = "admin:access";
 
@@ -144,6 +151,11 @@ export const ALL_PERMISSIONS = [
   PERM_CONTACT_INQUIRIES_VIEW,
   PERM_AFFILIATE_LIST,
   PERM_AFFILIATE_VIEW,
+  PERM_DOWNLOADS_LIST,
+  PERM_DOWNLOADS_VIEW,
+  PERM_DOWNLOADS_CREATE,
+  PERM_DOWNLOADS_EDIT,
+  PERM_DOWNLOADS_DELETE,
   PERM_ADMIN_ACCESS,
   PERM_ADMIN_USERS_LIST,
   PERM_ADMIN_USERS_VIEW,
