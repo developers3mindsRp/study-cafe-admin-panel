@@ -21,15 +21,36 @@ export interface CmsPageUpdatePayload {
   meta?: Record<string, unknown> | null;
 }
 
+function normalizeMeta(meta: CmsPageRecord["meta"]): Record<string, unknown> | null {
+  if (meta == null) return null;
+  if (typeof meta === "object" && !Array.isArray(meta)) return meta as Record<string, unknown>;
+  if (typeof meta === "string") {
+    try {
+      const p = JSON.parse(meta) as unknown;
+      return p && typeof p === "object" && !Array.isArray(p) ? (p as Record<string, unknown>) : null;
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+/** Normalizes API row (meta may be object or legacy string JSON). */
+export function normalizeCmsPageRecord(row: CmsPageRecord | null): CmsPageRecord | null {
+  if (!row) return null;
+  return { ...row, meta: normalizeMeta(row.meta) };
+}
+
 export async function fetchCmsPages(): Promise<CmsPageRecord[]> {
   const res = await api.get<CmsPageRecord[]>("/admin/platform/cms-pages");
-  return Array.isArray(res.data) ? res.data : [];
+  const raw = Array.isArray(res.data) ? res.data : [];
+  return raw.map((r) => normalizeCmsPageRecord(r)!).filter(Boolean);
 }
 
 export async function fetchCmsPageBySlug(slug: string): Promise<CmsPageRecord | null> {
   try {
     const res = await api.get<CmsPageRecord>(`/admin/platform/cms-pages/${encodeURIComponent(slug)}`);
-    return res.data ?? null;
+    return normalizeCmsPageRecord(res.data ?? null);
   } catch (e: unknown) {
     if (e && typeof e === "object" && "response" in e) {
       const ax = e as { response?: { status?: number } };
@@ -41,5 +62,5 @@ export async function fetchCmsPageBySlug(slug: string): Promise<CmsPageRecord | 
 
 export async function updateCmsPage(slug: string, payload: CmsPageUpdatePayload): Promise<CmsPageRecord> {
   const res = await api.put<CmsPageRecord>(`/admin/platform/cms-pages/${encodeURIComponent(slug)}`, payload);
-  return res.data;
+  return normalizeCmsPageRecord(res.data) as CmsPageRecord;
 }

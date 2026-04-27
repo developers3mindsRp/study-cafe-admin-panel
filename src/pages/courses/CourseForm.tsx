@@ -220,6 +220,9 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
             <Label>Sale Price (₹)</Label>
             <Input type="number" min={0} step={0.01} value={form.sale_price} onChange={(e) => updateField('sale_price', e.target.value)} />
           </div>
+          <p className="md:col-span-2 text-xs text-gray-500 dark:text-gray-400">
+            Set <strong>Regular Price</strong> to 0 for a <strong>free</strong> course. Leave <strong>Sale Price</strong> empty unless you are running a time-bound discount from the list price.
+          </p>
           <div className="md:col-span-2">
             <ImageUpload
               label="Thumbnail URL"

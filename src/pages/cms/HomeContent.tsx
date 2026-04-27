@@ -37,16 +37,14 @@ export default function HomeContent() {
     let cancelled = false;
     fetchCmsPageBySlug(SLUG)
       .then((data) => {
-        if (cancelled || !data?.meta) return;
-        const m = data.meta as Record<string, unknown>;
+        if (cancelled || !data) return;
+        const m = (data.meta || {}) as Record<string, unknown>;
         if (m.hero && typeof m.hero === "object") setHero({ ...defaultHero, ...(m.hero as object) });
         if (m.stats && typeof m.stats === "object") setStats({ ...defaultStats, ...(m.stats as object) });
       })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, []);
-
-  console.log("hero-->", hero);
 
   const handleSave = () => {
     setSaving(true);
