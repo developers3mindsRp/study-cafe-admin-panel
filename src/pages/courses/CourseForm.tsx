@@ -13,6 +13,7 @@ import { COURSE_PREVIEW_STATE_KEY, COURSE_RESTORE_STATE_KEY } from "./CoursePrev
 import { fetchCourseCats, type Course, type CourseCat } from "../../api/courses";
 import { adminUsersApi, type AdminPanelUser } from "../../api/adminUsers";
 import { CourseCatMultiSelect } from "./components/CourseCatMultiSelect";
+import MetaFieldsForm, { type SEOMetaFields } from "../../components/form/MetaFieldsForm";
 
 export interface CourseFormData {
   title: string;
@@ -47,6 +48,9 @@ export interface CourseFormData {
   course_cat_ids: number[];
   default_batch_start_date: string;
   default_batch_meet_link: string;
+  meta_title: string;
+  meta_description: string;
+  meta_keywords: string;
 }
 
 const safeJsonParse = (str: string | null | undefined, fallback: any = []) => {
@@ -131,6 +135,9 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
         (Array.isArray(initial?.categories) ? initial.categories.map((c) => c.id) : []),
       default_batch_start_date: "",
       default_batch_meet_link: "",
+      meta_title: initial?.meta_title ?? "",
+      meta_description: initial?.meta_description ?? "",
+      meta_keywords: initial?.meta_keywords ?? "",
     };
   });
 
@@ -592,6 +599,23 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
             </div>
           </div>
         </div>
+      </div>
+
+      {/* SEO & Meta */}
+      <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] sm:p-6">
+        <h3 className="mb-4 text-lg font-semibold text-gray-800 dark:text-white/90">SEO &amp; Meta</h3>
+        <MetaFieldsForm
+          value={{
+            metaTitle: form.meta_title,
+            metaDescription: form.meta_description,
+            metaKeywords: form.meta_keywords,
+          }}
+          onChange={(patch: Partial<SEOMetaFields>) => {
+            if (patch.metaTitle !== undefined) updateField('meta_title', patch.metaTitle);
+            if (patch.metaDescription !== undefined) updateField('meta_description', patch.metaDescription);
+            if (patch.metaKeywords !== undefined) updateField('meta_keywords', patch.metaKeywords);
+          }}
+        />
       </div>
 
       {/* Settings Options */}

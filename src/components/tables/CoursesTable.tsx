@@ -17,9 +17,15 @@ function courseListPrice(c: Course): number {
   return Number.isFinite(n) ? n : 0;
 }
 
+function courseEffectivePrice(c: Course): number {
+  const sale = Number(c.sale_price);
+  if (Number.isFinite(sale) && sale > 0) return sale;
+  return courseListPrice(c);
+}
+
 function matchesPriceRange(c: Course, range: PriceRangeFilter): boolean {
   if (!range) return true;
-  const p = courseListPrice(c);
+  const p = courseEffectivePrice(c);
   switch (range) {
     case "0-500":
       return p < 500;
@@ -59,16 +65,6 @@ function sortCoursesList(list: Course[], sort: CourseSortFilter): Course[] {
   const copy = [...list];
   const idNum = (c: Course) => Number(c.id) || 0;
   switch (sort) {
-    case "latest":
-      return copy.sort((a, b) => {
-        const d = parseTimeMs(b.updated_at) - parseTimeMs(a.updated_at);
-        return d !== 0 ? d : idNum(b) - idNum(a);
-      });
-    case "most_enrolled":
-      return copy.sort((a, b) => {
-        const d = (Number(b.enrolled_count) || 0) - (Number(a.enrolled_count) || 0);
-        return d !== 0 ? d : idNum(b) - idNum(a);
-      });
     case "newest":
       return copy.sort((a, b) => {
         const d = parseTimeMs(b.created_at) - parseTimeMs(a.created_at);
@@ -125,6 +121,17 @@ const columns = [
     sortable: false,
     align: "start" as const,
     render: (row: Course) => `₹${Number(row.price).toFixed(2)}`,
+  },
+  {
+    key: "sale_price",
+    header: "Sale Price",
+    sortable: false,
+    align: "start" as const,
+    render: (row: Course) => {
+      const s = Number(row.sale_price);
+      if (!Number.isFinite(s) || s <= 0) return <span className="text-gray-400 dark:text-gray-600">—</span>;
+      return <span className="text-green-600 dark:text-green-400">₹{s.toFixed(2)}</span>;
+    },
   },
   {
     key: "is_published",

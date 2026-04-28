@@ -114,8 +114,6 @@ export function CourseListFilters({
           onChange={(e) => onSortByChange(e.target.value as CourseSortFilter)}
         >
           <option value="">Default</option>
-          <option value="latest">Latest</option>
-          <option value="most_enrolled">Most enrolled</option>
           <option value="newest">Newest</option>
           <option value="oldest">Oldest</option>
         </select>
