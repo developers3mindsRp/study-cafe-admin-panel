@@ -2,7 +2,7 @@ import { useNavigate } from "react-router";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import CourseForm, { type CourseFormData } from "./CourseForm";
-import { createCourse } from "../../api/courses";
+import { createCourse, createBatch } from "../../api/courses";
 import { useState } from "react";
 
 export default function CourseCreate() {
@@ -12,7 +12,7 @@ export default function CourseCreate() {
   const handleSubmit = async (data: CourseFormData) => {
     try {
       setLoading(true);
-      await createCourse({
+      const course = await createCourse({
         title: data.title,
         short_title: data.short_title || null,
         slug: data.slug || null,
@@ -44,6 +44,19 @@ export default function CourseCreate() {
         author_image: data.author_image || null,
         course_cat_ids: data.course_cat_ids?.length ? data.course_cat_ids : [],
       });
+
+      // Auto-create the default batch from curriculum if curriculum was provided
+      if (data.curriculum?.length && course?.id) {
+        try {
+          await createBatch(String(course.id), {
+            start_date: data.default_batch_start_date || null,
+            meet_link: data.default_batch_meet_link || null,
+          });
+        } catch (batchErr) {
+          console.error("Course created but default batch creation failed", batchErr);
+        }
+      }
+
       navigate("/courses");
     } catch (err) {
       console.error("Failed to create course", err);
