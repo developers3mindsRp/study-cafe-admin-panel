@@ -49,6 +49,7 @@ const navItems: NavItem[] = [
       { name: "Create", path: "/courses/create", requiredPermission: ["courses:create"] },
       { name: "Categories", path: "/courses/categories", requiredPermission: ["courses:list", "courses:view"] },
       { name: "Page Settings", path: "/courses/settings", requiredPermission: ["courses:edit"] },
+      { name: "Reviews", path: "/courses/reviews", requiredPermission: ["courses:list", "courses:view"] },
     ],
     requiredPermission: ["courses:list", "courses:view", "courses:create", "courses:edit", "courses:delete"],
   },

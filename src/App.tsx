@@ -80,6 +80,7 @@ import CourseCatList from "./pages/courses/CourseCatList";
 import CourseCatCreate from "./pages/courses/CourseCatCreate";
 import CourseCatEdit from "./pages/courses/CourseCatEdit";
 import LiveSessions from "./pages/courses/LiveSessions";
+import CourseReviewList from "./pages/courses/CourseReviewList";
 import OrderList from "./pages/orders/OrderList";
 import OrderView from "./pages/orders/OrderView";
 import PromoCodeList from "./pages/promo-codes/PromoCodeList";
@@ -195,6 +196,9 @@ const router = createBrowserRouter(
           </Route>
           <Route path="/live-sessions" element={<RequirePermissionRoute permissions={["live_sessions:list"]} />}>
             <Route index element={<LiveSessions />} />
+          </Route>
+          <Route path="/courses/reviews" element={<RequirePermissionRoute permissions={["courses:list", "courses:view"]} />}>
+            <Route index element={<CourseReviewList />} />
           </Route>
 
           {/* Orders */}
