@@ -98,6 +98,7 @@ const navItems: NavItem[] = [
       { name: "Terms of Use", path: "/content/terms-of-use", requiredPermission: ["content:list", "content:view", "content:edit"] },
       { name: "Disclaimer", path: "/content/disclaimer", requiredPermission: ["content:list", "content:view", "content:edit"] },
       { name: "Refund Policy", path: "/content/refund-policy", requiredPermission: ["content:list", "content:view", "content:edit"] },
+      { name: "Footer", path: "/content/footer", requiredPermission: ["content:list", "content:view", "content:edit"] },
     ],
     requiredPermission: ["content:list", "content:view", "content:edit"],
   },

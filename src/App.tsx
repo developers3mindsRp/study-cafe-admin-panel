@@ -32,6 +32,7 @@ import EthicsPolicyContent from "./pages/cms/EthicsPolicyContent";
 import TermsOfUseContent from "./pages/cms/TermsOfUseContent";
 import DisclaimerContent from "./pages/cms/DisclaimerContent";
 import RefundPolicyContent from "./pages/cms/RefundPolicyContent";
+import FooterContent from "./pages/cms/FooterContent";
 import SEOMetadataList from "./pages/seo/SEOMetadataList";
 import SEOMetadataCreate from "./pages/seo/SEOMetadataCreate";
 import SEOMetadataEdit from "./pages/seo/SEOMetadataEdit";
@@ -122,6 +123,7 @@ const router = createBrowserRouter(
             <Route path="/content/terms-of-use" element={<TermsOfUseContent />} />
             <Route path="/content/disclaimer" element={<DisclaimerContent />} />
             <Route path="/content/refund-policy" element={<RefundPolicyContent />} />
+            <Route path="/content/footer" element={<FooterContent />} />
           </Route>
 
           {/* Articles — each sub-route requires its specific permission */}
