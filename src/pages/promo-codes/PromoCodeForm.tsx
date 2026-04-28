@@ -196,6 +196,7 @@ export default function CouponForm({
                   setFormData((prev) => ({
                     ...prev,
                     type: value as CouponType,
+                    max_discount: value === "Amount" ? "" : prev.max_discount,
                   }))
                 }
               />
@@ -229,6 +230,7 @@ export default function CouponForm({
                 required
                 type="number"
                 min={0}
+                max={formData.type === "Percentage" ? 100 : undefined}
                 value={formData.value}
                 onChange={(e) =>
                   setFormData((prev) => ({
@@ -236,31 +238,30 @@ export default function CouponForm({
                     value: e.target.value,
                   }))
                 }
-                placeholder="e.g. 20"
+                placeholder={formData.type === "Percentage" ? "e.g. 20" : "e.g. 500"}
               />
             </div>
 
-            <div>
-              <Label>
-                Maximum Discount <span className="text-error-500">*</span>
-              </Label>
-              <Input
-                required
-                type="number"
-                min={0}
-                value={formData.max_discount}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    max_discount: e.target.value,
-                  }))
-                }
-                placeholder="e.g. 500"
-              />
-              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                Optional maximum discount amount for this coupon.
-              </p>
-            </div>
+            {formData.type === "Percentage" && (
+              <div>
+                <Label>Maximum Discount (₹)</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={formData.max_discount}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      max_discount: e.target.value,
+                    }))
+                  }
+                  placeholder="Optional cap (e.g. 500)"
+                />
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  Optional cap on the rupee discount for percentage coupons. Empty means no extra cap beyond the order amount.
+                </p>
+              </div>
+            )}
 
             <div>
               <Label>Minimum Order Value (optional)</Label>

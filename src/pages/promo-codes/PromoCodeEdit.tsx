@@ -51,7 +51,10 @@ export default function PromoCodeEdit() {
         description: formData.description,
         type: formData.type,
         value: Number(formData.value),
-        max_discount: formData.max_discount ? Number(formData.max_discount) : undefined,
+        max_discount:
+          formData.type === "Percentage" && formData.max_discount
+            ? Number(formData.max_discount)
+            : undefined,
         min_order: formData.min_order ? Number(formData.min_order) : undefined,
         discount_on: formData.discount_on,
         start_date: formData.start_date || undefined,
