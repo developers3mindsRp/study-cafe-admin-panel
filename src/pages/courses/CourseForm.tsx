@@ -45,6 +45,8 @@ export interface CourseFormData {
   author_bio: string;
   author_image: string;
   course_cat_ids: number[];
+  default_batch_start_date: string;
+  default_batch_meet_link: string;
 }
 
 const safeJsonParse = (str: string | null | undefined, fallback: any = []) => {
@@ -127,6 +129,8 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
       course_cat_ids:
         initial?.course_cat_ids ??
         (Array.isArray(initial?.categories) ? initial.categories.map((c) => c.id) : []),
+      default_batch_start_date: "",
+      default_batch_meet_link: "",
     };
   });
 
@@ -295,6 +299,34 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
             />
           </div>
 
+          {/* Default Batch — only shown when creating */}
+          {!initial && (
+            <div className="rounded-xl border border-brand-200 bg-brand-50 p-4 dark:border-brand-800 dark:bg-brand-500/[0.05]">
+              <h4 className="mb-1 text-sm font-semibold text-brand-700 dark:text-brand-400">Default Batch</h4>
+              <p className="mb-3 text-xs text-brand-600 dark:text-brand-400/80">
+                A default batch will be auto-created from the curriculum when the course is saved. Optionally set a start date and meet link below.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label>Batch Start Date</Label>
+                  <Input
+                    type="date"
+                    value={form.default_batch_start_date}
+                    onChange={(e) => updateField('default_batch_start_date', e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label>Meet Link</Label>
+                  <Input
+                    value={form.default_batch_meet_link}
+                    onChange={(e) => updateField('default_batch_meet_link', e.target.value)}
+                    placeholder="https://meet.google.com/..."
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
           <div>
             <Label>Curriculum</Label>
             <ArrayEditor
@@ -389,13 +421,6 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
                                 placeholder="Minutes"
                               />
                             </div>
-                          </div>
-                          <div>
-                            <Input
-                              value={sec.videoId || ''}
-                              onChange={e => updateSection(sIdx, { videoId: e.target.value })}
-                              placeholder="Video ID (e.g. 538969956)"
-                            />
                           </div>
                           <div>
                             <TextArea rows={2} value={sec.description || ''} onChange={v => updateSection(sIdx, { description: v })} placeholder="Section description" />
