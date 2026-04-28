@@ -19,6 +19,9 @@ export interface Course {
   course_type: string | null;
   taxable: boolean;
   keywords: string | null;
+  meta_title: string | null;
+  meta_description: string | null;
+  meta_keywords: string | null;
   faqs: string | null;
   feedback: string | null;
   includes_info: string | null;

@@ -92,6 +92,10 @@ export default function SEOMetadataForm({
               placeholder="e.g. /, /about, /privacy-policy"
               required
             />
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              Use only for static pages (e.g. /about, /privacy-policy). Do not use
+              course or article slugs; those pages use their own SEO fields.
+            </p>
           </div>
         </div>
       </div>

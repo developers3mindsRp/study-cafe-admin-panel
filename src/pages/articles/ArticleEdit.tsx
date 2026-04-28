@@ -69,6 +69,7 @@ export default function ArticleEdit() {
         status: statusToBackend(formData.status),
         meta_title: formData.meta.metaTitle || null,
         meta_description: formData.meta.metaDesc || null,
+        meta_keywords: formData.meta.metaKeywords || null,
         category_ids: formData.category_ids ?? [],
         tag_ids: formData.tag_ids ?? [],
         article_type_ids: formData.article_type_ids ?? [],
@@ -100,6 +101,7 @@ export default function ArticleEdit() {
       description: article.excerpt ?? "",
       metaTitle: article.meta_title ?? "",
       metaDesc: article.meta_description ?? "",
+      metaKeywords: article.meta_keywords ?? "",
       slug: decodeSlugForDisplay(article.slug) ?? "",
     },
     featuredImage: {

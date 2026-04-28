@@ -42,34 +42,39 @@ const mapFrontendToBackend = (data: Partial<Omit<SEOMetadata, "id">>) => ({
 });
 
 export const fetchSeoMetadata = async (): Promise<SEOMetadata[]> => {
-    const { data } = await api.get<{ data: any[] }>("/admin/platform/seo-metadata");
-    return data.data.map(mapBackendToFrontend);
+    const { data } = await api.get("/admin/platform/seo-metadata");
+    const rows = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.data)
+            ? data.data
+            : [];
+    return rows.map(mapBackendToFrontend);
 };
 
 export const fetchSeoMetadataById = async (id: number): Promise<SEOMetadata> => {
-    const { data } = await api.get<{ data: any }>(`/admin/platform/seo-metadata/${id}`);
-    return mapBackendToFrontend(data.data);
+    const { data } = await api.get(`/admin/platform/seo-metadata/${id}`);
+    return mapBackendToFrontend(data?.data ?? data);
 };
 
 export const createSeoMetadata = async (
     payload: Omit<SEOMetadata, "id">
 ): Promise<SEOMetadata> => {
-    const { data } = await api.post<{ data: any }>(
+    const { data } = await api.post(
         "/admin/platform/seo-metadata",
         mapFrontendToBackend(payload)
     );
-    return mapBackendToFrontend(data.data);
+    return mapBackendToFrontend(data?.data ?? data);
 };
 
 export const updateSeoMetadata = async (
     id: number,
     payload: Partial<Omit<SEOMetadata, "id">>
 ): Promise<SEOMetadata> => {
-    const { data } = await api.put<{ data: any }>(
+    const { data } = await api.put(
         `/admin/platform/seo-metadata/${id}`,
         mapFrontendToBackend(payload)
     );
-    return mapBackendToFrontend(data.data);
+    return mapBackendToFrontend(data?.data ?? data);
 };
 
 export const deleteSeoMetadata = async (id: number): Promise<void> => {
