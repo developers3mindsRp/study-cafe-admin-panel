@@ -53,6 +53,8 @@ export interface Course {
   /** Admin internal: selected course category ids (course_cats). */
   course_cat_ids?: number[];
   categories?: Array<{ id: number; name: string; slug: string | null }>;
+  /** Affiliate commission as a percent of paid order amount (0–100). */
+  affiliate_commission?: number | string;
 }
 
 export interface CourseCat {

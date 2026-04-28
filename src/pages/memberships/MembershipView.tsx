@@ -295,6 +295,16 @@ export default function MembershipView() {
                     : formatDuration(Number(membership.duration_days) || 0)}
                 </p>
               </div>
+              <div>
+                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                  Affiliate commission
+                </p>
+                <p className="text-gray-800 dark:text-white/90">
+                  {membership.affiliate_commission != null && membership.affiliate_commission !== ""
+                    ? `${membership.affiliate_commission}%`
+                    : "0%"}
+                </p>
+              </div>
             </div>
             <div>
               <p className="mb-3 text-sm font-medium text-gray-500 dark:text-gray-400">

@@ -52,6 +52,17 @@ export default function MembershipEdit() {
         sort_order: plan.sort_order ?? 0,
         course_ids: Array.isArray(plan.course_ids) ? plan.course_ids : [],
         course_cat_ids: Array.isArray(plan.course_cat_ids) ? plan.course_cat_ids : [],
+        affiliate_commission: Math.min(
+          100,
+          Math.max(
+            0,
+            Number(
+              plan.affiliate_commission != null && plan.affiliate_commission !== ""
+                ? plan.affiliate_commission
+                : 0,
+            ) || 0,
+          ),
+        ),
       });
     } catch (err) {
       console.error("Failed to load plan", err);
@@ -76,6 +87,10 @@ export default function MembershipEdit() {
         is_lifetime: formData.is_lifetime,
         is_popular: formData.is_popular,
         sort_order: Number(formData.sort_order),
+        affiliate_commission: Math.min(
+          100,
+          Math.max(0, Number(formData.affiliate_commission)) || 0,
+        ),
         course_ids: formData.course_ids,
         course_cat_ids: formData.course_cat_ids,
       };
