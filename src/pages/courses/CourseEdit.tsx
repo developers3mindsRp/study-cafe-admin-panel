@@ -54,6 +54,10 @@ export default function CourseEdit() {
         author_bio: data.author_bio || null,
         author_image: data.author_image || null,
         course_cat_ids: data.course_cat_ids ?? [],
+        affiliate_commission: Math.min(
+          100,
+          Math.max(0, Number(data.affiliate_commission)) || 0,
+        ),
       });
       navigate("/courses");
     } catch (err) {

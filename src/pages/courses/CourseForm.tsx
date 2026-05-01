@@ -51,6 +51,8 @@ export interface CourseFormData {
   meta_title: string;
   meta_description: string;
   meta_keywords: string;
+  /** Percent of order amount paid to referrer (0–100). */
+  affiliate_commission: string;
 }
 
 const safeJsonParse = (str: string | null | undefined, fallback: any = []) => {
@@ -72,6 +74,10 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
           ? restoredData.course_includes
           : [],
         course_cat_ids: Array.isArray(restoredData.course_cat_ids) ? restoredData.course_cat_ids : [],
+        affiliate_commission:
+          restoredData.affiliate_commission != null && restoredData.affiliate_commission !== ""
+            ? String(restoredData.affiliate_commission)
+            : "0",
       };
     }
     return {
@@ -138,6 +144,10 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
       meta_title: initial?.meta_title ?? "",
       meta_description: initial?.meta_description ?? "",
       meta_keywords: initial?.meta_keywords ?? "",
+      affiliate_commission:
+        initial?.affiliate_commission != null && initial.affiliate_commission !== ""
+          ? String(initial.affiliate_commission)
+          : "0",
     };
   });
 
@@ -230,6 +240,20 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
           <div>
             <Label>Sale Price (₹)</Label>
             <Input type="number" min={0} step={0.01} value={form.sale_price} onChange={(e) => updateField('sale_price', e.target.value)} />
+          </div>
+          <div>
+            <Label>Affiliate commission (%)</Label>
+            <Input
+              type="number"
+              min={0}
+              max={100}
+              step={0.01}
+              value={form.affiliate_commission}
+              onChange={(e) => updateField("affiliate_commission", e.target.value)}
+            />
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              Percent of each paid order attributed to the referrer. Use 0 to disable commission for this course.
+            </p>
           </div>
           <p className="md:col-span-2 text-xs text-gray-500 dark:text-gray-400">
             Set <strong>Regular Price</strong> to 0 for a <strong>free</strong> course. Leave <strong>Sale Price</strong> empty unless you are running a time-bound discount from the list price.

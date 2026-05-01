@@ -24,6 +24,10 @@ export default function MembershipCreate() {
         is_lifetime: formData.is_lifetime,
         is_popular: formData.is_popular,
         sort_order: Number(formData.sort_order),
+        affiliate_commission: Math.min(
+          100,
+          Math.max(0, Number(formData.affiliate_commission)) || 0,
+        ),
         course_ids: formData.course_ids,
         course_cat_ids: formData.course_cat_ids,
       };

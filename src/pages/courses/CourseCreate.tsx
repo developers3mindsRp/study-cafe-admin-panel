@@ -46,6 +46,10 @@ export default function CourseCreate() {
         author_bio: data.author_bio || null,
         author_image: data.author_image || null,
         course_cat_ids: data.course_cat_ids?.length ? data.course_cat_ids : [],
+        affiliate_commission: Math.min(
+          100,
+          Math.max(0, Number(data.affiliate_commission)) || 0,
+        ),
       });
 
       // Auto-create the default batch from curriculum if curriculum was provided

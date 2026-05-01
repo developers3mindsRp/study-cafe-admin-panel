@@ -22,6 +22,8 @@ export interface Plan {
     is_popular?: boolean;
     course_ids?: number[];
     course_cat_ids?: number[];
+    /** Percent of order amount for affiliate commission (0–100). */
+    affiliate_commission?: number | string;
     created_at?: string;
     updated_at?: string;
 }

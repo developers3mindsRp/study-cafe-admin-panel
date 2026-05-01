@@ -52,6 +52,8 @@ export interface MembershipFormData {
   sort_order: number;
   course_ids: number[];
   course_cat_ids: number[];
+  /** Percent of paid order for affiliate (0–100). */
+  affiliate_commission: number;
 }
 
 interface MembershipFormProps {
@@ -76,6 +78,7 @@ const emptyFormData: MembershipFormData = {
   sort_order: 0,
   course_ids: [],
   course_cat_ids: [],
+  affiliate_commission: 0,
 };
 
 export default function MembershipForm({
@@ -244,6 +247,25 @@ export default function MembershipForm({
                 }
                 disabled // Fixed to INR for now
               />
+            </div>
+            <div>
+              <Label>Affiliate commission (%)</Label>
+              <Input
+                type="number"
+                min={0}
+                max={100}
+                step={0.01}
+                value={formData.affiliate_commission}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    affiliate_commission: Number(e.target.value),
+                  }))
+                }
+              />
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Percent of each paid membership order for the referrer. Use 0 to disable.
+              </p>
             </div>
             <div>
               <Label>Duration</Label>
