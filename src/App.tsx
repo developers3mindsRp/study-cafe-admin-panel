@@ -87,6 +87,9 @@ import OrderView from "./pages/orders/OrderView";
 import PromoCodeList from "./pages/promo-codes/PromoCodeList";
 import PromoCodeCreate from "./pages/promo-codes/PromoCodeCreate";
 import PromoCodeEdit from "./pages/promo-codes/PromoCodeEdit";
+import PaymentLinkList from "./pages/payment-links/PaymentLinkList";
+import PaymentLinkCreate from "./pages/payment-links/PaymentLinkCreate";
+import PaymentLinkEdit from "./pages/payment-links/PaymentLinkEdit";
 import ContactInquiryList from "./pages/contact-inquiries/ContactInquiryList";
 import ContactInquiryView from "./pages/contact-inquiries/ContactInquiryView";
 import AffiliateHistory from "./pages/affiliate/AffiliateHistory";
@@ -220,6 +223,17 @@ const router = createBrowserRouter(
           </Route>
           <Route path="/coupons/:id/edit" element={<RequirePermissionRoute permissions={["coupons:edit"]} />}>
             <Route index element={<PromoCodeEdit />} />
+          </Route>
+
+          {/* Payment Links */}
+          <Route path="/payment-links" element={<RequirePermissionRoute permissions={["payment_links:list"]} />}>
+            <Route index element={<PaymentLinkList />} />
+          </Route>
+          <Route path="/payment-links/create" element={<RequirePermissionRoute permissions={["payment_links:create"]} />}>
+            <Route index element={<PaymentLinkCreate />} />
+          </Route>
+          <Route path="/payment-links/:id/edit" element={<RequirePermissionRoute permissions={["payment_links:edit"]} />}>
+            <Route index element={<PaymentLinkEdit />} />
           </Route>
 
           {/* Memberships */}
