@@ -106,11 +106,12 @@ export default function MembershipForm({
       setOptionsLoading(true);
       try {
         const [coursesRes, catsRes] = await Promise.all([
-          api.get<CourseOption[]>("/admin/courses"),
+          api.get<(CourseOption & { is_published: boolean })[]>("/admin/courses"),
           api.get<CourseCatOption[]>("/admin/course-cats"),
         ]);
         if (!cancelled) {
-          setCourses(Array.isArray(coursesRes.data) ? coursesRes.data : []);
+          const allCourses = Array.isArray(coursesRes.data) ? coursesRes.data : [];
+          setCourses(allCourses.filter((c) => c.is_published));
           setCourseCats(Array.isArray(catsRes.data) ? catsRes.data : []);
         }
       } catch {

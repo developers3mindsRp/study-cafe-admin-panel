@@ -21,6 +21,8 @@ export async function fetchCourseReviewsTable(
     params: {
       page: params.page,
       limit: params.limit,
+      sortBy: params.sortBy || undefined,
+      sortOrder: params.sortOrder || undefined,
     },
   });
   const d = res.data as {

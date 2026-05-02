@@ -10,7 +10,7 @@ export default function CourseList() {
   const [categoryId, setCategoryId] = useState("");
   const [priceRange, setPriceRange] = useState<PriceRangeFilter>("");
   const [publication, setPublication] = useState<PublicationFilter>("");
-  const [sortBy, setSortBy] = useState<CourseSortFilter>("");
+  const [sortBy, setSortBy] = useState<CourseSortFilter>("newest");
 
   return (
     <>

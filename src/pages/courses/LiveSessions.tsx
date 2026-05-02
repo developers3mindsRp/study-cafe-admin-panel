@@ -406,7 +406,12 @@ export default function LiveSessions() {
                 page,
                 limit: pageSize,
             });
-            setTableRows(rows);
+            const sortedRows = [...rows].sort((a, b) => {
+                const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+                const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+                return dateB - dateA;
+            });
+            setTableRows(sortedRows);
             setPaginationMeta({
                 total: meta.total,
                 page: meta.page,

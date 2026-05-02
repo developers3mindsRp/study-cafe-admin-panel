@@ -141,6 +141,8 @@ export default function TemplatesList() {
           columns={columns}
           fetchData={fetchTemplatesPaginated}
           initialPageSize={10}
+          initialSortBy="created_at"
+          initialSortOrder="DESC"
           pageSizeOptions={[10, 20, 50, 100]}
           enableSearch
           enableSorting

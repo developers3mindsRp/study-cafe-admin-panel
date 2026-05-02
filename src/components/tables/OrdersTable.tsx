@@ -19,9 +19,9 @@ function statusColor(s: string) {
 async function fetchOrdersForTable(
   params: DataTableFetchParams
 ): Promise<DataTableFetchResult<OrderRecord>> {
-  const { page, limit, search } = params;
+  const { page, limit, search, sortBy, sortOrder } = params;
   const offset = (page - 1) * limit;
-  const result = await fetchOrders({ limit, offset, search: search ?? "" });
+  const result = await fetchOrders({ limit, offset, search: search ?? "", sortBy, sortOrder });
   const total = result.total ?? result.orders.length;
   const totalPages = Math.max(1, Math.ceil(total / limit));
   return {
@@ -87,7 +87,7 @@ const columns = [
   {
     key: "created_at",
     header: "Date",
-    sortable: false,
+    sortable: true,
     render: (row: OrderRecord) =>
       row.created_at ? new Date(row.created_at).toLocaleString() : "—",
   },
@@ -115,9 +115,11 @@ export function OrdersTable() {
       columns={columns}
       fetchData={fetchOrdersForTable}
       initialPageSize={20}
+      initialSortBy="created_at"
+      initialSortOrder="DESC"
       pageSizeOptions={[10, 20, 50, 100]}
       enableSearch
-      enableSorting={false}
+      enableSorting
       enablePagination
       searchPlaceholder="Search by order ID, email, type…"
       emptyMessage="No orders found."

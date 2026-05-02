@@ -152,6 +152,13 @@ export default function MembershipList() {
       ),
     },
     {
+      key: "created_at",
+      header: "Created At",
+      sortable: true,
+      render: (row: Plan) =>
+        row.created_at ? new Date(row.created_at).toLocaleDateString() : "—",
+    },
+    {
       key: "actions",
       header: "Actions",
       align: "end" as const,
@@ -217,6 +224,8 @@ export default function MembershipList() {
           columns={columns}
           fetchData={fetchMembershipsPaginated}
           initialPageSize={10}
+          initialSortBy="created_at"
+          initialSortOrder="DESC"
           pageSizeOptions={[10, 20, 50, 100]}
           enableSearch
           enableSorting
