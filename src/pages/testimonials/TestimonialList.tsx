@@ -76,6 +76,13 @@ export default function TestimonialList() {
       ),
     },
     {
+      key: "created_at",
+      header: "Created At",
+      sortable: true,
+      render: (row: Testimonial) =>
+        row.created_at ? new Date(row.created_at).toLocaleDateString() : "—",
+    },
+    {
       key: "actions",
       header: "Actions",
       align: "end" as const,
@@ -141,6 +148,8 @@ export default function TestimonialList() {
           columns={columns}
           fetchData={fetchTestimonialsPaginated}
           initialPageSize={10}
+          initialSortBy="created_at"
+          initialSortOrder="DESC"
           pageSizeOptions={[10, 20, 50, 100]}
           enableSearch
           enableSorting

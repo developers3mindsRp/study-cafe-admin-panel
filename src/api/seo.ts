@@ -12,6 +12,7 @@ export interface SEOMetadata {
     ogDescription: string;
     ogImageUrl: string;
     robots: string;
+    created_at?: string;
 }
 
 const mapBackendToFrontend = (data: any): SEOMetadata => ({
@@ -26,6 +27,7 @@ const mapBackendToFrontend = (data: any): SEOMetadata => ({
     ogDescription: data.og_description || "",
     ogImageUrl: data.og_image_url || "",
     robots: data.robots || "index, follow",
+    created_at: data.created_at,
 });
 
 const mapFrontendToBackend = (data: Partial<Omit<SEOMetadata, "id">>) => ({

@@ -178,9 +178,11 @@ export default function CourseReviewList() {
             columns={columns}
             fetchData={fetchCourseReviewsTable}
             initialPageSize={20}
+            initialSortBy="created_at"
+            initialSortOrder="DESC"
             pageSizeOptions={[10, 20, 50]}
             enableSearch={false}
-            enableSorting={false}
+            enableSorting
             enablePagination
             emptyMessage="No reviews yet."
           />

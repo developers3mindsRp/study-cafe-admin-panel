@@ -6,6 +6,7 @@ export interface Faq {
     answer: string;
     sort_order: number;
     is_active?: boolean;
+    created_at?: string;
 }
 
 export const fetchFaqs = async (): Promise<Faq[]> => {

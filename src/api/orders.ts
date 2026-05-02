@@ -27,6 +27,8 @@ export async function fetchOrders(params?: {
   offset?: number;
   search?: string;
   status?: string;
+  sortBy?: string;
+  sortOrder?: string;
 }): Promise<FetchOrdersResult> {
   const res = await api.get<FetchOrdersResult>("/admin/orders", { params: params ?? {} });
   // Handle both new paginated shape and legacy array (backwards compat)

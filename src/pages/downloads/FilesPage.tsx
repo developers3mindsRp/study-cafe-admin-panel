@@ -279,6 +279,8 @@ export default function FilesPage() {
           columns={columns}
           fetchData={fetchFilesPaginated}
           initialPageSize={20}
+          initialSortBy="created_at"
+          initialSortOrder="DESC"
           pageSizeOptions={[10, 20, 50]}
           enableSearch
           enableSorting
