@@ -30,6 +30,8 @@ export interface Course {
   certifications: string | null;
   gateway: string | null;
   is_published: boolean;
+  /** When true, course is omitted from public catalog and marketing pages (learners with access still reach /learn/...). */
+  hide_from_public?: boolean;
   status: string;
   start_date: string | null;
   end_date: string | null;

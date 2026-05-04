@@ -40,6 +40,7 @@ export interface CourseFormData {
   certifications: string;
   gateway: string;
   is_published: boolean;
+  hide_from_public: boolean;
   author_user_id: string;
   author_name: string;
   author_role: string;
@@ -70,6 +71,7 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
     if (restoredData) {
       return {
         ...restoredData,
+        hide_from_public: restoredData.hide_from_public ?? false,
         course_includes: Array.isArray(restoredData.course_includes)
           ? restoredData.course_includes
           : [],
@@ -127,6 +129,7 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
       certifications: initial?.certifications ?? "",
       gateway: initial?.gateway ?? "",
       is_published: initial?.is_published ?? false,
+      hide_from_public: initial?.hide_from_public ?? false,
       author_user_id: initial?.author_user_id != null
         ? String(initial.author_user_id)
         : primaryAuthor?.user_id != null
@@ -645,7 +648,7 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
       {/* Settings Options */}
       <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] sm:p-6">
         <h3 className="mb-4 text-lg font-semibold text-gray-800 dark:text-white/90">Settings</h3>
-        <div className="flex items-center gap-6">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-6">
           <div className="flex items-center gap-2">
             <input
               type="checkbox"
@@ -655,6 +658,16 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
               className="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
             />
             <Label htmlFor="is_published" className="!mb-0 cursor-pointer">Published</Label>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="hide_from_public"
+              checked={form.hide_from_public}
+              onChange={(e) => updateField('hide_from_public', e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
+            />
+            <Label htmlFor="hide_from_public" className="!mb-0 cursor-pointer">Hide from Public</Label>
           </div>
           <div className="flex items-center gap-2">
             <input
