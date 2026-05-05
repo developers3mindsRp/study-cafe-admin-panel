@@ -69,6 +69,13 @@ export const PERM_COUPONS_CREATE = "coupons:create";
 export const PERM_COUPONS_EDIT = "coupons:edit";
 export const PERM_COUPONS_DELETE = "coupons:delete";
 
+// Payment Links
+export const PERM_PAYMENT_LINKS_LIST = "payment_links:list";
+export const PERM_PAYMENT_LINKS_VIEW = "payment_links:view";
+export const PERM_PAYMENT_LINKS_CREATE = "payment_links:create";
+export const PERM_PAYMENT_LINKS_EDIT = "payment_links:edit";
+export const PERM_PAYMENT_LINKS_DELETE = "payment_links:delete";
+
 // Live Sessions
 export const PERM_LIVE_SESSIONS_LIST = "live_sessions:list";
 export const PERM_LIVE_SESSIONS_VIEW = "live_sessions:view";
@@ -145,6 +152,11 @@ export const ALL_PERMISSIONS = [
   PERM_COUPONS_CREATE,
   PERM_COUPONS_EDIT,
   PERM_COUPONS_DELETE,
+  PERM_PAYMENT_LINKS_LIST,
+  PERM_PAYMENT_LINKS_VIEW,
+  PERM_PAYMENT_LINKS_CREATE,
+  PERM_PAYMENT_LINKS_EDIT,
+  PERM_PAYMENT_LINKS_DELETE,
   PERM_LIVE_SESSIONS_LIST,
   PERM_LIVE_SESSIONS_VIEW,
   PERM_CONTACT_INQUIRIES_LIST,

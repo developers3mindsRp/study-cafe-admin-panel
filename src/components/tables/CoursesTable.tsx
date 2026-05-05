@@ -138,9 +138,21 @@ const columns = [
     header: "Status",
     sortable: false,
     render: (row: Course) => (
-      <Badge size="sm" color={row.is_published ? "success" : "error"}>
-        {row.is_published ? "Published" : "Draft"}
-      </Badge>
+      <div className="flex flex-wrap items-center gap-1.5">
+        <Badge size="sm" color={row.is_published ? "success" : "error"}>
+          {row.is_published ? "Published" : "Draft"}
+        </Badge>
+        {row.hide_from_public ? (
+          <span
+            title="Not shown on the public course catalog or marketing course pages. Assigned learners still get access."
+            className="inline-flex"
+          >
+            <Badge size="sm" color="warning">
+              Unlisted
+            </Badge>
+          </span>
+        ) : null}
+      </div>
     ),
   },
   {

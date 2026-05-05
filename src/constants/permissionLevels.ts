@@ -136,6 +136,17 @@ export const MODULE_LEVELS: ModuleConfig[] = [
     ],
   },
   {
+    key: "payment_links",
+    name: "Payment Links",
+    levels: [
+      { value: "none", label: "None", permissions: [] },
+      { value: "view", label: "View only", permissions: ["payment_links:list", "payment_links:view"] },
+      { value: "edit", label: "Edit (includes view)", permissions: ["payment_links:list", "payment_links:view", "payment_links:edit"] },
+      { value: "create", label: "Create (includes view, edit)", permissions: ["payment_links:list", "payment_links:view", "payment_links:edit", "payment_links:create"] },
+      { value: "delete", label: "Delete / Full", permissions: ["payment_links:list", "payment_links:view", "payment_links:edit", "payment_links:create", "payment_links:delete"] },
+    ],
+  },
+  {
     key: "live_sessions",
     name: "Live Sessions",
     levels: [

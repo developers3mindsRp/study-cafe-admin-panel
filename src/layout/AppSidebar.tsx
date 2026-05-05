@@ -77,6 +77,21 @@ const navItems: NavItem[] = [
     requiredPermission: ["coupons:list", "coupons:view", "coupons:create", "coupons:edit", "coupons:delete"],
   },
   {
+    icon: <DollarLineIcon />,
+    name: "Payment Links",
+    subItems: [
+      { name: "All Links", path: "/payment-links", requiredPermission: ["payment_links:list", "payment_links:view"] },
+      { name: "Create", path: "/payment-links/create", requiredPermission: ["payment_links:create"] },
+    ],
+    requiredPermission: [
+      "payment_links:list",
+      "payment_links:view",
+      "payment_links:create",
+      "payment_links:edit",
+      "payment_links:delete",
+    ],
+  },
+  {
     icon: <GroupIcon />,
     name: "Memberships",
     subItems: [
