@@ -287,6 +287,8 @@ export default function ArticleForm({
             <ImageUpload
               label="Featured Image"
               value={formData.featuredImage.imageUrl}
+              minWidth={1280}
+              minHeight={720}
               onChange={(imageUrl) =>
                 setFormData((prev) => ({
                   ...prev,
@@ -298,6 +300,9 @@ export default function ArticleForm({
               }
               placeholder="Drop or select featured image"
             />
+            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+              Recommended image size: 1280x720 px (minimum required).
+            </p>
           </div>
           <div>
             <Label>Link URL (optional)</Label>
