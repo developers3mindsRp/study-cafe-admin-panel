@@ -76,7 +76,7 @@ export const articlesApi = createCrudApi<ArticleRecord>(BASE_URL)();
 
 /** Server-side paginated list for DataTable */
 export async function fetchArticlesPaginated(
-  params: DataTableFetchParams
+  params: DataTableFetchParams & { status?: string }
 ): Promise<DataTableFetchResult<ArticleRecord>> {
   const { data } = await api.get<any>(BASE_URL, {
     params: {
@@ -85,6 +85,7 @@ export async function fetchArticlesPaginated(
       search: params.search || undefined,
       sortBy: params.sortBy || undefined,
       sortOrder: params.sortOrder,
+      ...(params.status ? { status: params.status } : {}),
     },
   });
 

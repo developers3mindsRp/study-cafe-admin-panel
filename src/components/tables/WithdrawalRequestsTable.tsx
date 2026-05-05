@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { DataTable } from "./data-table";
 import { fetchWithdrawalRequests, type WithdrawalRequest } from "../../api/affiliate";
 import type { DataTableFetchParams, DataTableFetchResult } from "./data-table/DataTable.types";
@@ -23,36 +24,41 @@ function toMeta(total: number, page: number, limit: number): DataTableFetchResul
   };
 }
 
-async function fetchWithdrawalRequestsForTable(
-  params: DataTableFetchParams
-): Promise<DataTableFetchResult<WithdrawalRequest>> {
-  const all = await fetchWithdrawalRequests();
-  const search = (params.search ?? "").trim().toLowerCase();
-  
-  const filtered = search
-    ? all.filter(
-        (r) =>
-          (r.affiliate_name && r.affiliate_name.toLowerCase().includes(search)) ||
-          (r.affiliate_email && r.affiliate_email.toLowerCase().includes(search)) ||
-          (r.status && r.status.toLowerCase().includes(search))
-      )
-    : all;
-
-  const { page, limit } = params;
-  const start = (page - 1) * limit;
-  const data = filtered.slice(start, start + limit);
-  
-  return {
-    data,
-    meta: toMeta(filtered.length, page, limit),
-  };
-}
-
 interface WithdrawalRequestsTableProps {
   onUpdateStatus: (request: WithdrawalRequest) => void;
+  filterStatus?: string;
 }
 
-export function WithdrawalRequestsTable({ onUpdateStatus }: WithdrawalRequestsTableProps) {
+export function WithdrawalRequestsTable({ onUpdateStatus, filterStatus = "" }: WithdrawalRequestsTableProps) {
+  const fetchWithdrawalRequestsForTable = useCallback(
+    async (params: DataTableFetchParams): Promise<DataTableFetchResult<WithdrawalRequest>> => {
+      const all = await fetchWithdrawalRequests();
+      const search = (params.search ?? "").trim().toLowerCase();
+
+      let filtered = filterStatus
+        ? all.filter((r) => r.status === filterStatus)
+        : all;
+
+      if (search) {
+        filtered = filtered.filter(
+          (r) =>
+            (r.affiliate_name && r.affiliate_name.toLowerCase().includes(search)) ||
+            (r.affiliate_email && r.affiliate_email.toLowerCase().includes(search)) ||
+            (r.status && r.status.toLowerCase().includes(search))
+        );
+      }
+
+      const { page, limit } = params;
+      const start = (page - 1) * limit;
+      const data = filtered.slice(start, start + limit);
+
+      return {
+        data,
+        meta: toMeta(filtered.length, page, limit),
+      };
+    },
+    [filterStatus]
+  );
   const columns = [
     {
       key: "user",
@@ -119,6 +125,7 @@ export function WithdrawalRequestsTable({ onUpdateStatus }: WithdrawalRequestsTa
 
   return (
     <DataTable<WithdrawalRequest>
+      key={filterStatus}
       columns={columns}
       fetchData={fetchWithdrawalRequestsForTable}
       initialPageSize={10}
@@ -126,7 +133,7 @@ export function WithdrawalRequestsTable({ onUpdateStatus }: WithdrawalRequestsTa
       enableSearch
       enableSorting={false}
       enablePagination
-      searchPlaceholder="Search by user or status..."
+      searchPlaceholder="Search by user or email..."
       emptyMessage="No withdrawal requests found."
     />
   );

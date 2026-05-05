@@ -7,7 +7,58 @@ import { DataTable, type DataTableRef } from "../../components/tables/data-table
 import { PencilIcon, TrashBinIcon } from "../../icons";
 import { useModal } from "../../hooks/useModal";
 import { RequirePermission } from "../../components/auth/RequirePermission";
-import { fetchCouponsPaginated, deleteCoupon, type Coupon } from "../../api/promoCodes";
+import { couponsApi, deleteCoupon, type Coupon } from "../../api/promoCodes";
+import { FilterBar, useFilterState } from "../../components/filters";
+import type { FilterFieldDef } from "../../components/filters";
+import type { DataTableFetchParams, DataTableFetchResult } from "../../components/tables/data-table/DataTable.types";
+
+const couponFilterFields: FilterFieldDef[] = [
+  {
+    type: "select",
+    id: "status",
+    label: "Status",
+    placeholder: "All statuses",
+    options: [
+      { value: "publish", label: "Published" },
+      { value: "draft", label: "Draft" },
+    ],
+  },
+  {
+    type: "select",
+    id: "type",
+    label: "Coupon Type",
+    placeholder: "All types",
+    options: [
+      { value: "Percentage", label: "Percentage (%)" },
+      { value: "Amount", label: "Fixed Amount (₹)" },
+    ],
+  },
+  {
+    type: "select",
+    id: "discount_on",
+    label: "Discount On",
+    placeholder: "All",
+    options: [
+      { value: "Membership Only", label: "Membership Only" },
+      { value: "Everything", label: "Everything" },
+      { value: "All Courses", label: "All Courses" },
+    ],
+  },
+  {
+    type: "date-range",
+    id: "start",
+    label: "Start Date",
+    fromId: "start_from",
+    toId: "start_to",
+  },
+  {
+    type: "date-range",
+    id: "expiry",
+    label: "Expiry Date",
+    fromId: "expiry_from",
+    toId: "expiry_to",
+  },
+];
 
 function getErrorMessage(error: unknown): string | undefined {
   if (error instanceof Error) return error.message;
@@ -16,6 +67,7 @@ function getErrorMessage(error: unknown): string | undefined {
   }
   return undefined;
 }
+
 function formatDate(dateStr?: string | null) {
   if (!dateStr) return "—";
   return new Date(dateStr).toLocaleDateString("en-IN", {
@@ -24,11 +76,18 @@ function formatDate(dateStr?: string | null) {
     year: "numeric",
   });
 }
+
+function toMeta(total: number, page: number, limit: number): DataTableFetchResult<Coupon>["meta"] {
+  const totalPages = Math.max(1, Math.ceil(total / limit));
+  return { total, page, limit, totalPages, hasNextPage: page < totalPages, hasPreviousPage: page > 1 };
+}
+
 export default function PromoCodeList() {
   const [deleteTarget, setDeleteTarget] = useState<Coupon | null>(null);
   const [deleting, setDeleting] = useState(false);
   const { isOpen: isDeleteModalOpen, openModal: openDeleteModal, closeModal: closeDeleteModal } = useModal();
   const dataTableRef = useRef<DataTableRef>(null);
+  const { values, set, reset, hasActive } = useFilterState();
 
   const handleDeleteClick = useCallback(
     (item: Coupon) => {
@@ -58,6 +117,81 @@ export default function PromoCodeList() {
     setDeleteTarget(null);
     closeDeleteModal();
   };
+
+  const fetchData = useCallback(
+    async (params: DataTableFetchParams): Promise<DataTableFetchResult<Coupon>> => {
+      const res = await couponsApi.list();
+      let data = res.data;
+
+      const search = (params.search ?? "").trim().toLowerCase();
+      if (search) {
+        data = data.filter((c) =>
+          [c.code, c.description, c.discount_on].some(
+            (v) => v && String(v).toLowerCase().includes(search)
+          )
+        );
+      }
+
+      if (values.status) {
+        data = data.filter((c) => c.status === values.status);
+      }
+
+      if (values.type) {
+        data = data.filter((c) => c.type === values.type);
+      }
+
+      if (values.discount_on) {
+        data = data.filter((c) => c.discount_on === values.discount_on);
+      }
+
+      if (values.start_from) {
+        const from = new Date(values.start_from).getTime();
+        data = data.filter((c) => c.start_date && new Date(c.start_date).getTime() >= from);
+      }
+
+      if (values.start_to) {
+        const to = new Date(values.start_to);
+        to.setHours(23, 59, 59, 999);
+        data = data.filter((c) => c.start_date && new Date(c.start_date).getTime() <= to.getTime());
+      }
+
+      if (values.expiry_from) {
+        const from = new Date(values.expiry_from).getTime();
+        data = data.filter((c) => c.expire_date && new Date(c.expire_date).getTime() >= from);
+      }
+
+      if (values.expiry_to) {
+        const to = new Date(values.expiry_to);
+        to.setHours(23, 59, 59, 999);
+        data = data.filter((c) => c.expire_date && new Date(c.expire_date).getTime() <= to.getTime());
+      }
+
+      // Sorting
+      if (params.sortBy) {
+        const { sortBy, sortOrder } = params;
+        data = [...data].sort((a, b) => {
+          const va = (a as Record<string, unknown>)[sortBy];
+          const vb = (b as Record<string, unknown>)[sortBy];
+          if (typeof va === "string" && typeof vb === "string") {
+            return sortOrder === "DESC" ? vb.localeCompare(va) : va.localeCompare(vb);
+          }
+          if (va == null) return 1;
+          if (vb == null) return -1;
+          return sortOrder === "DESC" ? (va < vb ? 1 : -1) : va < vb ? -1 : 1;
+        });
+      }
+
+      const { page, limit } = params;
+      const start = (page - 1) * limit;
+      return {
+        data: data.slice(start, start + limit),
+        meta: toMeta(data.length, page, limit),
+      };
+    },
+    [values]
+  );
+
+  const filterKey = Object.values(values).join("|");
 
   const columns = [
     {
@@ -164,10 +298,18 @@ export default function PromoCodeList() {
         }
       />
       <div className="space-y-6">
+        <FilterBar
+          fields={couponFilterFields}
+          values={values}
+          onChange={set}
+          onReset={reset}
+          hasActive={hasActive}
+        />
         <DataTable<Coupon>
+          key={filterKey}
           ref={dataTableRef}
           columns={columns}
-          fetchData={fetchCouponsPaginated}
+          fetchData={fetchData}
           initialPageSize={10}
           initialSortBy="created_at"
           initialSortOrder="DESC"

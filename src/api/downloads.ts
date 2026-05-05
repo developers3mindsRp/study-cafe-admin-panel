@@ -148,7 +148,7 @@ export const downloadFilesApi = {
  * Called per page — no full load.
  */
 export async function fetchFilesPaginated(
-  params: DataTableFetchParams
+  params: DataTableFetchParams & { status?: string; category_id?: string }
 ): Promise<DataTableFetchResult<DownloadFile>> {
   const { data } = await api.get<unknown>(FILES_BASE, {
     params: {
@@ -157,6 +157,8 @@ export async function fetchFilesPaginated(
       search: params.search || undefined,
       sortBy: params.sortBy || undefined,
       sortOrder: params.sortOrder || undefined,
+      ...(params.status ? { status: params.status } : {}),
+      ...(params.category_id ? { category_id: params.category_id } : {}),
     },
   });
   return toFetchResult<DownloadFile>(data);

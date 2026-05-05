@@ -10,6 +10,21 @@ import { PERM_ARTICLES_LIST, PERM_ARTICLES_CREATE } from "../../constants/permis
 import { articlesApi, type ArticleRecord } from "../../api/articles";
 import { ArticlesTable } from "../../components/tables";
 import type { DataTableRef } from "../../components/tables/data-table";
+import { FilterBar, useFilterState } from "../../components/filters";
+import type { FilterFieldDef } from "../../components/filters";
+
+const articleFilterFields: FilterFieldDef[] = [
+  {
+    type: "select",
+    id: "status",
+    label: "Status",
+    placeholder: "All statuses",
+    options: [
+      { value: "publish", label: "Published" },
+      { value: "draft", label: "Draft" },
+    ],
+  },
+];
 
 export default function ArticleList() {
   return (
@@ -26,6 +41,7 @@ function ArticleListContent() {
   const tableRef = useRef<DataTableRef>(null);
   const [deleteTarget, setDeleteTarget] = useState<ArticleRecord | null>(null);
   const { isOpen: isDeleteModalOpen, openModal: openDeleteModal, closeModal: closeDeleteModal } = useModal();
+  const { values, set, reset, hasActive } = useFilterState();
 
   const handleDeleteClick = (article: ArticleRecord) => {
     setDeleteTarget(article);
@@ -70,7 +86,18 @@ function ArticleListContent() {
         }
       />
       <div className="space-y-6">
-        <ArticlesTable ref={tableRef} onDeleteClick={handleDeleteClick} />
+        <FilterBar
+          fields={articleFilterFields}
+          values={values}
+          onChange={set}
+          onReset={reset}
+          hasActive={hasActive}
+        />
+        <ArticlesTable
+          ref={tableRef}
+          onDeleteClick={handleDeleteClick}
+          filterStatus={values.status ?? ""}
+        />
       </div>
 
       <ConfirmDeleteModal
