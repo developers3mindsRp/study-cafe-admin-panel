@@ -18,6 +18,29 @@ interface ImageUploadProps {
   placeholder?: string;
   className?: string;
   disabled?: boolean;
+  minWidth?: number;
+  minHeight?: number;
+}
+
+function getImageDimensions(file: File): Promise<{ width: number; height: number }> {
+  return new Promise((resolve, reject) => {
+    const objectUrl = URL.createObjectURL(file);
+    const img = new Image();
+
+    img.onload = () => {
+      const width = img.naturalWidth;
+      const height = img.naturalHeight;
+      URL.revokeObjectURL(objectUrl);
+      resolve({ width, height });
+    };
+
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error("Could not read image dimensions"));
+    };
+
+    img.src = objectUrl;
+  });
 }
 
 export default function ImageUpload({
@@ -27,6 +50,8 @@ export default function ImageUpload({
   placeholder = "Drag & drop an image here, or click to select",
   className = "",
   disabled = false,
+  minWidth,
+  minHeight,
 }: ImageUploadProps) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -36,8 +61,21 @@ export default function ImageUpload({
       const file = acceptedFiles[0];
       if (!file) return;
       setError(null);
-      setUploading(true);
       try {
+        if (minWidth || minHeight) {
+          const { width, height } = await getImageDimensions(file);
+          if (
+            (typeof minWidth === "number" && width < minWidth) ||
+            (typeof minHeight === "number" && height < minHeight)
+          ) {
+            setError(
+              `Image must be at least ${minWidth ?? 0}x${minHeight ?? 0}px. Uploaded image is ${width}x${height}px.`
+            );
+            return;
+          }
+        }
+
+        setUploading(true);
         const { url } = await uploadImage(file);
         onChange(url);
       } catch (e) {
@@ -47,7 +85,7 @@ export default function ImageUpload({
         setUploading(false);
       }
     },
-    [onChange]
+    [onChange, minWidth, minHeight]
   );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
