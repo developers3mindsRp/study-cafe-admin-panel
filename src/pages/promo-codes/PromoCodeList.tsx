@@ -170,8 +170,8 @@ export default function PromoCodeList() {
       if (params.sortBy) {
         const { sortBy, sortOrder } = params;
         data = [...data].sort((a, b) => {
-          const va = (a as Record<string, unknown>)[sortBy];
-          const vb = (b as Record<string, unknown>)[sortBy];
+          const va = (a as unknown as Record<string, unknown>)[sortBy];
+          const vb = (b as unknown as Record<string, unknown>)[sortBy];
           if (typeof va === "string" && typeof vb === "string") {
             return sortOrder === "DESC" ? vb.localeCompare(va) : va.localeCompare(vb);
           }
