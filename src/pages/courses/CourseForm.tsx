@@ -14,6 +14,7 @@ import { fetchCourseCats, type Course, type CourseCat } from "../../api/courses"
 import { adminUsersApi, type AdminPanelUser } from "../../api/adminUsers";
 import { CourseCatMultiSelect } from "./components/CourseCatMultiSelect";
 import MetaFieldsForm, { type SEOMetaFields } from "../../components/form/MetaFieldsForm";
+import { slugifyForSeo, shouldResyncSlugFromSource } from "../../lib/slug";
 
 export interface CourseFormData {
   title: string;
@@ -191,7 +192,10 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(form);
+    const slug =
+      slugifyForSeo(form.slug) ||
+      slugifyForSeo(form.title);
+    onSubmit({ ...form, slug });
   };
 
   const updateField = (field: keyof CourseFormData, value: any) => {
@@ -206,7 +210,25 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="md:col-span-2">
             <Label>Title <span className="text-error-500">*</span></Label>
-            <Input value={form.title} onChange={(e) => updateField('title', e.target.value)} required />
+            <Input
+              value={form.title}
+              onChange={(e) => {
+                const title = e.target.value;
+                setForm((prev) => {
+                  const keepSync = shouldResyncSlugFromSource(
+                    prev.slug,
+                    prev.title,
+                    (t) => slugifyForSeo(t),
+                  );
+                  return {
+                    ...prev,
+                    title,
+                    slug: keepSync ? slugifyForSeo(title) : prev.slug,
+                  };
+                });
+              }}
+              required
+            />
           </div>
           <div>
             <Label>Short Title</Label>
@@ -214,7 +236,17 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
           </div>
           <div>
             <Label>Slug</Label>
-            <Input value={form.slug} onChange={(e) => updateField('slug', e.target.value)} />
+            <Input
+              value={form.slug}
+              onChange={(e) => updateField("slug", e.target.value)}
+              onBlur={() =>
+                setForm((prev) => ({
+                  ...prev,
+                  slug: slugifyForSeo(prev.slug),
+                }))
+              }
+              placeholder="Auto from title when empty; edit freely, SEO format on blur"
+            />
           </div>
           <div className="md:col-span-2">
             <Label>Categories</Label>

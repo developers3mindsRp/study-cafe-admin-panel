@@ -4,6 +4,7 @@ import Label from "../../components/form/Label";
 import Input from "../../components/form/input/InputField";
 import Button from "../../components/ui/button/Button";
 import MetaFieldsForm, { type SEOMetaFields, emptySEOMetaFields } from "../../components/form/MetaFieldsForm";
+import { slugifyUrlPath, shouldResyncSlugFromSource } from "../../lib/slug";
 
 export interface SEOMetadataFormData {
   pageName: string;
@@ -31,6 +32,12 @@ const emptyFormData: SEOMetadataFormData = {
   ...emptySEOMetaFields,
 };
 
+function pagePathFromName(name: string): string {
+  const t = name.trim();
+  if (!t) return "";
+  return slugifyUrlPath(t);
+}
+
 export default function SEOMetadataForm({
   mode,
   defaultValues,
@@ -44,7 +51,10 @@ export default function SEOMetadataForm({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+    onSubmit({
+      ...formData,
+      pageSlug: slugifyUrlPath(formData.pageSlug),
+    });
   };
 
   const submitLabel = mode === "create" ? "Create SEO Metadata" : "Update SEO Metadata";
@@ -75,9 +85,21 @@ export default function SEOMetadataForm({
             <Label>Page Name <span className="text-error-500">*</span></Label>
             <Input
               value={formData.pageName}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, pageName: e.target.value }))
-              }
+              onChange={(e) => {
+                const pageName = e.target.value;
+                setFormData((prev) => {
+                  const keepSync = shouldResyncSlugFromSource(
+                    prev.pageSlug,
+                    prev.pageName,
+                    pagePathFromName,
+                  );
+                  const pageSlug =
+                    keepSync
+                      ? pagePathFromName(pageName)
+                      : prev.pageSlug;
+                  return { ...prev, pageName, pageSlug };
+                });
+              }}
               placeholder="e.g. Home, About, Privacy Policy"
               required
             />
@@ -87,7 +109,16 @@ export default function SEOMetadataForm({
             <Input
               value={formData.pageSlug}
               onChange={(e) =>
-                setFormData((prev) => ({ ...prev, pageSlug: e.target.value }))
+                setFormData((prev) => ({
+                  ...prev,
+                  pageSlug: e.target.value,
+                }))
+              }
+              onBlur={() =>
+                setFormData((prev) => ({
+                  ...prev,
+                  pageSlug: slugifyUrlPath(prev.pageSlug),
+                }))
               }
               placeholder="e.g. /, /about, /privacy-policy"
               required

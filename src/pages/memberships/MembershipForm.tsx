@@ -7,6 +7,7 @@ import { ChipMultiSelect } from "../../components/form/ChipMultiSelect";
 import Button from "../../components/ui/button/Button";
 import { api } from "../../api/axios";
 import { planIsLifetime } from "./membershipUtils";
+import { slugifyForSeo, shouldResyncSlugFromSource } from "../../lib/slug";
 
 export interface CourseOption {
   id: number;
@@ -145,24 +146,26 @@ export default function MembershipForm({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
-  };
-
-  const generateSlug = (name: string) => {
-    return name
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/(^-|-$)+/g, "");
+    const slug =
+      slugifyForSeo(formData.slug) ||
+      slugifyForSeo(formData.name);
+    onSubmit({ ...formData, slug });
   };
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const name = e.target.value;
-    // Only auto-generate slug in create mode or if slug is empty
-    if (mode === "create" || !formData.slug) {
-      setFormData((prev) => ({ ...prev, name, slug: generateSlug(name) }));
-    } else {
-      setFormData((prev) => ({ ...prev, name }));
-    }
+    setFormData((prev) => {
+      const keepSync = shouldResyncSlugFromSource(
+        prev.slug,
+        prev.name,
+        (t) => slugifyForSeo(t),
+      );
+      return {
+        ...prev,
+        name,
+        slug: keepSync ? slugifyForSeo(name) : prev.slug,
+      };
+    });
   };
 
   const submitLabel = loading
@@ -189,6 +192,12 @@ export default function MembershipForm({
                 value={formData.slug}
                 onChange={(e) =>
                   setFormData((prev) => ({ ...prev, slug: e.target.value }))
+                }
+                onBlur={() =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    slug: slugifyForSeo(prev.slug),
+                  }))
                 }
                 placeholder="e.g. lifetime-ultimate"
                 required

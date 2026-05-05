@@ -15,6 +15,7 @@ import type {
   FeaturedImage,
   AuthorBio,
 } from "../../components/blocks/types";
+import { slugifyForSeo, shouldResyncSlugFromSource } from "../../lib/slug";
 
 export interface ArticleFormData {
   meta: ArticleMeta;
@@ -180,7 +181,13 @@ export default function ArticleForm({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     submittedRef.current = true;
-    onSubmit(formData);
+    const slug =
+      slugifyForSeo(formData.meta.slug) ||
+      slugifyForSeo(formData.meta.title);
+    onSubmit({
+      ...formData,
+      meta: { ...formData.meta, slug },
+    });
   };
 
   const submitLabel = mode === "create" ? "Create Article" : "Update Article";
@@ -200,12 +207,24 @@ export default function ArticleForm({
             </Label>
             <Input
               value={formData.meta.title}
-              onChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  meta: { ...prev.meta, title: e.target.value },
-                }))
-              }
+              onChange={(e) => {
+                const title = e.target.value;
+                setFormData((prev) => {
+                  const keepSync = shouldResyncSlugFromSource(
+                    prev.meta.slug,
+                    prev.meta.title,
+                    (t) => slugifyForSeo(t),
+                  );
+                  return {
+                    ...prev,
+                    meta: {
+                      ...prev.meta,
+                      title,
+                      slug: keepSync ? slugifyForSeo(title) : prev.meta.slug,
+                    },
+                  };
+                });
+              }}
               placeholder="Article title"
             />
           </div>
@@ -246,7 +265,13 @@ export default function ArticleForm({
                   meta: { ...prev.meta, slug: e.target.value },
                 }))
               }
-              placeholder="article-url-slug"
+              onBlur={() =>
+                setFormData((prev) => ({
+                  ...prev,
+                  meta: { ...prev.meta, slug: slugifyForSeo(prev.meta.slug) },
+                }))
+              }
+              placeholder="Auto from title when empty; SEO format on blur"
             />
           </div>
         </div>
