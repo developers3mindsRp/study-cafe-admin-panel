@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import { categoriesApi } from "../../api/categories";
+import { slugifyForSeo, shouldResyncSlugFromSource } from "../../lib/slug";
 
 export default function CategoryEdit() {
     const { id } = useParams<{ id: string }>();
@@ -39,13 +40,25 @@ export default function CategoryEdit() {
         setSaving(true);
         setError(null);
         try {
-            await categoriesApi.update(id, { name: name.trim(), slug: slug.trim() || undefined } as any);
+            await categoriesApi.update(id, {
+                name: name.trim(),
+                slug: slug.trim() ? slugifyForSeo(slug) : undefined,
+            } as any);
             navigate("/article-categories");
         } catch (err: any) {
             setError(err?.response?.data?.message || "Failed to update category");
         } finally {
             setSaving(false);
         }
+    };
+
+    const handleNameChange = (value: string) => {
+        setSlug((prevSlug) =>
+            shouldResyncSlugFromSource(prevSlug, name, (t) => slugifyForSeo(t))
+                ? slugifyForSeo(value)
+                : prevSlug,
+        );
+        setName(value);
     };
 
     if (loading) {
@@ -83,7 +96,7 @@ export default function CategoryEdit() {
                             <input
                                 type="text"
                                 value={name}
-                                onChange={(e) => setName(e.target.value)}
+                                onChange={(e) => handleNameChange(e.target.value)}
                                 className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
                                 placeholder="e.g. Income Tax"
                                 maxLength={200}
@@ -98,6 +111,7 @@ export default function CategoryEdit() {
                                 type="text"
                                 value={slug}
                                 onChange={(e) => setSlug(e.target.value)}
+                                onBlur={(e) => setSlug(slugifyForSeo(e.target.value))}
                                 className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
                                 placeholder="income-tax"
                                 maxLength={200}

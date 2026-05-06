@@ -3,6 +3,7 @@ import { Link } from "react-router";
 import Label from "../../components/form/Label";
 import Input from "../../components/form/input/InputField";
 import Button from "../../components/ui/button/Button";
+import { slugifyForSeo, shouldResyncSlugFromSource } from "../../lib/slug";
 
 export interface CourseCatFormData {
   name: string;
@@ -19,31 +20,36 @@ interface CourseCatFormProps {
 
 const empty: CourseCatFormData = { name: "", slug: "", is_featured: false };
 
-function toSlug(name: string) {
-  return name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
-}
-
 export default function CourseCatForm({ mode, defaultValues, loading = false, onSubmit }: CourseCatFormProps) {
   const [form, setForm] = useState<CourseCatFormData>({ ...empty, ...defaultValues });
-  const [slugTouched, setSlugTouched] = useState(!!defaultValues?.slug);
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const name = e.target.value;
-    setForm((prev) => ({
-      ...prev,
-      name,
-      slug: slugTouched ? prev.slug : toSlug(name),
-    }));
+    setForm((prev) => {
+      const keepSync = shouldResyncSlugFromSource(
+        prev.slug,
+        prev.name,
+        (t) => slugifyForSeo(t),
+      );
+      return {
+        ...prev,
+        name,
+        slug: keepSync ? slugifyForSeo(name) : prev.slug,
+      };
+    });
   };
 
   const handleSlugChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSlugTouched(true);
     setForm((prev) => ({ ...prev, slug: e.target.value }));
+  };
+
+  const handleSlugBlur = () => {
+    setForm((prev) => ({ ...prev, slug: slugifyForSeo(prev.slug) }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(form);
+    onSubmit({ ...form, slug: slugifyForSeo(form.slug) });
   };
 
   return (
@@ -64,6 +70,7 @@ export default function CourseCatForm({ mode, defaultValues, loading = false, on
             <Input
               value={form.slug}
               onChange={handleSlugChange}
+              onBlur={handleSlugBlur}
               placeholder="e.g. gst-course"
             />
             <p className="mt-1 text-xs text-gray-400">Auto-generated from name. Used in URL filters.</p>

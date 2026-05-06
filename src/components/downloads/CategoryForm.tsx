@@ -3,15 +3,7 @@ import { Modal } from "../ui/modal";
 import Button from "../ui/button/Button";
 import Input from "../form/input/InputField";
 import type { DownloadCategory, CreateCategoryPayload } from "../../api/downloads";
-
-function slugify(text: string): string {
-  return text
-    .toLowerCase()
-    .replace(/\s+/g, "-")
-    .replace(/[^\w-]+/g, "")
-    .replace(/--+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}
+import { slugifyForSeo, shouldResyncSlugFromSource } from "../../lib/slug";
 
 interface CategoryFormProps {
   isOpen: boolean;
@@ -50,16 +42,27 @@ export default function CategoryForm({ isOpen, onClose, onSave, initial }: Categ
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const name = e.target.value;
-    setForm((prev) => ({
-      ...prev,
-      name,
-      slug: prev.slug || !isEditing ? slugify(name) : prev.slug,
-    }));
+    setForm((prev) => {
+      const keepSync = shouldResyncSlugFromSource(
+        prev.slug,
+        prev.name,
+        (t) => slugifyForSeo(t),
+      );
+      return {
+        ...prev,
+        name,
+        slug: keepSync ? slugifyForSeo(name) : prev.slug,
+      };
+    });
     if (errors.name) setErrors((prev) => ({ ...prev, name: undefined }));
   };
 
   const handleSlugChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((prev) => ({ ...prev, slug: e.target.value }));
+  };
+
+  const handleSlugBlur = () => {
+    setForm((prev) => ({ ...prev, slug: slugifyForSeo(prev.slug) }));
   };
 
   const validate = (): boolean => {
@@ -77,7 +80,7 @@ export default function CategoryForm({ isOpen, onClose, onSave, initial }: Categ
     try {
       await onSave({
         name: form.name.trim(),
-        slug: form.slug.trim() || undefined,
+        slug: slugifyForSeo(form.slug).trim() || undefined,
       });
       onClose();
     } catch (err: unknown) {
@@ -128,6 +131,7 @@ export default function CategoryForm({ isOpen, onClose, onSave, initial }: Categ
                 placeholder="e.g. banking"
                 value={form.slug}
                 onChange={handleSlugChange}
+                onBlur={handleSlugBlur}
                 disabled={saving}
               />
             </div>

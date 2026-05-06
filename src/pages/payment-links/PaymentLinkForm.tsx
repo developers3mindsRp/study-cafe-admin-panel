@@ -5,6 +5,7 @@ import Input from "../../components/form/input/InputField";
 import Button from "../../components/ui/button/Button";
 import RichTextEditor from "../../components/form/RichTextEditor";
 import type { PaymentLinkFormValues, PaymentLinkStatus } from "../../types/paymentLink";
+import { slugifyForSeo, shouldResyncSlugFromSource } from "../../lib/slug";
 
 const empty: PaymentLinkFormValues = {
   title: "",
@@ -43,7 +44,6 @@ export default function PaymentLinkForm({
   onSubmit,
 }: Props) {
   const [form, setForm] = useState<PaymentLinkFormValues>({ ...empty, ...defaultValues });
-  const [slugManual, setSlugManual] = useState(mode === "edit");
 
   useEffect(() => {
     setForm({ ...empty, ...defaultValues });
@@ -53,20 +53,18 @@ export default function PaymentLinkForm({
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
-  const slugify = (t: string) =>
-    t
-      .trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "") || "payment-link";
+  const paymentLinkSlug = (rawTitle: string) =>
+    slugifyForSeo(rawTitle) || "payment-link";
 
   return (
     <form
       className="space-y-6"
       onSubmit={(e) => {
         e.preventDefault();
-        const slug = form.slug.trim() ? slugify(form.slug) : slugify(form.title);
-        onSubmit({ ...form, slug });
+        const slug = form.slug.trim()
+          ? slugifyForSeo(form.slug)
+          : paymentLinkSlug(form.title);
+        onSubmit({ ...form, slug: slug || "payment-link" });
       }}
     >
       <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] sm:p-6">
@@ -81,10 +79,18 @@ export default function PaymentLinkForm({
               value={form.title}
               onChange={(e) => {
                 const v = e.target.value;
-                update("title", v);
-                if (!slugManual && mode === "create") {
-                  update("slug", slugify(v));
-                }
+                setForm((prev) => {
+                  const keepSync = shouldResyncSlugFromSource(
+                    prev.slug,
+                    prev.title,
+                    paymentLinkSlug,
+                  );
+                  return {
+                    ...prev,
+                    title: v,
+                    slug: keepSync ? paymentLinkSlug(v) : prev.slug,
+                  };
+                });
               }}
               placeholder="Payment title"
             />
@@ -93,10 +99,13 @@ export default function PaymentLinkForm({
             <Label>Slug</Label>
             <Input
               value={form.slug}
-              onChange={(e) => {
-                setSlugManual(true);
-                update("slug", e.target.value);
-              }}
+              onChange={(e) => update("slug", e.target.value)}
+              onBlur={() =>
+                setForm((prev) => ({
+                  ...prev,
+                  slug: slugifyForSeo(prev.slug),
+                }))
+              }
               placeholder="url-slug (auto from title if empty)"
             />
             <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">

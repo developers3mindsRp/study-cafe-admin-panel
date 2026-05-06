@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import { categoriesApi } from "../../api/categories";
+import { slugifyForSeo, shouldResyncSlugFromSource } from "../../lib/slug";
 
 export default function CategoryCreate() {
     const navigate = useNavigate();
@@ -11,15 +12,13 @@ export default function CategoryCreate() {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const autoSlug = (text: string) =>
-        text.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
-
     const handleNameChange = (value: string) => {
+        setSlug((prevSlug) =>
+            shouldResyncSlugFromSource(prevSlug, name, (t) => slugifyForSeo(t))
+                ? slugifyForSeo(value)
+                : prevSlug,
+        );
         setName(value);
-        // Auto-generate slug if user hasn't touched it
-        if (!slug || slug === autoSlug(name)) {
-            setSlug(autoSlug(value));
-        }
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -31,7 +30,10 @@ export default function CategoryCreate() {
         setSaving(true);
         setError(null);
         try {
-            await categoriesApi.create({ name: name.trim(), slug: slug.trim() || undefined } as any);
+            await categoriesApi.create({
+                name: name.trim(),
+                slug: slug.trim() ? slugifyForSeo(slug) : undefined,
+            } as any);
             navigate("/article-categories");
         } catch (err: any) {
             setError(err?.response?.data?.message || "Failed to create category");
@@ -78,6 +80,7 @@ export default function CategoryCreate() {
                                 type="text"
                                 value={slug}
                                 onChange={(e) => setSlug(e.target.value)}
+                                onBlur={(e) => setSlug(slugifyForSeo(e.target.value))}
                                 className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-brand-500 focus:ring-1 focus:ring-brand-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
                                 placeholder="income-tax"
                                 maxLength={200}

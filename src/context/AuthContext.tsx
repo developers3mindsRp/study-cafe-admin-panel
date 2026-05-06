@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import { authApi } from "../api/auth";
+import { accessTokenExpiryMs } from "../lib/accessTokenExpiry";
 import { getStoredAuth, setStoredAuth, clearStoredAuth } from "../lib/authStorage";
 import type { AdminUser, LoginCredentials, PersistedAuth } from "../types/auth";
 
@@ -49,9 +50,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         token,
         user,
         expiresAt:
-          res.expiresIn != null
-            ? Date.now() + res.expiresIn * 1000
-            : undefined,
+          accessTokenExpiryMs(token) ??
+          (res.expiresIn != null ? Date.now() + res.expiresIn * 1000 : undefined),
       };
       setStoredAuth(payload);
       setToken(token);
@@ -115,7 +115,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           id: String(freshUser.id),
           permissions: freshUser.permissions ?? [],
         };
-        setStoredAuth({ token: stored.token, user, expiresAt: stored.expiresAt });
+        const jwtExpMs = accessTokenExpiryMs(stored.token);
+        setStoredAuth({
+          token: stored.token,
+          user,
+          expiresAt: jwtExpMs ?? stored.expiresAt,
+        });
         setUser(user);
       })
       .catch(() => {

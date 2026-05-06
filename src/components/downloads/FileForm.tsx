@@ -3,15 +3,7 @@ import { Modal } from "../ui/modal";
 import Button from "../ui/button/Button";
 import Input from "../form/input/InputField";
 import type { DownloadFile, DownloadCategory, CreateFilePayload } from "../../api/downloads";
-
-function slugify(text: string): string {
-  return text
-    .toLowerCase()
-    .replace(/\s+/g, "-")
-    .replace(/[^\w-]+/g, "")
-    .replace(/--+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}
+import { slugifyForSeo, shouldResyncSlugFromSource } from "../../lib/slug";
 
 function isValidUrl(value: string): boolean {
   try {
@@ -99,11 +91,18 @@ export default function FileForm({ isOpen, onClose, onSave, initial, categories 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const title = e.target.value;
     titleChangedByUser.current = true;
-    setForm((prev) => ({
-      ...prev,
-      title,
-      slug: !isEditing ? slugify(title) : prev.slug,
-    }));
+    setForm((prev) => {
+      const keepSync = shouldResyncSlugFromSource(
+        prev.slug,
+        prev.title,
+        (t) => slugifyForSeo(t),
+      );
+      return {
+        ...prev,
+        title,
+        slug: keepSync ? slugifyForSeo(title) : prev.slug,
+      };
+    });
     if (errors.title) setErrors((prev) => ({ ...prev, title: undefined }));
   };
 
@@ -145,7 +144,7 @@ export default function FileForm({ isOpen, onClose, onSave, initial, categories 
     try {
       await onSave({
         title: form.title.trim(),
-        slug: form.slug.trim() || undefined,
+        slug: slugifyForSeo(form.slug).trim() || undefined,
         file_url: form.file_url.trim(),
         category_ids: form.category_ids,
         status: form.status,
@@ -206,6 +205,12 @@ export default function FileForm({ isOpen, onClose, onSave, initial, categories 
                 placeholder="e.g. rrb-ntpc-notes-pdf-2024"
                 value={form.slug}
                 onChange={handleFieldChange("slug")}
+                onBlur={() =>
+                  setForm((prev) => ({
+                    ...prev,
+                    slug: slugifyForSeo(prev.slug),
+                  }))
+                }
                 disabled={saving}
               />
             </div>
