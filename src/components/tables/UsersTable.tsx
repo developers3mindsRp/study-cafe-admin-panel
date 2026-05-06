@@ -2,7 +2,7 @@
  * Users (Students) table using the reusable DataTable with server-side pagination, sort, and search.
  */
 
-import { forwardRef } from "react";
+import { forwardRef, useCallback } from "react";
 import { Link } from "react-router";
 import { DataTable, type DataTableRef } from "./data-table";
 import Badge from "../ui/badge/Badge";
@@ -13,13 +13,26 @@ import {
   PERM_ADMIN_USERS_DELETE,
 } from "../../constants/permissions";
 import { fetchUsersPaginated, type User } from "../../api/users";
+import type { DataTableFetchParams, DataTableFetchResult } from "./data-table/DataTable.types";
 
 export interface UsersTableProps {
   onDeleteClick?: (user: User) => void;
+  filterRole?: string;
+  filterStatus?: string;
 }
 
 export const UsersTable = forwardRef<DataTableRef, UsersTableProps>(
-  function UsersTable({ onDeleteClick }, ref) {
+  function UsersTable({ onDeleteClick, filterRole = "", filterStatus = "" }, ref) {
+    const fetchData = useCallback(
+      (params: DataTableFetchParams): Promise<DataTableFetchResult<User>> =>
+        fetchUsersPaginated({
+          ...params,
+          ...(filterRole ? { role: filterRole } : {}),
+          ...(filterStatus ? { status: filterStatus } : {}),
+        }),
+      [filterRole, filterStatus]
+    );
+
     const columns = [
       {
         key: "name",
@@ -112,9 +125,10 @@ export const UsersTable = forwardRef<DataTableRef, UsersTableProps>(
 
     return (
       <DataTable<User>
+        key={`${filterRole}|${filterStatus}`}
         ref={ref}
         columns={columns}
-        fetchData={fetchUsersPaginated}
+        fetchData={fetchData}
         initialPageSize={10}
         initialSortBy="created_at"
         initialSortOrder="DESC"

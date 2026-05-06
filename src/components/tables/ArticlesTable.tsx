@@ -2,7 +2,7 @@
  * Articles table using the reusable DataTable with server-side pagination, sort, and search.
  */
 
-import { forwardRef } from "react";
+import { forwardRef, useCallback } from "react";
 import { Link } from "react-router";
 import { DataTable, type DataTableRef } from "./data-table";
 import Badge from "../ui/badge/Badge";
@@ -14,9 +14,11 @@ import {
 } from "../../constants/permissions";
 import { decodeSlugForDisplay } from "../../lib/slug";
 import { fetchArticlesPaginated, type ArticleRecord } from "../../api/articles";
+import type { DataTableFetchParams, DataTableFetchResult } from "./data-table/DataTable.types";
 
 export interface ArticlesTableProps {
   onDeleteClick?: (article: ArticleRecord) => void;
+  filterStatus?: string;
 }
 
 const statusColor = (status: string) =>
@@ -34,7 +36,13 @@ const statusLabel = (status: string) =>
       : status || "—";
 
 export const ArticlesTable = forwardRef<DataTableRef, ArticlesTableProps>(
-  function ArticlesTable({ onDeleteClick }, ref) {
+  function ArticlesTable({ onDeleteClick, filterStatus = "" }, ref) {
+    const fetchData = useCallback(
+      (params: DataTableFetchParams): Promise<DataTableFetchResult<ArticleRecord>> =>
+        fetchArticlesPaginated({ ...params, ...(filterStatus ? { status: filterStatus } : {}) }),
+      [filterStatus]
+    );
+
     const columns = [
       {
         key: "image",
@@ -156,9 +164,10 @@ export const ArticlesTable = forwardRef<DataTableRef, ArticlesTableProps>(
 
     return (
       <DataTable<ArticleRecord>
+        key={filterStatus}
         ref={ref}
         columns={columns}
-        fetchData={fetchArticlesPaginated}
+        fetchData={fetchData}
         initialPageSize={10}
         initialSortBy="created_at"
         initialSortOrder="DESC"

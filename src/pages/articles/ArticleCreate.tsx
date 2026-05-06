@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
+import { toast } from "react-toastify";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import ArticleForm, { type ArticleFormData, type ArticleTaxonomyOptions } from "./ArticleForm";
@@ -51,10 +52,16 @@ export default function ArticleCreate() {
         blog_access_tier: formData.blog_access_tier,
       };
       await articlesApi.create(payload);
+      toast.success("Article created successfully!");
       navigate("/articles");
-    } catch (err) {
+    } catch (err: unknown) {
       console.error("Failed to create article", err);
-      alert("Failed to create article");
+      const axiosErr = err as { response?: { data?: { error?: string; message?: string } } };
+      const msg =
+        axiosErr?.response?.data?.error ||
+        axiosErr?.response?.data?.message ||
+        "Failed to create article";
+      toast.error(msg);
     } finally {
       setSubmitting(false);
     }

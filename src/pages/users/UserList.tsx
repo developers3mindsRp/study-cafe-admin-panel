@@ -8,6 +8,21 @@ import { PERM_ADMIN_USERS_LIST, PERM_ADMIN_USERS_CREATE } from "../../constants/
 import { usersApi, type User } from "../../api/users";
 import { UsersTable } from "../../components/tables";
 import type { DataTableRef } from "../../components/tables/data-table";
+import { FilterBar, useFilterState } from "../../components/filters";
+import type { FilterFieldDef } from "../../components/filters";
+
+const userFilterFields: FilterFieldDef[] = [
+  {
+    type: "select",
+    id: "status",
+    label: "Status",
+    placeholder: "All statuses",
+    options: [
+      { value: "active", label: "Active" },
+      { value: "inactive", label: "Inactive" },
+    ],
+  },
+];
 
 export default function UserList() {
   return (
@@ -21,6 +36,7 @@ function UserListContent() {
   const tableRef = useRef<DataTableRef>(null);
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const { values, set, reset, hasActive } = useFilterState();
 
   const handleDeleteClick = (user: User) => {
     setDeleteTarget(user);
@@ -65,7 +81,18 @@ function UserListContent() {
         }
       />
       <div className="space-y-6">
-        <UsersTable ref={tableRef} onDeleteClick={handleDeleteClick} />
+        <FilterBar
+          fields={userFilterFields}
+          values={values}
+          onChange={set}
+          onReset={reset}
+          hasActive={hasActive}
+        />
+        <UsersTable
+          ref={tableRef}
+          onDeleteClick={handleDeleteClick}
+          filterStatus={values.status ?? ""}
+        />
       </div>
 
       <ConfirmDeleteModal

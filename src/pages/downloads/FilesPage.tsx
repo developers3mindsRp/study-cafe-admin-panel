@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import { DataTable, type DataTableRef } from "../../components/tables/data-table/DataTable";
@@ -14,6 +14,8 @@ import {
   type CreateFilePayload,
 } from "../../api/downloads";
 import FileForm from "../../components/downloads/FileForm";
+import { FilterBar, useFilterState } from "../../components/filters";
+import type { FilterFieldDef } from "../../components/filters";
 
 function formatDate(dateStr: string | null | undefined): string {
   if (!dateStr) return "—";
@@ -86,14 +88,40 @@ export default function FilesPage() {
   const [editTarget, setEditTarget] = useState<DownloadFile | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<DownloadFile | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const { values, set, reset, hasActive } = useFilterState();
 
   const { isOpen: isFormOpen, openModal: openForm, closeModal: closeForm } = useModal();
   const { isOpen: isDeleteOpen, openModal: openDelete, closeModal: closeDelete } = useModal();
 
-  // Load categories for the form dropdowns
+  // Load categories for the form dropdowns and filter async-select
   useEffect(() => {
     downloadCategoriesApi.listAll().then(setCategories).catch(console.error);
   }, []);
+
+  const fileFilterFields: FilterFieldDef[] = useMemo(
+    () => [
+      {
+        type: "select",
+        id: "status",
+        label: "Status",
+        placeholder: "All statuses",
+        options: [
+          { value: "publish", label: "Published" },
+          { value: "draft", label: "Draft" },
+          { value: "private", label: "Private" },
+        ],
+      },
+      {
+        type: "async-select",
+        id: "category_id",
+        label: "Category",
+        placeholder: "All categories",
+        loader: async () =>
+          categories.map((c) => ({ value: String(c.id), label: c.name })),
+      },
+    ],
+    [categories]
+  );
 
   const handleAddClick = useCallback(() => {
     setEditTarget(null);
@@ -129,6 +157,18 @@ export default function FilesPage() {
     }
     dataTableRef.current?.refetch();
   };
+
+  const fetchFilesWithFilters = useCallback(
+    (params: Parameters<typeof fetchFilesPaginated>[0]) =>
+      fetchFilesPaginated({
+        ...params,
+        ...(values.status ? { status: values.status } : {}),
+        ...(values.category_id ? { category_id: values.category_id } : {}),
+      }),
+    [values.status, values.category_id]
+  );
+
+  const filterKey = `${values.status ?? ""}|${values.category_id ?? ""}`;
 
   const handleDeleteConfirm = async () => {
     if (!deleteTarget) return;
@@ -274,10 +314,18 @@ export default function FilesPage() {
       />
 
       <div className="space-y-6">
+        <FilterBar
+          fields={fileFilterFields}
+          values={values}
+          onChange={set}
+          onReset={reset}
+          hasActive={hasActive}
+        />
         <DataTable<DownloadFile>
+          key={filterKey}
           ref={dataTableRef}
           columns={columns}
-          fetchData={fetchFilesPaginated}
+          fetchData={fetchFilesWithFilters}
           initialPageSize={20}
           initialSortBy="created_at"
           initialSortOrder="DESC"
