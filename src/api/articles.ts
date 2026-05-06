@@ -31,6 +31,14 @@ export interface ArticleRecord {
   meta_title: string | null;
   meta_description: string | null;
   meta_keywords?: string | null;
+  canonical_url?: string | null;
+  robots?: string | null;
+  og_title?: string | null;
+  og_description?: string | null;
+  og_image_url?: string | null;
+  thumbnail_alt?: string | null;
+  thumbnail_link_url?: string | null;
+  thumbnail_caption?: string | null;
   created_at?: string;
   updated_at?: string;
   category_ids?: number[];

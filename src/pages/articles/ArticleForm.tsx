@@ -5,7 +5,7 @@ import Label from "../../components/form/Label";
 import Input from "../../components/form/input/InputField";
 import TextArea from "../../components/form/input/TextArea";
 import ImageUpload from "../../components/form/ImageUpload";
-import MetaFieldsForm from "../../components/form/MetaFieldsForm";
+import MetaFieldsForm, { type SEOMetaFields } from "../../components/form/MetaFieldsForm";
 import { ChipMultiSelect } from "../../components/form/ChipMultiSelect";
 import Button from "../../components/ui/button/Button";
 import ArticleEditor from "../../components/article-editor/ArticleEditor";
@@ -23,7 +23,8 @@ export interface ArticleFormData {
   /** Article body (TipTap JSON string). Single-document editor for articles. */
   body: string;
   author: AuthorBio;
-  tags: string[];
+  /** Comma-separated tag labels as typed (parsed on save only). */
+  tagsCommaRaw: string;
   shareEnabled: boolean;
   status: "Draft" | "Published" | "Archived";
   /** Who can read full HTML on the public blog (cafestudy-fe). */
@@ -76,12 +77,26 @@ const emptyAuthor: AuthorBio = {
   bio: "",
 };
 
+function mergeArticleMetaPatch(meta: ArticleMeta, patch: Partial<SEOMetaFields>): ArticleMeta {
+  return {
+    ...meta,
+    ...(patch.metaTitle !== undefined ? { metaTitle: patch.metaTitle } : {}),
+    ...(patch.metaDescription !== undefined ? { metaDesc: patch.metaDescription } : {}),
+    ...(patch.metaKeywords !== undefined ? { metaKeywords: patch.metaKeywords } : {}),
+    ...(patch.canonicalUrl !== undefined ? { canonicalUrl: patch.canonicalUrl } : {}),
+    ...(patch.robots !== undefined ? { robots: patch.robots } : {}),
+    ...(patch.ogTitle !== undefined ? { ogTitle: patch.ogTitle } : {}),
+    ...(patch.ogDescription !== undefined ? { ogDescription: patch.ogDescription } : {}),
+    ...(patch.ogImageUrl !== undefined ? { ogImageUrl: patch.ogImageUrl } : {}),
+  };
+}
+
 const emptyFormData: ArticleFormData = {
   meta: emptyMeta,
   featuredImage: emptyFeaturedImage,
   body: "",
   author: emptyAuthor,
-  tags: [],
+  tagsCommaRaw: "",
   shareEnabled: true,
   status: "Draft",
   blog_access_tier: "free",
@@ -91,6 +106,25 @@ const emptyFormData: ArticleFormData = {
   article_type_ids: [],
   court_ids: [],
 };
+
+/** Preview/back-navigation state historically used `tags: string[]`. */
+type ArticleFormSeed = Partial<ArticleFormData> & { tags?: string[] };
+
+function buildArticleFormState(seed: ArticleFormSeed): ArticleFormData {
+  const { tags: legacyTags, ...rest } = seed;
+  const tagsCommaRaw =
+    typeof seed.tagsCommaRaw === "string"
+      ? seed.tagsCommaRaw
+      : Array.isArray(legacyTags) && legacyTags.length > 0
+        ? legacyTags.join(", ")
+        : "";
+  return {
+    ...emptyFormData,
+    ...rest,
+    tagsCommaRaw,
+    blog_access_tier: seed.blog_access_tier === "premium" ? "premium" : "free",
+  };
+}
 
 export default function ArticleForm({
   mode,
@@ -104,19 +138,15 @@ export default function ArticleForm({
   const location = useLocation();
 
   // Check if we're returning from preview with restored data (must preserve when Back to Editor)
-  const restoredData = location.state?.[RESTORE_STATE_KEY] as ArticleFormData | undefined;
+  const restoredData = location.state?.[RESTORE_STATE_KEY] as ArticleFormSeed | undefined;
 
   const initialDataRef = useRef<ArticleFormData | null>(null);
   const submittedRef = useRef(false);
   const restoreAppliedRef = useRef(false);
 
   const [formData, setFormData] = useState<ArticleFormData>(() => {
-    const raw = restoredData ?? { ...emptyFormData, ...defaultValues };
-    const init: ArticleFormData = {
-      ...emptyFormData,
-      ...raw,
-      blog_access_tier: raw.blog_access_tier === "premium" ? "premium" : "free",
-    };
+    const seed = restoredData ?? { ...emptyFormData, ...defaultValues };
+    const init = buildArticleFormState(seed);
     initialDataRef.current = init;
     if (restoredData) restoreAppliedRef.current = true;
     return init;
@@ -126,11 +156,7 @@ export default function ArticleForm({
   useEffect(() => {
     if (restoredData && !restoreAppliedRef.current) {
       restoreAppliedRef.current = true;
-      const init: ArticleFormData = {
-        ...emptyFormData,
-        ...restoredData,
-        blog_access_tier: restoredData.blog_access_tier === "premium" ? "premium" : "free",
-      };
+      const init = buildArticleFormState(restoredData);
       setFormData(init);
       initialDataRef.current = init;
     }
@@ -487,14 +513,10 @@ export default function ArticleForm({
           <div>
             <Label>Tags (comma-separated, optional)</Label>
             <Input
-              value={formData.tags.join(", ")}
-              onChange={(e) => {
-                const tags = e.target.value
-                  .split(",")
-                  .map((s) => s.trim())
-                  .filter(Boolean);
-                setFormData((prev) => ({ ...prev, tags }));
-              }}
+              value={formData.tagsCommaRaw}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, tagsCommaRaw: e.target.value }))
+              }
               placeholder="GST, Tax, Finance"
             />
           </div>
@@ -591,17 +613,7 @@ export default function ArticleForm({
             onChange={(patch) =>
               setFormData((prev) => ({
                 ...prev,
-                meta: {
-                  ...prev.meta,
-                  metaTitle: patch.metaTitle ?? prev.meta.metaTitle,
-                  metaDesc: patch.metaDescription ?? prev.meta.metaDesc,
-                  metaKeywords: patch.metaKeywords ?? prev.meta.metaKeywords,
-                  canonicalUrl: patch.canonicalUrl ?? prev.meta.canonicalUrl,
-                  robots: patch.robots ?? prev.meta.robots,
-                  ogTitle: patch.ogTitle ?? prev.meta.ogTitle,
-                  ogDescription: patch.ogDescription ?? prev.meta.ogDescription,
-                  ogImageUrl: patch.ogImageUrl ?? prev.meta.ogImageUrl,
-                },
+                meta: mergeArticleMetaPatch(prev.meta, patch),
               }))
             }
             collapsible

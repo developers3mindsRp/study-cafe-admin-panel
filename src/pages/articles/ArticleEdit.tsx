@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import ArticleForm, { type ArticleFormData, type ArticleTaxonomyOptions } from "./ArticleForm";
+import { articleFormToApiPayload } from "./articlePayload";
 import { articlesApi, fetchArticleCategories, fetchTags, fetchArticleTypes, fetchCourts, type ArticleRecord } from "../../api/articles";
 import { decodeSlugForDisplay } from "../../lib/slug";
 
@@ -20,6 +21,15 @@ function statusToBackend(s: ArticleFormData["status"]) {
   if (s === "Published") return "publish";
   if (s === "Archived") return "archived";
   return "draft";
+}
+
+/** Prefer snake_case API keys; accept camelCase if any proxy transforms responses. */
+function pickArticleStr(record: Record<string, unknown>, snake: string, camel: string): string {
+  const a = record[snake];
+  const b = record[camel];
+  if (typeof a === "string") return a;
+  if (typeof b === "string") return b;
+  return "";
 }
 
 export default function ArticleEdit() {
@@ -61,21 +71,8 @@ export default function ArticleEdit() {
     try {
       setSubmitting(true);
       const payload = {
-        title: formData.meta.title,
-        slug: formData.meta.slug || undefined,
-        excerpt: formData.meta.description || null,
-        content: formData.body || null,
-        thumbnail_url: formData.featuredImage?.imageUrl || null,
+        ...articleFormToApiPayload(formData),
         status: statusToBackend(formData.status),
-        meta_title: formData.meta.metaTitle || null,
-        meta_description: formData.meta.metaDesc || null,
-        meta_keywords: formData.meta.metaKeywords || null,
-        category_ids: formData.category_ids ?? [],
-        tag_ids: formData.tag_ids ?? [],
-        article_type_ids: formData.article_type_ids ?? [],
-        court_ids: formData.court_ids ?? [],
-        blog_access_tier: formData.blog_access_tier,
-        rel_download_url: formData.rel_download_url || null,
       };
       await articlesApi.update(id, payload);
       navigate("/articles");
@@ -94,25 +91,33 @@ export default function ArticleEdit() {
     (article as unknown as Record<string, unknown>).content ??
     (article as unknown as Record<string, unknown>).body ??
     "";
+  const raw = article as unknown as Record<string, unknown>;
   const defaultValues: ArticleFormData = {
     meta: {
       title: article.title,
-      subHeading: article.sub_heading ?? "",
+      subHeading: pickArticleStr(raw, "sub_heading", "subHeading"),
       description: article.excerpt ?? "",
-      metaTitle: article.meta_title ?? "",
-      metaDesc: article.meta_description ?? "",
-      metaKeywords: article.meta_keywords ?? "",
+      metaTitle: pickArticleStr(raw, "meta_title", "metaTitle"),
+      metaDesc: pickArticleStr(raw, "meta_description", "metaDescription"),
+      metaKeywords: pickArticleStr(raw, "meta_keywords", "metaKeywords"),
       slug: decodeSlugForDisplay(article.slug) ?? "",
+      canonicalUrl: pickArticleStr(raw, "canonical_url", "canonicalUrl"),
+      robots: (typeof raw.robots === "string" && raw.robots
+        ? raw.robots
+        : "index, follow") as ArticleFormData["meta"]["robots"],
+      ogTitle: pickArticleStr(raw, "og_title", "ogTitle"),
+      ogDescription: pickArticleStr(raw, "og_description", "ogDescription"),
+      ogImageUrl: pickArticleStr(raw, "og_image_url", "ogImageUrl"),
     },
     featuredImage: {
       imageUrl: article.thumbnail_url ?? "",
-      linkUrl: "",
-      alt: "",
-      caption: "",
+      linkUrl: pickArticleStr(raw, "thumbnail_link_url", "thumbnailLinkUrl"),
+      alt: pickArticleStr(raw, "thumbnail_alt", "thumbnailAlt"),
+      caption: pickArticleStr(raw, "thumbnail_caption", "thumbnailCaption"),
     },
     body: typeof articleContent === "string" ? articleContent : "",
     author: { name: "", role: "", imageUrl: "", bio: "" },
-    tags: [],
+    tagsCommaRaw: article.tags?.map((t) => t.name.trim()).filter(Boolean).join(", ") ?? "",
     shareEnabled: true,
     status: statusToForm(article.status),
     blog_access_tier: tierFromApi(article.blog_access_tier),
@@ -134,6 +139,7 @@ export default function ArticleEdit() {
         ]}
       />
       <ArticleForm
+        key={id}
         mode="edit"
         defaultValues={defaultValues}
         onSubmit={handleSubmit}
