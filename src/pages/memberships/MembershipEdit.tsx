@@ -5,6 +5,7 @@ import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import MembershipForm, { type MembershipFormData, parseFeaturesToArray, arrayToFeaturesHtml } from "./MembershipForm";
 import { plansApi, type MembershipFeatures } from "../../api/plans";
 import { planIsLifetime } from "./membershipUtils";
+import { getApiErrorMessage } from "../../lib/apiError";
 
 export default function MembershipEdit() {
   const navigate = useNavigate();
@@ -100,9 +101,9 @@ export default function MembershipEdit() {
 
       await plansApi.update(id, payload);
       navigate("/memberships");
-    } catch (err) {
+    } catch (err: unknown) {
       console.error("Failed to update membership", err);
-      alert("Failed to update membership");
+      alert(getApiErrorMessage(err, "Failed to update membership"));
     } finally {
       setSubmitting(false);
     }

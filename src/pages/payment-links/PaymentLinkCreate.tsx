@@ -5,6 +5,7 @@ import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PaymentLinkForm from "./PaymentLinkForm";
 import type { PaymentLinkFormValues } from "../../types/paymentLink";
 import { createPaymentLink } from "../../api/paymentLinks";
+import { getApiErrorMessage } from "../../lib/apiError";
 
 export default function PaymentLinkCreate() {
   const navigate = useNavigate();
@@ -27,7 +28,7 @@ export default function PaymentLinkCreate() {
       navigate("/payment-links");
     } catch (err: unknown) {
       console.error(err);
-      alert("Failed to create payment link");
+      alert(getApiErrorMessage(err, "Failed to create payment link"));
     } finally {
       setLoading(false);
     }

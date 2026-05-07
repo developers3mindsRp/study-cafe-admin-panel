@@ -6,6 +6,7 @@ import ArticleForm, { type ArticleFormData, type ArticleTaxonomyOptions } from "
 import { articleFormToApiPayload } from "./articlePayload";
 import { articlesApi, fetchArticleCategories, fetchTags, fetchArticleTypes, fetchCourts, type ArticleRecord } from "../../api/articles";
 import { decodeSlugForDisplay } from "../../lib/slug";
+import { getApiErrorMessage } from "../../lib/apiError";
 
 function statusToForm(s: string): ArticleFormData["status"] {
   if (s === "publish" || s === "published") return "Published";
@@ -76,9 +77,9 @@ export default function ArticleEdit() {
       };
       await articlesApi.update(id, payload);
       navigate("/articles");
-    } catch (err) {
+    } catch (err: unknown) {
       console.error("Failed to update article", err);
-      alert("Failed to update article");
+      alert(getApiErrorMessage(err, "Failed to update article"));
     } finally {
       setSubmitting(false);
     }

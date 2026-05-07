@@ -53,6 +53,12 @@ export interface CourseFormData {
   meta_title: string;
   meta_description: string;
   meta_keywords: string;
+  canonical_url: string;
+  /** Robots directive (must match MetaFieldsForm options). */
+  robots: string;
+  og_title: string;
+  og_description: string;
+  og_image_url: string;
   /** Percent of order amount paid to referrer (0–100). */
   affiliate_commission: string;
 }
@@ -81,6 +87,11 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
           restoredData.affiliate_commission != null && restoredData.affiliate_commission !== ""
             ? String(restoredData.affiliate_commission)
             : "0",
+        canonical_url: restoredData.canonical_url ?? "",
+        robots: restoredData.robots ?? "index, follow",
+        og_title: restoredData.og_title ?? "",
+        og_description: restoredData.og_description ?? "",
+        og_image_url: restoredData.og_image_url ?? "",
       };
     }
     return {
@@ -148,6 +159,17 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
       meta_title: initial?.meta_title ?? "",
       meta_description: initial?.meta_description ?? "",
       meta_keywords: initial?.meta_keywords ?? "",
+      canonical_url: initial?.canonical_url ?? "",
+      robots:
+        initial?.robots &&
+        ["index, follow", "noindex, nofollow", "index, nofollow", "noindex, follow"].includes(
+          initial.robots,
+        )
+          ? initial.robots
+          : "index, follow",
+      og_title: initial?.og_title ?? "",
+      og_description: initial?.og_description ?? "",
+      og_image_url: initial?.og_image_url ?? "",
       affiliate_commission:
         initial?.affiliate_commission != null && initial.affiliate_commission !== ""
           ? String(initial.affiliate_commission)
@@ -668,11 +690,21 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
             metaTitle: form.meta_title,
             metaDescription: form.meta_description,
             metaKeywords: form.meta_keywords,
+            canonicalUrl: form.canonical_url,
+            robots: form.robots as SEOMetaFields["robots"],
+            ogTitle: form.og_title,
+            ogDescription: form.og_description,
+            ogImageUrl: form.og_image_url,
           }}
           onChange={(patch: Partial<SEOMetaFields>) => {
-            if (patch.metaTitle !== undefined) updateField('meta_title', patch.metaTitle);
-            if (patch.metaDescription !== undefined) updateField('meta_description', patch.metaDescription);
-            if (patch.metaKeywords !== undefined) updateField('meta_keywords', patch.metaKeywords);
+            if (patch.metaTitle !== undefined) updateField("meta_title", patch.metaTitle);
+            if (patch.metaDescription !== undefined) updateField("meta_description", patch.metaDescription);
+            if (patch.metaKeywords !== undefined) updateField("meta_keywords", patch.metaKeywords);
+            if (patch.canonicalUrl !== undefined) updateField("canonical_url", patch.canonicalUrl);
+            if (patch.robots !== undefined) updateField("robots", patch.robots);
+            if (patch.ogTitle !== undefined) updateField("og_title", patch.ogTitle);
+            if (patch.ogDescription !== undefined) updateField("og_description", patch.ogDescription);
+            if (patch.ogImageUrl !== undefined) updateField("og_image_url", patch.ogImageUrl);
           }}
         />
       </div>
