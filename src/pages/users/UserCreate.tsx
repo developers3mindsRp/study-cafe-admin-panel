@@ -13,7 +13,7 @@ import { useAssignCoursesState } from "./hooks/useAssignCoursesState";
 import { CourseBatchAssignSection } from "./components/CourseBatchAssignSection";
 import { getApiErrorMessage } from "../../lib/apiError";
 
-type UserPayload = Partial<User>;
+type UserPayload = Partial<User> & { password?: string };
 
 export default function UserCreate() {
     const navigate = useNavigate();
@@ -38,13 +38,13 @@ export default function UserCreate() {
         phone: "",
         membership: "", // Will be set to first plan or empty
         status: "active",
+        password: "",
         // Profile
         first_name: "",
         last_name: "",
-        // Location
+        // Location (country defaults to India on the server)
         city: "",
         state: "",
-        country: "India",
         // Professional
         designation: "",
         company: "",
@@ -87,7 +87,14 @@ export default function UserCreate() {
         e.preventDefault();
         try {
             setLoading(true);
-            const createdUser = await usersApi.create(formData);
+            const { password: pwd, ...profile } = formData;
+            const payload = {
+                ...profile,
+                ...(pwd != null && String(pwd).trim() !== ""
+                    ? { password: String(pwd).trim() }
+                    : {}),
+            };
+            const createdUser = await usersApi.create(payload);
             const userId = Number(createdUser.id);
 
             const enrollPromises = Object.entries(selectedBatches)
@@ -144,6 +151,20 @@ export default function UserCreate() {
                                     placeholder="john@example.com"
                                     required
                                 />
+                            </div>
+                            <div>
+                                <Label>Password</Label>
+                                <Input
+                                    type="password"
+                                    name="password"
+                                    value={formData.password || ""}
+                                    onChange={handleChange}
+                                    placeholder="Leave blank to auto-generate"
+                                    autoComplete="new-password"
+                                />
+                                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                    Optional. If empty, the API sets a random password; the student can still sign in using email OTP.
+                                </p>
                             </div>
                             <div>
                                 <Label>Phone</Label>
@@ -249,17 +270,7 @@ export default function UserCreate() {
                             <span className="w-1 h-6 bg-brand-500 rounded-full inline-block"></span>
                             Location
                         </h4>
-                        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-                            <div>
-                                <Label>City</Label>
-                                <Input
-                                    type="text"
-                                    name="city"
-                                    value={formData.city || ""}
-                                    onChange={handleChange}
-                                    placeholder="City"
-                                />
-                            </div>
+                        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                             <div>
                                 <Label>State</Label>
                                 <Input
@@ -271,13 +282,13 @@ export default function UserCreate() {
                                 />
                             </div>
                             <div>
-                                <Label>Country</Label>
+                                <Label>City</Label>
                                 <Input
                                     type="text"
-                                    name="country"
-                                    value={formData.country || ""}
+                                    name="city"
+                                    value={formData.city || ""}
                                     onChange={handleChange}
-                                    placeholder="Country"
+                                    placeholder="City"
                                 />
                             </div>
                         </div>
