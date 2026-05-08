@@ -75,7 +75,7 @@ export const ArticlesTable = forwardRef<DataTableRef, ArticlesTableProps>(
           metaTitle: article.meta_title ?? "",
           metaDesc: article.meta_description ?? "",
           metaKeywords: article.meta_keywords ?? "",
-          slug: decodeSlugForDisplay(article.slug) ?? "",
+          slug: decodeSlugForDisplay(article.slug) ?? "", 
         },
         featuredImage: {
           imageUrl: article.thumbnail_url ?? "",
@@ -85,7 +85,7 @@ export const ArticlesTable = forwardRef<DataTableRef, ArticlesTableProps>(
         },
         body: typeof articleContent === "string" ? articleContent : "",
         author: { name: "", role: "", imageUrl: "", bio: "" },
-        tags: [],
+        tagsCommaRaw: "",
         shareEnabled: true,
         status:
           article.status === "publish" || article.status === "published"

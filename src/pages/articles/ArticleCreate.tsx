@@ -3,16 +3,12 @@ import { useNavigate } from "react-router";
 import { toast } from "react-toastify";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
-<<<<<<< HEAD
 import ArticleForm, {
   type ArticleFormData,
   type ArticleFormSubmitMeta,
   type ArticleTaxonomyOptions,
 } from "./ArticleForm";
-=======
-import ArticleForm, { type ArticleFormData, type ArticleTaxonomyOptions } from "./ArticleForm";
 import { articleFormToApiPayload } from "./articlePayload";
->>>>>>> origin/main
 import { articlesApi, fetchArticleCategories, fetchTags, fetchArticleTypes, fetchCourts } from "../../api/articles";
 
 function statusToBackend(s: ArticleFormData["status"]) {
@@ -51,7 +47,6 @@ export default function ArticleCreate() {
       const payload = {
         ...articleFormToApiPayload(formData),
         status: statusToBackend(formData.status),
-<<<<<<< HEAD
         scheduled_publish_at,
         meta_title: formData.meta.metaTitle || null,
         meta_description: formData.meta.metaDesc || null,
@@ -60,8 +55,6 @@ export default function ArticleCreate() {
         article_type_ids: formData.article_type_ids ?? [],
         court_ids: formData.court_ids ?? [],
         blog_access_tier: formData.blog_access_tier,
-=======
->>>>>>> origin/main
       };
       await articlesApi.create(payload);
       toast.success("Article created successfully!");
