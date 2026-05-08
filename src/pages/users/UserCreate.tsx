@@ -11,6 +11,7 @@ import { plansApi, type Plan } from "../../api/plans";
 import { fetchCourses, addBatchEnrollment } from "../../api/courses";
 import { useAssignCoursesState } from "./hooks/useAssignCoursesState";
 import { CourseBatchAssignSection } from "./components/CourseBatchAssignSection";
+import { getApiErrorMessage } from "../../lib/apiError";
 
 type UserPayload = Partial<User>;
 
@@ -99,9 +100,9 @@ export default function UserCreate() {
             await Promise.all(enrollPromises);
 
             navigate("/users");
-        } catch (err) {
+        } catch (err: unknown) {
             console.error("Failed to create user", err);
-            alert("Failed to create user");
+            alert(getApiErrorMessage(err, "Failed to create user"));
         } finally {
             setLoading(false);
         }
