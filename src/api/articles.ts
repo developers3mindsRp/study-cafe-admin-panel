@@ -25,6 +25,8 @@ export interface ArticleRecord {
   author_name: string | null;
   sub_heading?: string | null;
   status: string;
+  /** When status is `scheduled`, BullMQ will publish at this time. */
+  scheduled_publish_at?: string | null;
   /** Public site: `premium` uses member-gated full body on cafestudy-fe. */
   blog_access_tier?: "free" | "premium";
   published_at: string | null;

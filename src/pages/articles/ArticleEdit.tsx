@@ -2,7 +2,11 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
-import ArticleForm, { type ArticleFormData, type ArticleTaxonomyOptions } from "./ArticleForm";
+import ArticleForm, {
+  type ArticleFormData,
+  type ArticleFormSubmitMeta,
+  type ArticleTaxonomyOptions,
+} from "./ArticleForm";
 import { articleFormToApiPayload } from "./articlePayload";
 import { articlesApi, fetchArticleCategories, fetchTags, fetchArticleTypes, fetchCourts, type ArticleRecord } from "../../api/articles";
 import { decodeSlugForDisplay } from "../../lib/slug";
@@ -11,6 +15,7 @@ import { getApiErrorMessage } from "../../lib/apiError";
 function statusToForm(s: string): ArticleFormData["status"] {
   if (s === "publish" || s === "published") return "Published";
   if (s === "archived") return "Archived";
+  if (s === "scheduled") return "Scheduled";
   return "Draft";
 }
 
@@ -21,6 +26,7 @@ function tierFromApi(t: string | undefined | null): ArticleFormData["blog_access
 function statusToBackend(s: ArticleFormData["status"]) {
   if (s === "Published") return "publish";
   if (s === "Archived") return "archived";
+  if (s === "Scheduled") return "scheduled";
   return "draft";
 }
 
@@ -67,13 +73,25 @@ export default function ArticleEdit() {
     }).catch(console.error);
   }, []);
 
-  const handleSubmit = async (formData: ArticleFormData) => {
+  const handleSubmit = async (formData: ArticleFormData, meta: ArticleFormSubmitMeta) => {
     if (!id) return;
     try {
       setSubmitting(true);
+      const scheduled_publish_at =
+        meta.type === "schedule" ? meta.scheduledAtIso : null;
       const payload = {
         ...articleFormToApiPayload(formData),
         status: statusToBackend(formData.status),
+        scheduled_publish_at,
+        meta_title: formData.meta.metaTitle || null,
+        meta_description: formData.meta.metaDesc || null,
+        meta_keywords: formData.meta.metaKeywords || null,
+        category_ids: formData.category_ids ?? [],
+        tag_ids: formData.tag_ids ?? [],
+        article_type_ids: formData.article_type_ids ?? [],
+        court_ids: formData.court_ids ?? [],
+        blog_access_tier: formData.blog_access_tier,
+        rel_download_url: formData.rel_download_url || null,
       };
       await articlesApi.update(id, payload);
       navigate("/articles");
@@ -121,6 +139,8 @@ export default function ArticleEdit() {
     tagsCommaRaw: article.tags?.map((t) => t.name.trim()).filter(Boolean).join(", ") ?? "",
     shareEnabled: true,
     status: statusToForm(article.status),
+    scheduled_publish_at: article.scheduled_publish_at ?? null,
+    scheduled_publish_at_local: "", // hydrated by buildArticleFormState from scheduled_publish_at
     blog_access_tier: tierFromApi(article.blog_access_tier),
     rel_download_url: article.rel_download_url ?? null,
     category_ids: article.category_ids ?? [],

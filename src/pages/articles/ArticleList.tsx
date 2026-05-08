@@ -21,6 +21,7 @@ const articleFilterFields: FilterFieldDef[] = [
     placeholder: "All statuses",
     options: [
       { value: "publish", label: "Published" },
+      { value: "scheduled", label: "Scheduled" },
       { value: "draft", label: "Draft" },
     ],
   },

@@ -26,7 +26,11 @@ export interface ArticleFormData {
   /** Comma-separated tag labels as typed (parsed on save only). */
   tagsCommaRaw: string;
   shareEnabled: boolean;
-  status: "Draft" | "Published" | "Archived";
+  status: "Draft" | "Published" | "Archived" | "Scheduled";
+  /** ISO time from API when editing (hydrates datetime-local). */
+  scheduled_publish_at?: string | null;
+  /** Local datetime string for `<input type="datetime-local" />` (schedule publish). */
+  scheduled_publish_at_local: string;
   /** Who can read full HTML on the public blog (cafestudy-fe). */
   blog_access_tier: "free" | "premium";
   /** Downloadable asset URL (PDF / judgment) shown on the article page. */
@@ -38,6 +42,19 @@ export interface ArticleFormData {
   court_ids?: number[];
 }
 
+export type ArticleSubmitAction =
+  | { type: "draft" }
+  | { type: "publish_now" }
+  | { type: "schedule" }
+  | { type: "archive" };
+
+/** Passed to parent `onSubmit` (schedule includes resolved ISO instant). */
+export type ArticleFormSubmitMeta =
+  | { type: "draft" }
+  | { type: "publish_now" }
+  | { type: "schedule"; scheduledAtIso: string }
+  | { type: "archive" };
+
 export interface ArticleTaxonomyOptions {
   categories: { id: number; name: string; slug: string | null }[];
   tags: { id: number; name: string; slug: string | null }[];
@@ -48,7 +65,7 @@ export interface ArticleTaxonomyOptions {
 interface ArticleFormProps {
   mode: "create" | "edit";
   defaultValues?: Partial<ArticleFormData>;
-  onSubmit: (data: ArticleFormData) => void;
+  onSubmit: (data: ArticleFormData, meta: ArticleFormSubmitMeta) => void;
   articleId?: string | number;
   loading?: boolean;
   taxonomyOptions?: ArticleTaxonomyOptions;
@@ -99,6 +116,7 @@ const emptyFormData: ArticleFormData = {
   tagsCommaRaw: "",
   shareEnabled: true,
   status: "Draft",
+  scheduled_publish_at_local: "",
   blog_access_tier: "free",
   rel_download_url: null,
   category_ids: [],
@@ -106,6 +124,48 @@ const emptyFormData: ArticleFormData = {
   article_type_ids: [],
   court_ids: [],
 };
+
+function isoToDatetimeLocalValue(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function minDatetimeLocalValue(minutesAhead = 1): string {
+  const d = new Date();
+  d.setSeconds(0, 0);
+  d.setMinutes(d.getMinutes() + minutesAhead);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function sidebarBadgeLabel(status: ArticleFormData["status"]): string {
+  switch (status) {
+    case "Published":
+      return "Published";
+    case "Scheduled":
+      return "Scheduled";
+    case "Archived":
+      return "Archived";
+    default:
+      return "Draft";
+  }
+}
+
+function sidebarBadgeClass(status: ArticleFormData["status"]): string {
+  switch (status) {
+    case "Published":
+      return "bg-success-50 text-success-700 ring-success-500/20 dark:bg-success-500/10 dark:text-success-400";
+    case "Scheduled":
+      return "bg-brand-50 text-brand-700 ring-brand-500/20 dark:bg-brand-500/10 dark:text-brand-300";
+    case "Archived":
+      return "bg-error-50 text-error-700 ring-error-500/20 dark:bg-error-500/10 dark:text-error-400";
+    default:
+      return "bg-warning-50 text-warning-800 ring-warning-500/20 dark:bg-warning-500/10 dark:text-warning-300";
+  }
+}
 
 /** Preview/back-navigation state historically used `tags: string[]`. */
 type ArticleFormSeed = Partial<ArticleFormData> & { tags?: string[] };
@@ -123,6 +183,16 @@ function buildArticleFormState(seed: ArticleFormSeed): ArticleFormData {
     ...rest,
     tagsCommaRaw,
     blog_access_tier: seed.blog_access_tier === "premium" ? "premium" : "free",
+    // Hydrate the datetime-local input from the ISO string when not already set
+    scheduled_publish_at_local:
+      rest.scheduled_publish_at_local != null &&
+      String(rest.scheduled_publish_at_local).trim() !== ""
+        ? String(rest.scheduled_publish_at_local)
+        : isoToDatetimeLocalValue(
+            typeof seed.scheduled_publish_at === "string"
+              ? seed.scheduled_publish_at
+              : undefined,
+          ),
   };
 }
 
@@ -204,23 +274,70 @@ export default function ArticleForm({
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const runSubmit = (action: ArticleSubmitAction) => {
+    if (!formData.meta.title?.trim()) {
+      alert("Please enter a title.");
+      return;
+    }
+
+    if (action.type === "schedule") {
+      const local = formData.scheduled_publish_at_local?.trim();
+      if (!local) {
+        alert("Please choose a date and time to schedule.");
+        return;
+      }
+      const when = new Date(local);
+      if (Number.isNaN(when.getTime())) {
+        alert("Invalid schedule date.");
+        return;
+      }
+      if (when.getTime() <= Date.now()) {
+        alert("Schedule time must be in the future.");
+        return;
+      }
+    }
+
     submittedRef.current = true;
     const slug =
       slugifyForSeo(formData.meta.slug) ||
       slugifyForSeo(formData.meta.title);
-    onSubmit({
+
+    let nextStatus: ArticleFormData["status"] = formData.status;
+    if (action.type === "draft") nextStatus = "Draft";
+    else if (action.type === "publish_now") nextStatus = "Published";
+    else if (action.type === "schedule") nextStatus = "Scheduled";
+    else if (action.type === "archive") nextStatus = "Archived";
+
+    const isSchedule = action.type === "schedule";
+    const payload: ArticleFormData = {
       ...formData,
       meta: { ...formData.meta, slug },
-    });
-  };
+      status: nextStatus,
+      scheduled_publish_at_local: isSchedule ? formData.scheduled_publish_at_local : "",
+    };
 
-  const submitLabel = mode === "create" ? "Create Article" : "Update Article";
+    if (isSchedule) {
+      onSubmit(payload, {
+        type: "schedule",
+        scheduledAtIso: new Date(formData.scheduled_publish_at_local.trim()).toISOString(),
+      });
+      return;
+    }
+
+    onSubmit(payload, action);
+  };
 
   return (
     <>
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        runSubmit({ type: "draft" });
+      }}
+      className="space-y-6"
+    >
+      <div className="lg:grid lg:grid-cols-[1fr_280px] lg:items-start lg:gap-8">
+        <div className="min-w-0 space-y-6">
       {/* Title + Meta (Fixed Top) */}
       <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] sm:p-6">
         <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">
@@ -538,23 +655,6 @@ export default function ArticleForm({
             </Label>
           </div>
           <div>
-            <Label>Status</Label>
-            <select
-              value={formData.status}
-              onChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  status: e.target.value as ArticleFormData["status"],
-                }))
-              }
-              className="w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-800 dark:border-gray-800 dark:bg-white/[0.03] dark:text-white/90"
-            >
-              <option value="Draft">Draft</option>
-              <option value="Published">Published</option>
-              <option value="Archived">Archived</option>
-            </select>
-          </div>
-          <div>
             <Label>Blog access</Label>
             <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">
               Premium: full article on the public site is for logged-in members (preview for others). Free: everyone
@@ -621,26 +721,112 @@ export default function ArticleForm({
           />
         </div>
       </div>
-      <div className="flex flex-wrap gap-3">
-        <button
-          type="submit"
-          disabled={loading}
-          className="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-medium text-white transition bg-brand-500 shadow-theme-xs hover:bg-brand-600 disabled:opacity-50"
-        >
-          {loading ? "Saving…" : submitLabel}
-        </button>
-        <button
-          type="button"
-          onClick={handlePreview}
-          className="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm bg-white text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:ring-gray-700 dark:hover:bg-white/[0.03] dark:hover:text-gray-300"
-        >
-          Preview
-        </button>
+
+      <div className="flex flex-wrap gap-3 pt-2">
         <Link to="/articles">
           <Button variant="outline" size="sm">
-            Cancel
+            Back to list
           </Button>
         </Link>
+        <p className="w-full text-xs text-gray-500 dark:text-gray-400 lg:w-auto lg:py-2">
+          Tip: press Enter in a field to save as draft. Use the panel on the right to publish or schedule.
+        </p>
+      </div>
+        </div>
+
+        <aside className="mt-8 space-y-4 lg:sticky lg:top-6 lg:mt-0">
+          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-xs dark:border-gray-800 dark:bg-white/[0.03]">
+            <h3 className="text-base font-semibold text-gray-800 dark:text-white/90">
+              Publish
+            </h3>
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              Choose how this article should go live. Drafts stay private until you publish or schedule.
+            </p>
+
+            <div className={`mt-4 inline-flex rounded-full px-3 py-1 text-xs font-medium ring-1 ring-inset ${sidebarBadgeClass(formData.status)}`}>
+              {sidebarBadgeLabel(formData.status)}
+            </div>
+
+            {formData.status === "Scheduled" && formData.scheduled_publish_at_local ? (
+              <p className="mt-2 text-xs text-gray-600 dark:text-gray-300">
+                Goes live{" "}
+                <span className="font-medium">
+                  {new Date(formData.scheduled_publish_at_local).toLocaleString()}
+                </span>
+              </p>
+            ) : null}
+
+            <div className="mt-5 flex flex-col gap-2">
+              <button
+                type="button"
+                disabled={loading}
+                onClick={() => runSubmit({ type: "draft" })}
+                className="inline-flex w-full items-center justify-center rounded-lg px-4 py-2.5 text-sm font-medium ring-1 ring-inset ring-gray-300 bg-white text-gray-800 hover:bg-gray-50 disabled:opacity-50 dark:bg-gray-900 dark:text-white dark:ring-gray-700 dark:hover:bg-white/[0.06]"
+              >
+                {loading ? "Saving…" : "Save draft"}
+              </button>
+              <button
+                type="button"
+                disabled={loading}
+                onClick={() => runSubmit({ type: "publish_now" })}
+                className="inline-flex w-full items-center justify-center rounded-lg px-4 py-2.5 text-sm font-medium text-white bg-brand-500 shadow-theme-xs hover:bg-brand-600 disabled:opacity-50"
+              >
+                {loading ? "Saving…" : "Publish now"}
+              </button>
+              <button
+                type="button"
+                disabled={loading}
+                onClick={handlePreview}
+                className="inline-flex w-full items-center justify-center rounded-lg px-4 py-2.5 text-sm font-medium ring-1 ring-inset ring-gray-300 bg-white text-gray-800 hover:bg-gray-50 dark:bg-gray-900 dark:text-white dark:ring-gray-700 dark:hover:bg-white/[0.06]"
+              >
+                Preview
+              </button>
+            </div>
+
+            <div className="mt-6 border-t border-gray-200 pt-5 dark:border-gray-800">
+              <Label>Schedule for later</Label>
+              <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">
+                Article will appear on the public site at the time you pick (your local timezone).
+              </p>
+              <input
+                type="datetime-local"
+                min={minDatetimeLocalValue(1)}
+                value={formData.scheduled_publish_at_local}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    scheduled_publish_at_local: e.target.value,
+                  }))
+                }
+                className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-800 dark:border-gray-800 dark:bg-white/[0.03] dark:text-white/90"
+              />
+              <button
+                type="button"
+                disabled={loading}
+                onClick={() => runSubmit({ type: "schedule" })}
+                className="mt-3 inline-flex w-full items-center justify-center rounded-lg px-4 py-2.5 text-sm font-medium text-brand-700 ring-1 ring-inset ring-brand-200 bg-brand-50 hover:bg-brand-100 disabled:opacity-50 dark:bg-brand-500/10 dark:text-brand-300 dark:ring-brand-500/30"
+              >
+                {loading ? "Saving…" : "Schedule publish"}
+              </button>
+            </div>
+
+            {mode === "edit" ? (
+              <div className="mt-4 border-t border-gray-200 pt-4 dark:border-gray-800">
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={() => {
+                    if (!window.confirm("Archive this article? It will be hidden from the public blog.")) return;
+                    runSubmit({ type: "archive" });
+                  }}
+                  className="inline-flex w-full items-center justify-center rounded-lg px-4 py-2.5 text-sm font-medium text-error-600 ring-1 ring-inset ring-error-200 hover:bg-error-50 disabled:opacity-50 dark:text-error-400 dark:ring-error-500/30 dark:hover:bg-error-500/10"
+                >
+                  Archive article
+                </button>
+              </div>
+            ) : null}
+          </div>
+        </aside>
       </div>
     </form>
 
