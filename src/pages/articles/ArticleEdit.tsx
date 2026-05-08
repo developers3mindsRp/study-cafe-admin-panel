@@ -2,13 +2,18 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
-import ArticleForm, { type ArticleFormData, type ArticleTaxonomyOptions } from "./ArticleForm";
+import ArticleForm, {
+  type ArticleFormData,
+  type ArticleFormSubmitMeta,
+  type ArticleTaxonomyOptions,
+} from "./ArticleForm";
 import { articlesApi, fetchArticleCategories, fetchTags, fetchArticleTypes, fetchCourts, type ArticleRecord } from "../../api/articles";
 import { decodeSlugForDisplay } from "../../lib/slug";
 
 function statusToForm(s: string): ArticleFormData["status"] {
   if (s === "publish" || s === "published") return "Published";
   if (s === "archived") return "Archived";
+  if (s === "scheduled") return "Scheduled";
   return "Draft";
 }
 
@@ -19,6 +24,7 @@ function tierFromApi(t: string | undefined | null): ArticleFormData["blog_access
 function statusToBackend(s: ArticleFormData["status"]) {
   if (s === "Published") return "publish";
   if (s === "Archived") return "archived";
+  if (s === "Scheduled") return "scheduled";
   return "draft";
 }
 
@@ -56,10 +62,12 @@ export default function ArticleEdit() {
     }).catch(console.error);
   }, []);
 
-  const handleSubmit = async (formData: ArticleFormData) => {
+  const handleSubmit = async (formData: ArticleFormData, meta: ArticleFormSubmitMeta) => {
     if (!id) return;
     try {
       setSubmitting(true);
+      const scheduled_publish_at =
+        meta.type === "schedule" ? meta.scheduledAtIso : null;
       const payload = {
         title: formData.meta.title,
         slug: formData.meta.slug || undefined,
@@ -67,6 +75,7 @@ export default function ArticleEdit() {
         content: formData.body || null,
         thumbnail_url: formData.featuredImage?.imageUrl || null,
         status: statusToBackend(formData.status),
+        scheduled_publish_at,
         meta_title: formData.meta.metaTitle || null,
         meta_description: formData.meta.metaDesc || null,
         meta_keywords: formData.meta.metaKeywords || null,
@@ -115,6 +124,7 @@ export default function ArticleEdit() {
     tags: [],
     shareEnabled: true,
     status: statusToForm(article.status),
+    scheduled_publish_at: article.scheduled_publish_at ?? null,
     blog_access_tier: tierFromApi(article.blog_access_tier),
     rel_download_url: article.rel_download_url ?? null,
     category_ids: article.category_ids ?? [],

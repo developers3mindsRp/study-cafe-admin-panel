@@ -3,12 +3,17 @@ import { useNavigate } from "react-router";
 import { toast } from "react-toastify";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
-import ArticleForm, { type ArticleFormData, type ArticleTaxonomyOptions } from "./ArticleForm";
+import ArticleForm, {
+  type ArticleFormData,
+  type ArticleFormSubmitMeta,
+  type ArticleTaxonomyOptions,
+} from "./ArticleForm";
 import { articlesApi, fetchArticleCategories, fetchTags, fetchArticleTypes, fetchCourts } from "../../api/articles";
 
 function statusToBackend(s: ArticleFormData["status"]) {
   if (s === "Published") return "publish";
   if (s === "Archived") return "archived";
+  if (s === "Scheduled") return "scheduled";
   return "draft";
 }
 
@@ -33,9 +38,11 @@ export default function ArticleCreate() {
     }).catch(console.error);
   }, []);
 
-  const handleSubmit = async (formData: ArticleFormData) => {
+  const handleSubmit = async (formData: ArticleFormData, meta: ArticleFormSubmitMeta) => {
     try {
       setSubmitting(true);
+      const scheduled_publish_at =
+        meta.type === "schedule" ? meta.scheduledAtIso : null;
       const payload = {
         title: formData.meta.title,
         slug: formData.meta.slug || undefined,
@@ -43,6 +50,7 @@ export default function ArticleCreate() {
         content: formData.body || null,
         thumbnail_url: formData.featuredImage?.imageUrl || null,
         status: statusToBackend(formData.status),
+        scheduled_publish_at,
         meta_title: formData.meta.metaTitle || null,
         meta_description: formData.meta.metaDesc || null,
         category_ids: formData.category_ids ?? [],
