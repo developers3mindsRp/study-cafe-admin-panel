@@ -317,6 +317,11 @@ export default function CourseView() {
             <Field label="Price">₹{Number(course.price).toFixed(2)}</Field>
             {course.sale_price && <Field label="Sale Price">₹{Number(course.sale_price).toFixed(2)}</Field>}
             {course.language && <Field label="Language">{course.language}</Field>}
+            <Field label="Students (banner)">{course.enrolled_count ?? 0}</Field>
+            <Field label="Avg rating (banner)">
+              {course.ratings != null && course.ratings !== "" ? Number(course.ratings).toFixed(1) : "—"}
+            </Field>
+            <Field label="Rating users (banner)">{course.rating_users ?? 0}</Field>
             {course.gateway && <Field label="Gateway">{course.gateway}</Field>}
             <Field label="Taxable">{course.taxable ? "Yes" : "No"}</Field>
             <Field label="Hide from Public">{course.hide_from_public ? "Yes" : "No"}</Field>

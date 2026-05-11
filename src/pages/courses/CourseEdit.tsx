@@ -39,6 +39,14 @@ export default function CourseEdit() {
         thumbnail_url: data.thumbnail_url || null,
         youtube_url: data.youtube_url || null,
         language: data.language || null,
+        enrolled_count: Math.max(0, parseInt(String(data.enrolled_count), 10) || 0),
+        ratings: (() => {
+          const t = String(data.ratings ?? "").trim();
+          if (!t) return null;
+          const n = Number(t);
+          return Number.isFinite(n) ? n : null;
+        })(),
+        rating_users: Math.max(0, parseInt(String(data.rating_users), 10) || 0),
         course_type: data.course_type || null,
         taxable: data.taxable,
         keywords: data.keywords || null,
