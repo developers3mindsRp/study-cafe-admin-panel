@@ -1,9 +1,11 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Modal } from "../ui/modal";
 import Button from "../ui/button/Button";
 import Input from "../form/input/InputField";
 import type { DownloadFile, DownloadCategory, CreateFilePayload } from "../../api/downloads";
 import { slugifyForSeo, shouldResyncSlugFromSource } from "../../lib/slug";
+import { uploadFile } from "../../api/uploads";
+import { toast } from "react-toastify";
 
 function isValidUrl(value: string): boolean {
   try {
@@ -12,6 +14,12 @@ function isValidUrl(value: string): boolean {
   } catch {
     return false;
   }
+}
+
+function isVideoFile(file: File): boolean {
+  if (file.type && file.type.startsWith("video/")) return true;
+  const name = file.name.toLowerCase();
+  return /\.(mp4|webm|ogv|ogg|mov|avi|mkv|m4v|wmv|flv|mpeg|mpg|3gp|3g2|ts|m2ts|vob|asf|f4v)$/.test(name);
 }
 
 interface FileFormProps {
@@ -58,6 +66,13 @@ export default function FileForm({ isOpen, onClose, onSave, initial, categories 
   const [catDropdownOpen, setCatDropdownOpen] = useState(false);
   const catDropdownRef = useRef<HTMLDivElement>(null);
 
+  // File upload state
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     if (isOpen) {
       titleChangedByUser.current = false;
@@ -74,6 +89,9 @@ export default function FileForm({ isOpen, onClose, onSave, initial, categories 
       setErrors({});
       setApiError(null);
       setCatDropdownOpen(false);
+      setUploadError(null);
+      setUploadProgress(0);
+      setUploading(false);
     }
   }, [isOpen, initial]);
 
@@ -124,6 +142,41 @@ export default function FileForm({ isOpen, onClose, onSave, initial, categories 
     }));
   };
 
+  const handleFileUpload = useCallback(async (file: File) => {
+    if (isVideoFile(file)) {
+      toast.warning(
+        "Video files are not allowed here. You can upload images, documents, archives, and other file types—or paste a direct file URL.",
+      );
+      return;
+    }
+    setUploading(true);
+    setUploadProgress(0);
+    setUploadError(null);
+    try {
+      const { url } = await uploadFile(file, setUploadProgress);
+      setForm((prev) => ({ ...prev, file_url: url }));
+      setErrors((prev) => ({ ...prev, file_url: undefined }));
+    } catch (err: any) {
+      setUploadError(err?.response?.data?.message ?? err?.message ?? "Upload failed");
+    } finally {
+      setUploading(false);
+      setUploadProgress(0);
+    }
+  }, []);
+
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleFileUpload(file);
+    e.target.value = "";
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) handleFileUpload(file);
+  };
+
   const validate = (): boolean => {
     const newErrors: FormErrors = {};
     if (!form.title.trim()) newErrors.title = "Title is required";
@@ -138,6 +191,7 @@ export default function FileForm({ isOpen, onClose, onSave, initial, categories 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (uploading) return;
     if (!validate()) return;
     setSaving(true);
     setApiError(null);
@@ -215,19 +269,72 @@ export default function FileForm({ isOpen, onClose, onSave, initial, categories 
               />
             </div>
 
-            {/* File URL */}
+            {/* File URL + Upload */}
             <div>
               <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                File URL <span className="text-error-500">*</span>
+                File <span className="text-error-500">*</span>
               </label>
+
+              {/* Drag-and-drop zone */}
+              <div
+                onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+                onDragLeave={() => setIsDragOver(false)}
+                onDrop={handleDrop}
+                onClick={() => !uploading && !saving && fileInputRef.current?.click()}
+                className={`relative mb-2 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-4 py-6 transition-colors
+                  ${isDragOver
+                    ? "border-brand-400 bg-brand-50 dark:bg-brand-500/10"
+                    : "border-gray-300 bg-gray-50 hover:border-brand-400 hover:bg-brand-50 dark:border-gray-700 dark:bg-white/[0.02] dark:hover:border-brand-500 dark:hover:bg-brand-500/10"}
+                  ${(uploading || saving) ? "pointer-events-none opacity-60" : ""}`}
+              >
+                {uploading ? (
+                  <>
+                    <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand-500 border-t-transparent" />
+                    <p className="text-sm font-medium text-brand-600 dark:text-brand-400">
+                      Uploading… {uploadProgress}%
+                    </p>
+                    <div className="h-1.5 w-48 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+                      <div
+                        className="h-full rounded-full bg-brand-500 transition-all duration-200"
+                        style={{ width: `${uploadProgress}%` }}
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                    </svg>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      <span className="font-semibold text-brand-600 dark:text-brand-400">Click to browse</span>
+                      {" "}or drag &amp; drop a file here
+                    </p>
+                    <p className="text-xs text-gray-400">Any file type except video (e.g. PDF, images, ZIP).</p>
+                  </>
+                )}
+              </div>
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                className="hidden"
+                onChange={handleFileInputChange}
+                disabled={uploading || saving}
+              />
+
+              {uploadError && (
+                <p className="mb-2 text-xs text-error-500">{uploadError}</p>
+              )}
+
+              {/* Manual URL field */}
               <Input
                 type="url"
-                placeholder="https://studycafe.in/wp-content/uploads/..."
+                placeholder="https://studycafe.in/wp-content/uploads/... (or upload above)"
                 value={form.file_url}
                 onChange={handleFieldChange("file_url")}
                 error={!!errors.file_url}
                 hint={errors.file_url}
-                disabled={saving}
+                disabled={saving || uploading}
               />
             </div>
 

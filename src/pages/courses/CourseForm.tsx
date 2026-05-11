@@ -13,6 +13,7 @@ import { COURSE_PREVIEW_STATE_KEY, COURSE_RESTORE_STATE_KEY } from "./CoursePrev
 import { fetchCourseCats, type Course, type CourseCat } from "../../api/courses";
 import { adminUsersApi, type AdminPanelUser } from "../../api/adminUsers";
 import { CourseCatMultiSelect } from "./components/CourseCatMultiSelect";
+import { AuthorUserSelect } from "./components/AuthorUserSelect";
 import MetaFieldsForm, { type SEOMetaFields } from "../../components/form/MetaFieldsForm";
 import { slugifyForSeo, shouldResyncSlugFromSource } from "../../lib/slug";
 
@@ -620,18 +621,13 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
               <div>
                 <Label>Author</Label>
-                <select
+                <AuthorUserSelect
+                  users={adminUsers}
                   value={form.author_user_id}
-                  onChange={(e) => handleAuthorSelect(e.target.value)}
-                  className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-                >
-                  <option value="">Select an author</option>
-                  {adminUsers.map((u) => (
-                    <option key={u.id} value={String(u.id)}>
-                      {u.name || u.email} — {u.role}
-                    </option>
-                  ))}
-                </select>
+                  onChange={handleAuthorSelect}
+                  disabled={loading}
+                  placeholder="Select an author"
+                />
               </div>
               <div>
                 <Label>Author Name</Label>
