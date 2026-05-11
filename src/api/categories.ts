@@ -13,6 +13,9 @@ export interface CategoryRecord {
     slug: string | null;
     parent_id: number | null;
     wp_term_id?: number | null;
+    whatsapp_links?: string[] | null;
+    telegram_links?: string[] | null;
+    google_news_url?: string | null;
 }
 
 const BASE_URL = "/admin/platform/article-categories";
