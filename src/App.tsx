@@ -4,6 +4,7 @@ import {
   RouterProvider,
   Route,
   Outlet,
+  Navigate,
 } from "react-router";
 import SignIn from "./pages/auth-pages/SignIn";
 import SignUp from "./pages/auth-pages/SignUp";
@@ -33,6 +34,7 @@ import TermsOfUseContent from "./pages/cms/TermsOfUseContent";
 import DisclaimerContent from "./pages/cms/DisclaimerContent";
 import RefundPolicyContent from "./pages/cms/RefundPolicyContent";
 import FooterContent from "./pages/cms/FooterContent";
+import DisplayAdsContent from "./pages/cms/DisplayAdsContent";
 import SEOMetadataList from "./pages/seo/SEOMetadataList";
 import SEOMetadataCreate from "./pages/seo/SEOMetadataCreate";
 import SEOMetadataEdit from "./pages/seo/SEOMetadataEdit";
@@ -76,6 +78,7 @@ import CourseView from "./pages/courses/CourseView";
 import CourseCreate from "./pages/courses/CourseCreate";
 import CourseEdit from "./pages/courses/CourseEdit";
 import CoursePageSettings from "./pages/courses/CoursePageSettings";
+import GlobalSettings from "./pages/settings/GlobalSettings";
 import CoursePreview from "./pages/courses/CoursePreview";
 import CourseCatList from "./pages/courses/CourseCatList";
 import CourseCatCreate from "./pages/courses/CourseCatCreate";
@@ -116,6 +119,27 @@ const router = createBrowserRouter(
             <Route index path="/" element={<Home />} />
           </Route>
 
+          <Route path="/settings/global" element={<RequirePermissionRoute permissions={["global_settings:list", "global_settings:view", "global_settings:edit"]} />}>
+            <Route index element={<GlobalSettings />} />
+          </Route>
+          <Route
+            path="/settings/global/display-ads"
+            element={
+              <RequirePermissionRoute
+                permissions={[
+                  "global_settings:list",
+                  "global_settings:view",
+                  "global_settings:edit",
+                  "content:list",
+                  "content:view",
+                  "content:edit",
+                ]}
+              />
+            }
+          >
+            <Route index element={<DisplayAdsContent />} />
+          </Route>
+
           {/* Page Content / CMS — view or edit */}
           <Route element={<RequirePermissionRoute permissions={["content:list", "content:view", "content:edit"]} />}>
             <Route path="/content/home" element={<HomeContent />} />
@@ -128,6 +152,7 @@ const router = createBrowserRouter(
             <Route path="/content/refund-policy" element={<RefundPolicyContent />} />
             <Route path="/content/footer" element={<FooterContent />} />
           </Route>
+          <Route path="/content/display-ads" element={<Navigate to="/settings/global/display-ads" replace />} />
 
           {/* Articles — each sub-route requires its specific permission */}
           <Route path="/articles" element={<RequirePermissionRoute permissions={["articles:list"]} />}>

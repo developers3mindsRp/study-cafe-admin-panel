@@ -95,6 +95,11 @@ export const PERM_DOWNLOADS_CREATE = "downloads:create";
 export const PERM_DOWNLOADS_EDIT = "downloads:edit";
 export const PERM_DOWNLOADS_DELETE = "downloads:delete";
 
+// Global storefront / site settings (admin UI)
+export const PERM_GLOBAL_SETTINGS_LIST = "global_settings:list";
+export const PERM_GLOBAL_SETTINGS_VIEW = "global_settings:view";
+export const PERM_GLOBAL_SETTINGS_EDIT = "global_settings:edit";
+
 // Admin (panel gate)
 export const PERM_ADMIN_ACCESS = "admin:access";
 
@@ -168,6 +173,9 @@ export const ALL_PERMISSIONS = [
   PERM_DOWNLOADS_CREATE,
   PERM_DOWNLOADS_EDIT,
   PERM_DOWNLOADS_DELETE,
+  PERM_GLOBAL_SETTINGS_LIST,
+  PERM_GLOBAL_SETTINGS_VIEW,
+  PERM_GLOBAL_SETTINGS_EDIT,
   PERM_ADMIN_ACCESS,
   PERM_ADMIN_USERS_LIST,
   PERM_ADMIN_USERS_VIEW,
