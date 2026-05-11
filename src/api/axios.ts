@@ -1,5 +1,10 @@
-import axios, { type InternalAxiosRequestConfig } from "axios";
-import { getStoredToken, clearStoredAuth } from "../lib/authStorage";
+import axios, { type AxiosError, type InternalAxiosRequestConfig } from "axios";
+import {
+  clearStoredAuth,
+  getStoredRefreshToken,
+  getStoredToken,
+  updateStoredAccessToken,
+} from "../lib/authStorage";
 
 const baseURL =
   typeof import.meta !== "undefined" && import.meta.env?.VITE_API_BASE_URL
@@ -15,6 +20,38 @@ export const api = axios.create({
   },
 });
 
+let refreshInFlight: Promise<string | null> | null = null;
+
+function postAuthRefresh(): Promise<string | null> {
+  if (refreshInFlight) return refreshInFlight;
+  refreshInFlight = (async () => {
+    const refresh = getStoredRefreshToken();
+    if (!refresh) return null;
+    try {
+      const { data: envelope } = await axios.post<{
+        success?: boolean;
+        data?: { accessToken?: string; token?: string };
+      }>(`${baseURL}/auth/refresh`, { refreshToken: refresh }, {
+        headers: { "Content-Type": "application/json" },
+        timeout: 30_000,
+      });
+      const inner =
+        envelope && typeof envelope === "object" && envelope.success === true && envelope.data != null
+          ? envelope.data
+          : (envelope as { accessToken?: string; token?: string } | undefined);
+      const accessToken = inner?.accessToken ?? inner?.token;
+      if (!accessToken) return null;
+      updateStoredAccessToken(accessToken);
+      return accessToken;
+    } catch {
+      return null;
+    } finally {
+      refreshInFlight = null;
+    }
+  })();
+  return refreshInFlight;
+}
+
 /**
  * Request interceptor: add auth token from storage.
  */
@@ -27,7 +64,7 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
 });
 
 /**
- * Response interceptor: unwraps backend envelopes and handles 401s.
+ * Response interceptor: unwraps backend envelopes and handles 401s (refresh access JWT when possible).
  */
 api.interceptors.response.use(
   (response) => {
@@ -43,8 +80,30 @@ api.interceptors.response.use(
     }
     return response;
   },
-  (error) => {
-    if (error.response?.status === 401 && typeof window !== "undefined") {
+  async (error: AxiosError) => {
+    const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+    const status = error.response?.status;
+    const url = originalRequest?.url ?? "";
+
+    const isAuthPath =
+      url.includes("/auth/login") ||
+      url.includes("/auth/register") ||
+      url.includes("/auth/refresh");
+
+    if (
+      status === 401 &&
+      !originalRequest._retry &&
+      !isAuthPath &&
+      typeof window !== "undefined"
+    ) {
+      originalRequest._retry = true;
+      const newAccess = await postAuthRefresh();
+      if (newAccess) {
+        if (originalRequest.headers) {
+          originalRequest.headers.Authorization = `Bearer ${newAccess}`;
+        }
+        return api(originalRequest);
+      }
       clearStoredAuth();
       const redirect = encodeURIComponent(window.location.pathname + window.location.search);
       window.location.href = `/signin?redirect=${redirect}`;

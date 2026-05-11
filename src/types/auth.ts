@@ -22,6 +22,8 @@ export interface LoginCredentials {
 
 export interface LoginResponse {
   token: string;
+  /** Long-lived token from auth-service; required for silent session renewal after access JWT expires */
+  refreshToken?: string;
   user: AdminUser;
   expiresIn?: number;
 }
@@ -40,4 +42,5 @@ export interface PersistedAuth {
   token: string;
   user: AdminUser;
   expiresAt?: number;
+  refreshToken?: string;
 }

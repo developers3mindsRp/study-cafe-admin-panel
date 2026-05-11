@@ -31,6 +31,12 @@ export interface CourseFormData {
   thumbnail_url: string;
   youtube_url: string;
   language: string;
+  /** Shown on public course page banner (“N students”). */
+  enrolled_count: string;
+  /** Banner average rating (e.g. 4.8); leave empty if none. */
+  ratings: string;
+  /** Banner copy: “rating by N users”. */
+  rating_users: string;
   course_type: string;
   taxable: boolean;
   keywords: string;
@@ -87,6 +93,15 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
           restoredData.affiliate_commission != null && restoredData.affiliate_commission !== ""
             ? String(restoredData.affiliate_commission)
             : "0",
+        enrolled_count:
+          restoredData.enrolled_count != null && restoredData.enrolled_count !== ""
+            ? String(restoredData.enrolled_count)
+            : "0",
+        ratings: restoredData.ratings != null ? String(restoredData.ratings) : "",
+        rating_users:
+          restoredData.rating_users != null && restoredData.rating_users !== ""
+            ? String(restoredData.rating_users)
+            : "0",
         canonical_url: restoredData.canonical_url ?? "",
         robots: restoredData.robots ?? "index, follow",
         og_title: restoredData.og_title ?? "",
@@ -124,6 +139,18 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
       thumbnail_url: initial?.thumbnail_url ?? "",
       youtube_url: initial?.youtube_url ?? "",
       language: initial?.language ?? "",
+      enrolled_count:
+        initial?.enrolled_count != null
+          ? String(initial.enrolled_count)
+          : "0",
+      ratings:
+        initial?.ratings != null && initial.ratings !== ""
+          ? String(initial.ratings)
+          : "",
+      rating_users:
+        initial?.rating_users != null
+          ? String(initial.rating_users)
+          : "0",
       course_type: initial?.course_type ?? "",
       taxable: initial?.taxable ?? false,
       keywords: initial?.keywords ?? "",
@@ -665,6 +692,40 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
             <div>
               <Label>Language</Label>
               <Input value={form.language} onChange={(e) => updateField('language', e.target.value)} />
+            </div>
+            <div>
+              <Label>Students (public banner)</Label>
+              <Input
+                type="number"
+                min={0}
+                step={1}
+                value={form.enrolled_count}
+                onChange={(e) => updateField('enrolled_count', e.target.value)}
+                placeholder="e.g. 120"
+              />
+            </div>
+            <div>
+              <Label>Average rating (banner)</Label>
+              <Input
+                type="number"
+                min={0}
+                max={5}
+                step={0.1}
+                value={form.ratings}
+                onChange={(e) => updateField('ratings', e.target.value)}
+                placeholder="e.g. 4.8 — leave empty for none"
+              />
+            </div>
+            <div>
+              <Label>Rating user count (banner)</Label>
+              <Input
+                type="number"
+                min={0}
+                step={1}
+                value={form.rating_users}
+                onChange={(e) => updateField('rating_users', e.target.value)}
+                placeholder="e.g. 50"
+              />
             </div>
             <div>
               <Label>Course Type</Label>
