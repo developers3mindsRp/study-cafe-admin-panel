@@ -36,6 +36,55 @@ export interface ComparisonFeature {
     updated_at?: string;
 }
 
+export interface UpgradeSummaryCurrentPlan {
+    id: number | null;
+    name: string;
+    slug: string;
+    price: number;
+    /** Days used for pro-rate (capped at plan duration). */
+    remainingDays: number;
+    /** Present when calendar time left exceeds one plan period (e.g. far-future expiry). */
+    remainingCalendarDays?: number;
+    remainingAmount: number;
+}
+
+export interface UpgradeSummaryTargetPlan {
+    id: number;
+    name: string;
+    price: number;
+}
+
+export interface UpgradeSummaryPricing {
+    targetAmount: number;
+    deductAmount: number;
+    finalAmount: number;
+    gstAmount: number;
+    grandTotal: number;
+}
+
+export interface UpgradeSummaryResponse {
+    currentPlan: UpgradeSummaryCurrentPlan | null;
+    targetPlan: UpgradeSummaryTargetPlan;
+    pricing: UpgradeSummaryPricing;
+}
+
+export interface CreateOrderResponse {
+    orderId: string;
+    free: boolean;
+    paid: boolean;
+    razorpayOrderId: string | null;
+    amount: number;
+    originalAmount: number;
+    upgradeAdjustment: number;
+    adjustedMembershipAmount: number;
+    discountAmount: number;
+    gstAmount: number;
+    grandTotal: number;
+    currency: string;
+    key: string | null;
+    prefill: { name: string; email: string; contact: string };
+}
+
 // Re-export ListQuery from factory for convenience
 export type { ListQuery as ListParams } from "./apiFactory";
 export type { PaginatedResponse } from "./apiFactory";
@@ -50,6 +99,26 @@ export const plansApi = createCrudApi<Plan>(BASE_URL)({
         return data;
     },
 });
+
+export async function fetchUpgradeSummary(targetPlanId: number): Promise<UpgradeSummaryResponse> {
+    const res = await api.post<{ success: boolean; data: UpgradeSummaryResponse }>(
+        '/platform/membership/upgrade-summary',
+        { targetPlanId }
+    );
+    return res.data.data ?? (res.data as unknown as UpgradeSummaryResponse);
+}
+
+export async function createMembershipOrder(
+    entityId: number,
+    couponCode?: string
+): Promise<CreateOrderResponse> {
+    const res = await api.post<{ success: boolean; data: CreateOrderResponse }>('/orders/create', {
+        type: 'MEMBERSHIP',
+        entityId,
+        couponCode: couponCode || undefined,
+    });
+    return res.data.data ?? (res.data as unknown as CreateOrderResponse);
+}
 
 export const comparisonFeaturesApi = {
     async list(): Promise<ComparisonFeature[]> {
