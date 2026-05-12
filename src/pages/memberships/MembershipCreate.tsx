@@ -4,6 +4,7 @@ import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
 import { plansApi } from "../../api/plans";
 import { useState } from "react";
+import { getApiErrorMessage } from "../../lib/apiError";
 
 export default function MembershipCreate() {
   const navigate = useNavigate();
@@ -37,10 +38,9 @@ export default function MembershipCreate() {
 
       await plansApi.create(payload);
       navigate("/memberships");
-    } catch (err) {
+    } catch (err: unknown) {
       console.error("Failed to create membership", err);
-      // You might want to show a toast/alert here
-      alert("Failed to create membership");
+      alert(getApiErrorMessage(err, "Failed to create membership"));
     } finally {
       setLoading(false);
     }

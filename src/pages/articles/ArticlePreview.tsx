@@ -2,6 +2,7 @@ import { Link, useLocation, useNavigate } from "react-router";
 import PageMeta from "../../components/common/PageMeta";
 import ArticleContentRenderer from "../../components/article-editor/ArticleContentRenderer";
 import type { ArticleFormData, ArticleTaxonomyOptions } from "./ArticleForm";
+import { parseCommaSeparatedLabels } from "./articlePayload";
 
 const PREVIEW_STATE_KEY = "previewArticle";
 const RESTORE_STATE_KEY = "restoreFormData";
@@ -57,7 +58,16 @@ export default function ArticlePreview() {
     );
   }
 
-  const { meta, featuredImage, body, author, tags, category_ids, tag_ids, article_type_ids, court_ids } = previewData;
+  const { meta, featuredImage, body, author, tagsCommaRaw, category_ids, tag_ids, article_type_ids, court_ids } =
+    previewData;
+  const previewLegacy = previewData as ArticleFormData & { tags?: string[] };
+  const commaRaw =
+    typeof tagsCommaRaw === "string"
+      ? tagsCommaRaw
+      : Array.isArray(previewLegacy.tags) && previewLegacy.tags.length > 0
+        ? previewLegacy.tags.join(", ")
+        : "";
+  const commaTagLabels = parseCommaSeparatedLabels(commaRaw);
   const hasBody = Boolean(body?.trim());
   const currentDate = new Date().toLocaleDateString("en-US", {
     year: "numeric",
@@ -69,7 +79,12 @@ export default function ArticlePreview() {
   const tagNames = resolveNames(tag_ids, opts.tags);
   const articleTypeNames = resolveNames(article_type_ids, opts.articleTypes);
   const courtNames = resolveNames(court_ids, opts.courts);
-  const hasTaxonomies = categoryNames.length > 0 || tagNames.length > 0 || articleTypeNames.length > 0 || courtNames.length > 0 || (tags?.length ?? 0) > 0;
+  const hasTaxonomies =
+    categoryNames.length > 0 ||
+    tagNames.length > 0 ||
+    articleTypeNames.length > 0 ||
+    courtNames.length > 0 ||
+    commaTagLabels.length > 0;
 
   return (
     <>
@@ -192,7 +207,7 @@ export default function ArticlePreview() {
                       </div>
                     </div>
                   )}
-                  {(tagNames.length > 0 || (tags?.length ?? 0) > 0) && (
+                  {(tagNames.length > 0 || commaTagLabels.length > 0) && (
                     <div>
                       <p className="mb-2 text-sm font-medium text-gray-500">Tags</p>
                       <div className="flex flex-wrap gap-2">
@@ -201,7 +216,7 @@ export default function ArticlePreview() {
                             {name}
                           </span>
                         ))}
-                        {(tags?.length ?? 0) > 0 && tags!.map((tag, i) => (
+                        {commaTagLabels.map((tag, i) => (
                           <span key={`t-${i}-${tag}`} className="rounded-full border border-gray-700  px-3 py-1 text-sm text-black">
                             {tag}
                           </span>

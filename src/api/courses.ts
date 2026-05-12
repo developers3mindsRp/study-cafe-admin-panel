@@ -22,6 +22,11 @@ export interface Course {
   meta_title: string | null;
   meta_description: string | null;
   meta_keywords: string | null;
+  canonical_url: string | null;
+  robots: string | null;
+  og_title: string | null;
+  og_description: string | null;
+  og_image_url: string | null;
   faqs: string | null;
   feedback: string | null;
   includes_info: string | null;
@@ -37,6 +42,10 @@ export interface Course {
   end_date: string | null;
   /** From admin list API — for sorting / display. */
   enrolled_count?: number;
+  /** Average rating shown on public course banner (editable in admin). */
+  ratings?: number | string | null;
+  /** Number of users for banner rating text (editable in admin). */
+  rating_users?: number;
   updated_at?: string;
   authors?: Array<{
     user_id: number;

@@ -17,6 +17,13 @@ import DatePicker from "../form/date-picker";
 import { deleteOrder } from "../../api/orders";
 import { TrashBinIcon } from "../../icons";
 
+export interface OrdersTableProps {
+  filterStatus?: string;
+  filterType?: string;
+  filterAmountMin?: string;
+  filterAmountMax?: string;
+}
+
 function statusColor(s: string) {
   if (s === "paid" || s === "completed") return "success";
   if (s === "pending") return "warning";

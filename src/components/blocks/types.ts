@@ -175,5 +175,5 @@ export interface Article {
   author: AuthorBio;
   tags: string[];
   shareEnabled: boolean;
-  status: "Draft" | "Published" | "Archived";
+  status: "Draft" | "Published" | "Archived" | "Scheduled";
 }

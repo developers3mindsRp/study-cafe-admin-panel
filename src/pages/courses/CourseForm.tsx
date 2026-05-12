@@ -13,6 +13,7 @@ import { COURSE_PREVIEW_STATE_KEY, COURSE_RESTORE_STATE_KEY } from "./CoursePrev
 import { fetchCourseCats, type Course, type CourseCat } from "../../api/courses";
 import { adminUsersApi, type AdminPanelUser } from "../../api/adminUsers";
 import { CourseCatMultiSelect } from "./components/CourseCatMultiSelect";
+import { AuthorUserSelect } from "./components/AuthorUserSelect";
 import MetaFieldsForm, { type SEOMetaFields } from "../../components/form/MetaFieldsForm";
 import { slugifyForSeo, shouldResyncSlugFromSource } from "../../lib/slug";
 
@@ -31,6 +32,12 @@ export interface CourseFormData {
   thumbnail_url: string;
   youtube_url: string;
   language: string;
+  /** Shown on public course page banner (“N students”). */
+  enrolled_count: string;
+  /** Banner average rating (e.g. 4.8); leave empty if none. */
+  ratings: string;
+  /** Banner copy: “rating by N users”. */
+  rating_users: string;
   course_type: string;
   taxable: boolean;
   keywords: string;
@@ -53,6 +60,12 @@ export interface CourseFormData {
   meta_title: string;
   meta_description: string;
   meta_keywords: string;
+  canonical_url: string;
+  /** Robots directive (must match MetaFieldsForm options). */
+  robots: string;
+  og_title: string;
+  og_description: string;
+  og_image_url: string;
   /** Percent of order amount paid to referrer (0–100). */
   affiliate_commission: string;
 }
@@ -81,6 +94,20 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
           restoredData.affiliate_commission != null && restoredData.affiliate_commission !== ""
             ? String(restoredData.affiliate_commission)
             : "0",
+        enrolled_count:
+          restoredData.enrolled_count != null && restoredData.enrolled_count !== ""
+            ? String(restoredData.enrolled_count)
+            : "0",
+        ratings: restoredData.ratings != null ? String(restoredData.ratings) : "",
+        rating_users:
+          restoredData.rating_users != null && restoredData.rating_users !== ""
+            ? String(restoredData.rating_users)
+            : "0",
+        canonical_url: restoredData.canonical_url ?? "",
+        robots: restoredData.robots ?? "index, follow",
+        og_title: restoredData.og_title ?? "",
+        og_description: restoredData.og_description ?? "",
+        og_image_url: restoredData.og_image_url ?? "",
       };
     }
     return {
@@ -113,6 +140,18 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
       thumbnail_url: initial?.thumbnail_url ?? "",
       youtube_url: initial?.youtube_url ?? "",
       language: initial?.language ?? "",
+      enrolled_count:
+        initial?.enrolled_count != null
+          ? String(initial.enrolled_count)
+          : "0",
+      ratings:
+        initial?.ratings != null && initial.ratings !== ""
+          ? String(initial.ratings)
+          : "",
+      rating_users:
+        initial?.rating_users != null
+          ? String(initial.rating_users)
+          : "0",
       course_type: initial?.course_type ?? "",
       taxable: initial?.taxable ?? false,
       keywords: initial?.keywords ?? "",
@@ -148,6 +187,17 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
       meta_title: initial?.meta_title ?? "",
       meta_description: initial?.meta_description ?? "",
       meta_keywords: initial?.meta_keywords ?? "",
+      canonical_url: initial?.canonical_url ?? "",
+      robots:
+        initial?.robots &&
+        ["index, follow", "noindex, nofollow", "index, nofollow", "noindex, follow"].includes(
+          initial.robots,
+        )
+          ? initial.robots
+          : "index, follow",
+      og_title: initial?.og_title ?? "",
+      og_description: initial?.og_description ?? "",
+      og_image_url: initial?.og_image_url ?? "",
       affiliate_commission:
         initial?.affiliate_commission != null && initial.affiliate_commission !== ""
           ? String(initial.affiliate_commission)
@@ -571,18 +621,13 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
               <div>
                 <Label>Author</Label>
-                <select
+                <AuthorUserSelect
+                  users={adminUsers}
                   value={form.author_user_id}
-                  onChange={(e) => handleAuthorSelect(e.target.value)}
-                  className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-                >
-                  <option value="">Select an author</option>
-                  {adminUsers.map((u) => (
-                    <option key={u.id} value={String(u.id)}>
-                      {u.name || u.email} — {u.role}
-                    </option>
-                  ))}
-                </select>
+                  onChange={handleAuthorSelect}
+                  disabled={loading}
+                  placeholder="Select an author"
+                />
               </div>
               <div>
                 <Label>Author Name</Label>
@@ -645,6 +690,40 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
               <Input value={form.language} onChange={(e) => updateField('language', e.target.value)} />
             </div>
             <div>
+              <Label>Students (public banner)</Label>
+              <Input
+                type="number"
+                min={0}
+                step={1}
+                value={form.enrolled_count}
+                onChange={(e) => updateField('enrolled_count', e.target.value)}
+                placeholder="e.g. 120"
+              />
+            </div>
+            <div>
+              <Label>Average rating (banner)</Label>
+              <Input
+                type="number"
+                min={0}
+                max={5}
+                step={0.1}
+                value={form.ratings}
+                onChange={(e) => updateField('ratings', e.target.value)}
+                placeholder="e.g. 4.8 — leave empty for none"
+              />
+            </div>
+            <div>
+              <Label>Rating user count (banner)</Label>
+              <Input
+                type="number"
+                min={0}
+                step={1}
+                value={form.rating_users}
+                onChange={(e) => updateField('rating_users', e.target.value)}
+                placeholder="e.g. 50"
+              />
+            </div>
+            <div>
               <Label>Course Type</Label>
               <Input value={form.course_type} onChange={(e) => updateField('course_type', e.target.value)} />
             </div>
@@ -668,11 +747,21 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
             metaTitle: form.meta_title,
             metaDescription: form.meta_description,
             metaKeywords: form.meta_keywords,
+            canonicalUrl: form.canonical_url,
+            robots: form.robots as SEOMetaFields["robots"],
+            ogTitle: form.og_title,
+            ogDescription: form.og_description,
+            ogImageUrl: form.og_image_url,
           }}
           onChange={(patch: Partial<SEOMetaFields>) => {
-            if (patch.metaTitle !== undefined) updateField('meta_title', patch.metaTitle);
-            if (patch.metaDescription !== undefined) updateField('meta_description', patch.metaDescription);
-            if (patch.metaKeywords !== undefined) updateField('meta_keywords', patch.metaKeywords);
+            if (patch.metaTitle !== undefined) updateField("meta_title", patch.metaTitle);
+            if (patch.metaDescription !== undefined) updateField("meta_description", patch.metaDescription);
+            if (patch.metaKeywords !== undefined) updateField("meta_keywords", patch.metaKeywords);
+            if (patch.canonicalUrl !== undefined) updateField("canonical_url", patch.canonicalUrl);
+            if (patch.robots !== undefined) updateField("robots", patch.robots);
+            if (patch.ogTitle !== undefined) updateField("og_title", patch.ogTitle);
+            if (patch.ogDescription !== undefined) updateField("og_description", patch.ogDescription);
+            if (patch.ogImageUrl !== undefined) updateField("og_image_url", patch.ogImageUrl);
           }}
         />
       </div>

@@ -7,6 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import axios from "axios";
 import { authApi } from "../api/auth";
 import { accessTokenExpiryMs } from "../lib/accessTokenExpiry";
 import { getStoredAuth, setStoredAuth, clearStoredAuth } from "../lib/authStorage";
@@ -49,6 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const payload: PersistedAuth = {
         token,
         user,
+        refreshToken: res.refreshToken,
         expiresAt:
           accessTokenExpiryMs(token) ??
           (res.expiresIn != null ? Date.now() + res.expiresIn * 1000 : undefined),
@@ -123,11 +125,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
         setUser(user);
       })
-      .catch(() => {
-        // Token invalid/expired — clear and force re-login
-        clearStoredAuth();
-        setToken(null);
-        setUser(null);
+      .catch((err: unknown) => {
+        // Only treat real auth failures as logout; network errors keep cached session.
+        if (axios.isAxiosError(err) && err.response?.status === 401) {
+          clearStoredAuth();
+          setToken(null);
+          setUser(null);
+          return;
+        }
+        setUser(stored.user);
       })
       .finally(() => {
         setIsInitialized(true);

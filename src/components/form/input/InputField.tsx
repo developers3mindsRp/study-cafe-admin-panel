@@ -5,10 +5,12 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   success?: boolean;
   error?: boolean;
   hint?: string;
+  classNameParent?:string;
 }
 
 const Input: FC<InputProps> = ({
   className = "",
+  classNameParent = "",
   success = false,
   error = false,
   hint,
@@ -27,7 +29,7 @@ const Input: FC<InputProps> = ({
   }
 
   return (
-    <div className="relative">
+    <div className={`relative ${classNameParent}`}>
       <input
         className={inputClasses}
         {...props}

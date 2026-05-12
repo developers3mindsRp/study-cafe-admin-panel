@@ -25,12 +25,22 @@ export interface ArticleRecord {
   author_name: string | null;
   sub_heading?: string | null;
   status: string;
+  /** When status is `scheduled`, BullMQ will publish at this time. */
+  scheduled_publish_at?: string | null;
   /** Public site: `premium` uses member-gated full body on cafestudy-fe. */
   blog_access_tier?: "free" | "premium";
   published_at: string | null;
   meta_title: string | null;
   meta_description: string | null;
   meta_keywords?: string | null;
+  canonical_url?: string | null;
+  robots?: string | null;
+  og_title?: string | null;
+  og_description?: string | null;
+  og_image_url?: string | null;
+  thumbnail_alt?: string | null;
+  thumbnail_link_url?: string | null;
+  thumbnail_caption?: string | null;
   created_at?: string;
   updated_at?: string;
   category_ids?: number[];
@@ -78,7 +88,7 @@ export const articlesApi = createCrudApi<ArticleRecord>(BASE_URL)();
 
 /** Server-side paginated list for DataTable */
 export async function fetchArticlesPaginated(
-  params: DataTableFetchParams
+  params: DataTableFetchParams & { status?: string }
 ): Promise<DataTableFetchResult<ArticleRecord>> {
   const { data } = await api.get<any>(BASE_URL, {
     params: {
@@ -87,6 +97,7 @@ export async function fetchArticlesPaginated(
       search: params.search || undefined,
       sortBy: params.sortBy || undefined,
       sortOrder: params.sortOrder,
+      ...(params.status ? { status: params.status } : {}),
     },
   });
 

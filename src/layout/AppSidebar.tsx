@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router";
 
 import { useMemo } from "react";
-import { ChatIcon, ChevronDownIcon, DocsIcon, DollarLineIcon, FileIcon, FolderIcon, GridIcon, GroupIcon, HorizontaLDots, InfoIcon, MailIcon, PageIcon, UserIcon, VideoIcon } from "../icons";
+import { BoltIcon, ChatIcon, ChevronDownIcon, DocsIcon, DollarLineIcon, FileIcon, FolderIcon, GridIcon, GroupIcon, HorizontaLDots, InfoIcon, MailIcon, PageIcon, UserIcon, VideoIcon } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
 import { useAuth } from "../context/AuthContext";
 
@@ -198,6 +198,37 @@ const navItems: NavItem[] = [
       { name: "Categories", path: "/downloads/categories", requiredPermission: ["downloads:list", "downloads:view"] },
     ],
     requiredPermission: ["downloads:list", "downloads:view", "downloads:create", "downloads:edit", "downloads:delete"],
+  },
+  {
+    icon: <BoltIcon />,
+    name: "Global Settings",
+    subItems: [
+      {
+        name: "Marketing & analytics",
+        path: "/settings/global",
+        requiredPermission: ["global_settings:list", "global_settings:view", "global_settings:edit"],
+      },
+      {
+        name: "Display Ads",
+        path: "/settings/global/display-ads",
+        requiredPermission: [
+          "global_settings:list",
+          "global_settings:view",
+          "global_settings:edit",
+          "content:list",
+          "content:view",
+          "content:edit",
+        ],
+      },
+    ],
+    requiredPermission: [
+      "global_settings:list",
+      "global_settings:view",
+      "global_settings:edit",
+      "content:list",
+      "content:view",
+      "content:edit",
+    ],
   },
 ];
 

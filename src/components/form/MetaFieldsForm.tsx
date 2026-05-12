@@ -43,8 +43,8 @@ export default function MetaFieldsForm({
 }: MetaFieldsFormProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
-  const update = (patch: Partial<SEOMetaFields>) =>
-    onChange({ ...value, ...patch });
+  /** Send only the changed slice so parents merge correctly (full `{ ...value, ...patch }` stale-closed UI values). */
+  const update = (patch: Partial<SEOMetaFields>) => onChange(patch);
 
   const content = (
     <div className="space-y-6">

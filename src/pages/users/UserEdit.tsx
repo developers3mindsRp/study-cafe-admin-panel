@@ -300,17 +300,7 @@ export default function UserEdit() {
                             <span className="w-1 h-6 bg-brand-500 rounded-full inline-block"></span>
                             Location
                         </h4>
-                        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-                            <div>
-                                <Label>City</Label>
-                                <Input
-                                    type="text"
-                                    name="city"
-                                    value={formData.city || ""}
-                                    onChange={handleChange}
-                                    placeholder="City"
-                                />
-                            </div>
+                        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                             <div>
                                 <Label>State</Label>
                                 <Input
@@ -322,13 +312,13 @@ export default function UserEdit() {
                                 />
                             </div>
                             <div>
-                                <Label>Country</Label>
+                                <Label>City</Label>
                                 <Input
                                     type="text"
-                                    name="country"
-                                    value={formData.country || ""}
+                                    name="city"
+                                    value={formData.city || ""}
                                     onChange={handleChange}
-                                    placeholder="Country"
+                                    placeholder="City"
                                 />
                             </div>
                         </div>

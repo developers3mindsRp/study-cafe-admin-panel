@@ -4,6 +4,7 @@ import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import CourseForm, { type CourseFormData } from "./CourseForm";
 import { fetchCourse, updateCourse } from "../../api/courses";
+import { getApiErrorMessage } from "../../lib/apiError";
 
 export default function CourseEdit() {
   const { id } = useParams<{ id: string }>();
@@ -38,9 +39,25 @@ export default function CourseEdit() {
         thumbnail_url: data.thumbnail_url || null,
         youtube_url: data.youtube_url || null,
         language: data.language || null,
+        enrolled_count: Math.max(0, parseInt(String(data.enrolled_count), 10) || 0),
+        ratings: (() => {
+          const t = String(data.ratings ?? "").trim();
+          if (!t) return null;
+          const n = Number(t);
+          return Number.isFinite(n) ? n : null;
+        })(),
+        rating_users: Math.max(0, parseInt(String(data.rating_users), 10) || 0),
         course_type: data.course_type || null,
         taxable: data.taxable,
         keywords: data.keywords || null,
+        meta_title: data.meta_title || null,
+        meta_description: data.meta_description || null,
+        meta_keywords: data.meta_keywords || null,
+        canonical_url: data.canonical_url?.trim() || null,
+        robots: data.robots?.trim() || null,
+        og_title: data.og_title?.trim() || null,
+        og_description: data.og_description?.trim() || null,
+        og_image_url: data.og_image_url?.trim() || null,
         faqs: data.faqs?.length ? JSON.stringify(data.faqs) : null,
         includes_info: data.includes_info?.length ? JSON.stringify(data.includes_info) : null,
         course_includes: data.course_includes?.length ? JSON.stringify(data.course_includes) : null,
@@ -61,9 +78,9 @@ export default function CourseEdit() {
         ),
       });
       navigate("/courses");
-    } catch (err) {
+    } catch (err: unknown) {
       console.error("Failed to update course", err);
-      alert("Failed to update course");
+      alert(getApiErrorMessage(err, "Failed to update course"));
     } finally {
       setLoading(false);
     }

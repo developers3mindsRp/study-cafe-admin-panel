@@ -14,6 +14,7 @@ import type {
 } from "../../types/promoCode";
 import { COUPON_DISCOUNT_ON_OPTIONS } from "../../types/promoCode";
 import { checkCouponCodeExists } from "../../api/promoCodes";
+import { IndianRupee, Percentage } from "../../icons";
 
 interface CouponFormProps {
   mode: "create" | "edit";
@@ -185,64 +186,120 @@ export default function CouponForm({
               <Label>
                 Coupon Type <span className="text-error-500">*</span>
               </Label>
-              <Select
-                options={[
-                  { value: "Percentage", label: "Percentage" },
-                  { value: "Amount", label: "Amount" },
-                ]}
-                placeholder="Select coupon type"
-                defaultValue={formData.type}
-                onChange={(value) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    type: value as CouponType,
-                    max_discount: value === "Amount" ? "" : prev.max_discount,
-                  }))
-                }
-              />
+              <div>
+                 <Select
+                  options={[
+                    { value: "Percentage", label: "Percentage" },
+                    { value: "Amount", label: "Amount" },
+                  ]}
+                  placeholder="Select coupon type"
+                  defaultValue={formData.type}
+                  onChange={(value) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      type: value as CouponType,
+                      max_discount: value === "Amount" ? "" : prev.max_discount,
+                    }))
+                  }
+                />
+
+              </div>
+             
             </div>
 
             <div>
               <Label>
                 Discount On <span className="text-error-500">*</span>
               </Label>
-              <Select
-                options={COUPON_DISCOUNT_ON_OPTIONS.map((item) => ({
-                  value: item.value,
-                  label: item.label,
-                }))}
-                placeholder="Select discount target"
-                defaultValue={formData.discount_on}
-                onChange={(value) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    discount_on: value as CouponDiscountOn,
-                  }))
-                }
-              />
+             
+                
+                  <Select
+                    options={COUPON_DISCOUNT_ON_OPTIONS.map((item) => ({
+                      value: item.value,
+                      label: item.label,
+                    }))}
+                    placeholder="Select discount target"
+                    defaultValue={formData.discount_on}
+                    onChange={(value) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        discount_on: value as CouponDiscountOn,
+                      }))
+                    }
+                  />
+            
             </div>
 
             <div>
               <Label>
                 Discount Value <span className="text-error-500">*</span>
               </Label>
-              <Input
+              <div className="flex align-center justify-center relative">
+                  <div className="flex align-center py-[9px]  absolute left-[15px]">
+                    {
+                      formData.type === "Percentage" ?                      
+                      <Percentage fontSize={25} color="gray"/>
+                      : 
+                      <IndianRupee fontSize={25} color="gray"/> 
+                    }
+                   
+                  </div>
+              
+                   <Input
+                      required
+                      type="number"
+                      className="!w-full pl-[55px]"
+                      classNameParent="w-full"
+                      min={0}
+                      max={formData.type === "Percentage" ? 100 : undefined}
+                      value={formData.value}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          value: e.target.value,
+                        }))
+                      }
+                      placeholder={formData.type === "Percentage" ? "e.g. 20" : "e.g. 500"}
+                    />
+              </div>
+             
+            </div>
+            <div>
+              <Label>
+                Start Date <span className="text-error-500">*</span>
+              </Label>
+              <DatePicker
                 required
+                id="coupon-start-date"
+                placeholder="Select start date"
+                defaultDate={formData.start_date || undefined}
+                onChange={(_, dateStr) =>
+                  setFormData((prev) => ({ ...prev, start_date: dateStr }))
+                }
+              />
+            </div>
+           
+            <div>
+              <Label>Minimum Order Value (optional)</Label>
+              <Input
                 type="number"
                 min={0}
-                max={formData.type === "Percentage" ? 100 : undefined}
-                value={formData.value}
+                value={formData.min_order}
                 onChange={(e) =>
                   setFormData((prev) => ({
                     ...prev,
-                    value: e.target.value,
+                    min_order: e.target.value,
                   }))
                 }
-                placeholder={formData.type === "Percentage" ? "e.g. 20" : "e.g. 500"}
+                placeholder="e.g. 500"
               />
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Optional minimum order value required to apply this coupon.
+              </p>
             </div>
 
-            {formData.type === "Percentage" && (
+           
+             {formData.type === "Percentage" && (
               <div>
                 <Label>Maximum Discount (₹)</Label>
                 <Input
@@ -263,39 +320,6 @@ export default function CouponForm({
               </div>
             )}
 
-            <div>
-              <Label>Minimum Order Value (optional)</Label>
-              <Input
-                type="number"
-                min={0}
-                value={formData.min_order}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    min_order: e.target.value,
-                  }))
-                }
-                placeholder="e.g. 500"
-              />
-              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                Optional minimum order value required to apply this coupon.
-              </p>
-            </div>
-
-            <div>
-              <Label>
-                Start Date <span className="text-error-500">*</span>
-              </Label>
-              <DatePicker
-                required
-                id="coupon-start-date"
-                placeholder="Select start date"
-                defaultDate={formData.start_date || undefined}
-                onChange={(_, dateStr) =>
-                  setFormData((prev) => ({ ...prev, start_date: dateStr }))
-                }
-              />
-            </div>
 
             <div>
               <Label>

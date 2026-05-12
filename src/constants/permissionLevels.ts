@@ -170,6 +170,34 @@ export const MODULE_LEVELS: ModuleConfig[] = [
       { value: "view", label: "View only", permissions: ["affiliate:list", "affiliate:view"] },
     ],
   },
+  {
+    key: "downloads",
+    name: "Downloads",
+    levels: [
+      { value: "none", label: "None", permissions: [] },
+      { value: "view", label: "View only", permissions: ["downloads:list", "downloads:view"] },
+      { value: "edit", label: "Edit (includes view)", permissions: ["downloads:list", "downloads:view", "downloads:edit"] },
+      { value: "create", label: "Create (includes view, edit)", permissions: ["downloads:list", "downloads:view", "downloads:edit", "downloads:create"] },
+      { value: "delete", label: "Delete / Full", permissions: ["downloads:list", "downloads:view", "downloads:edit", "downloads:create", "downloads:delete"] },
+    ],
+  },
+  {
+    key: "global_settings",
+    name: "Global Settings",
+    levels: [
+      { value: "none", label: "None", permissions: [] },
+      {
+        value: "view",
+        label: "View only",
+        permissions: ["global_settings:list", "global_settings:view"],
+      },
+      {
+        value: "edit",
+        label: "Edit (includes view)",
+        permissions: ["global_settings:list", "global_settings:view", "global_settings:edit"],
+      },
+    ],
+  },
 ];
 
 /** Get the effective level for a module from a list of permissions (e.g. from API). */

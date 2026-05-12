@@ -6,12 +6,11 @@ import { PlusIcon } from "../../icons";
 import { Link } from "react-router";
 
 export default function OrderList() {
-
   return (
     <>
       <PageMeta title="Orders | StudyCafe Admin" description="View orders" />
-      <PageBreadcrumb 
-        pageTitle="Orders" 
+      <PageBreadcrumb
+        pageTitle="Orders"
         actions={
           <Link to="/orders/create">
             <Button startIcon={<PlusIcon className="w-5 h-5" />}>
@@ -23,7 +22,6 @@ export default function OrderList() {
       <div className="space-y-6">
         <OrdersTable />
       </div>
-
     </>
   );
 }

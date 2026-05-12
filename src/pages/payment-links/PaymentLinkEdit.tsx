@@ -5,6 +5,7 @@ import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PaymentLinkForm from "./PaymentLinkForm";
 import type { PaymentLink, PaymentLinkFormValues } from "../../types/paymentLink";
 import { fetchPaymentLink, updatePaymentLink } from "../../api/paymentLinks";
+import { getApiErrorMessage } from "../../lib/apiError";
 
 export default function PaymentLinkEdit() {
   const { id } = useParams();
@@ -45,8 +46,8 @@ export default function PaymentLinkEdit() {
         status: form.status,
       });
       navigate("/payment-links");
-    } catch {
-      alert("Failed to update payment link");
+    } catch (err: unknown) {
+      alert(getApiErrorMessage(err, "Failed to update payment link"));
     } finally {
       setSaving(false);
     }
