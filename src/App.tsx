@@ -39,6 +39,7 @@ import SEOMetadataList from "./pages/seo/SEOMetadataList";
 import SEOMetadataCreate from "./pages/seo/SEOMetadataCreate";
 import SEOMetadataEdit from "./pages/seo/SEOMetadataEdit";
 import SEOMetadataView from "./pages/seo/SEOMetadataView";
+import SiteSeoRoutesPage from "./pages/seo/SiteSeoRoutesPage";
 import ArticleList from "./pages/articles/ArticleList";
 import ArticleCreate from "./pages/articles/ArticleCreate";
 import ArticleEdit from "./pages/articles/ArticleEdit";
@@ -193,6 +194,9 @@ const router = createBrowserRouter(
           </Route>
           <Route path="/seo-metadata/create" element={<RequirePermissionRoute permissions={["seo:create"]} />}>
             <Route index element={<SEOMetadataCreate />} />
+          </Route>
+          <Route path="/seo-metadata/site-pages" element={<RequirePermissionRoute permissions={["seo:list"]} />}>
+            <Route index element={<SiteSeoRoutesPage />} />
           </Route>
           <Route path="/seo-metadata/:id" element={<RequirePermissionRoute permissions={["seo:view"]} />}>
             <Route index element={<SEOMetadataView />} />

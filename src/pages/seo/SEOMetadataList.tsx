@@ -7,7 +7,7 @@ import { DataTable, type DataTableRef } from "../../components/tables/data-table
 import { EyeIcon, PencilIcon, TrashBinIcon } from "../../icons";
 import { useModal } from "../../hooks/useModal";
 import { RequirePermission } from "../../components/auth/RequirePermission";
-import { PERM_SEO_CREATE, PERM_SEO_EDIT, PERM_SEO_DELETE } from "../../constants/permissions";
+import { PERM_SEO_CREATE, PERM_SEO_EDIT, PERM_SEO_DELETE, PERM_SEO_LIST } from "../../constants/permissions";
 import { fetchSeoMetadata, deleteSeoMetadata, type SEOMetadata } from "../../api/seo";
 import { withClientPagination } from "../../utils/dataTableUtils";
 
@@ -152,14 +152,24 @@ export default function SEOMetadataList() {
       <PageBreadcrumb
         pageTitle="SEO Metadata"
         actions={
-          <RequirePermission permissions={[PERM_SEO_CREATE]} fallback={null}>
-            <Link
-              to="/seo-metadata/create"
-              className="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-medium text-white transition bg-brand-500 shadow-theme-xs hover:bg-brand-600"
-            >
-              Create New
-            </Link>
-          </RequirePermission>
+          <div className="flex flex-wrap items-center gap-2">
+            <RequirePermission permissions={[PERM_SEO_LIST]} fallback={null}>
+              <Link
+                to="/seo-metadata/site-pages"
+                className="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-800 shadow-theme-xs transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:hover:bg-gray-800"
+              >
+                Site pages (URLs)
+              </Link>
+            </RequirePermission>
+            <RequirePermission permissions={[PERM_SEO_CREATE]} fallback={null}>
+              <Link
+                to="/seo-metadata/create"
+                className="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-medium text-white transition bg-brand-500 shadow-theme-xs hover:bg-brand-600"
+              >
+                Create New
+              </Link>
+            </RequirePermission>
+          </div>
         }
       />
       <div className="space-y-6">
