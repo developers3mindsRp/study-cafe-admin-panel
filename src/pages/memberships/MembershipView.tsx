@@ -13,6 +13,7 @@ import {
 import { plansApi, type Plan, type MembershipFeatures } from "../../api/plans";
 import { usersApi, type User } from "../../api/users";
 import { planIsLifetime } from "./membershipUtils";
+import { MembershipUpgradeModal } from "../../components/membership/MembershipUpgradeModal";
 
 function FeaturesDisplay({ features }: { features: Plan["features"] }) {
   let included: string[] = [];
@@ -84,11 +85,18 @@ export default function MembershipView() {
   const [addSearch, setAddSearch] = useState("");
   const [addCandidates, setAddCandidates] = useState<User[]>([]);
   const [addCandidatesLoading, setAddCandidatesLoading] = useState(false);
+  const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
+  const [upgradeTargetPlan, setUpgradeTargetPlan] = useState<Plan | null>(null);
   const {
     isOpen: isDeleteModalOpen,
     openModal: openDeleteModal,
     closeModal: closeDeleteModal,
   } = useModal();
+
+  const openUpgradeModal = (plan: Plan) => {
+    setUpgradeTargetPlan(plan);
+    setUpgradeModalOpen(true);
+  };
 
   const loadPlan = useCallback(
     async (planId: string) => {
@@ -370,13 +378,22 @@ export default function MembershipView() {
                           permissions={[PERM_MEMBERSHIPS_EDIT]}
                           fallback={null}
                         >
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveFromPlan(u)}
-                            className="text-error-500 hover:underline text-sm"
-                          >
-                            Remove
-                          </button>
+                          <div className="flex items-center gap-3">
+                            <button
+                              type="button"
+                              onClick={() => membership && openUpgradeModal(membership)}
+                              className="text-brand-500 hover:underline text-sm"
+                            >
+                              Upgrade
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveFromPlan(u)}
+                              className="text-error-500 hover:underline text-sm"
+                            >
+                              Remove
+                            </button>
+                          </div>
                         </RequirePermission>
                       </td>
                     </tr>
@@ -468,6 +485,16 @@ export default function MembershipView() {
         onConfirm={handleDeleteConfirm}
         title="Delete Membership"
         itemName={membership.name}
+      />
+
+      <MembershipUpgradeModal
+        isOpen={upgradeModalOpen}
+        onClose={() => setUpgradeModalOpen(false)}
+        onSuccess={() => {
+          setUpgradeModalOpen(false);
+          loadStudents();
+        }}
+        targetPlan={upgradeTargetPlan}
       />
     </>
   );
