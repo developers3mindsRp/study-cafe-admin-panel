@@ -56,32 +56,45 @@ export function useAssignCoursesState() {
     }, []);
 
     const hydrateFromEnrollments = useCallback(async (enrollments: UserEnrollmentRecord[]) => {
-        const firstByCourse = new Map<number, number>();
+        const preferredBatchByCourse = new Map<number, number>();
+        const courseIds: number[] = [];
+        const seenCourse = new Set<number>();
         for (const e of enrollments) {
             if (e.course_id == null) continue;
-            if (!firstByCourse.has(e.course_id)) {
-                firstByCourse.set(e.course_id, e.batch_id);
+            if (!seenCourse.has(e.course_id)) {
+                seenCourse.add(e.course_id);
+                courseIds.push(e.course_id);
+            }
+            if (e.batch_id != null && !preferredBatchByCourse.has(e.course_id)) {
+                preferredBatchByCourse.set(e.course_id, e.batch_id);
             }
         }
-        const ids = [...firstByCourse.keys()];
-        if (ids.length === 0) return;
+        if (courseIds.length === 0) return;
 
-        setSelectedCourseIds(ids);
+        setSelectedCourseIds(courseIds);
 
         const nextMap: Record<number, { id: number; name: string }[]> = {};
         const nextSel: Record<number, number> = {};
 
         await Promise.all(
-            ids.map(async (courseId) => {
-                const preferredBatchId = firstByCourse.get(courseId)!;
+            courseIds.map(async (courseId) => {
+                const preferredBatchId = preferredBatchByCourse.get(courseId);
                 try {
                     const batches = await fetchCourseBatches(courseId);
                     nextMap[courseId] = batches;
-                    const match = batches.find((b) => b.id === preferredBatchId);
-                    nextSel[courseId] = match ? match.id : batches[0]?.id ?? preferredBatchId;
+                    const match =
+                        preferredBatchId != null
+                            ? batches.find((b) => b.id === preferredBatchId)
+                            : undefined;
+                    const chosen = (match ? match.id : batches[0]?.id) ?? preferredBatchId;
+                    if (chosen != null) {
+                        nextSel[courseId] = chosen;
+                    }
                 } catch {
                     nextMap[courseId] = [];
-                    nextSel[courseId] = preferredBatchId;
+                    if (preferredBatchId != null) {
+                        nextSel[courseId] = preferredBatchId;
+                    }
                 }
             }),
         );

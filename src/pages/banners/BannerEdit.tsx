@@ -46,7 +46,7 @@ export default function BannerEdit() {
 
   return (
     <>
-      <PageMeta title="Edit Banner | StudyCafe Admin" />
+      <PageMeta title="Edit Banner | StudyCafe Admin" description="Edit banner content and placement" />
       <PageBreadcrumb pageTitle="Edit Banner" />
       <div className="mx-auto max-w-4xl">
         <BannerForm initialData={banner || undefined} onSubmit={handleSubmit} loading={loading} />

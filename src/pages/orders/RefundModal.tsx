@@ -39,7 +39,7 @@ export default function RefundModal({ order, isOpen, onClose, onSuccess }: Refun
     setLoading(true);
     try {
       await refundOrder(order.id, {
-        amount: formData.amount,
+        amount: Number(formData.amount),
         remarks: formData.remarks,
       });
       onSuccess();
@@ -91,8 +91,8 @@ export default function RefundModal({ order, isOpen, onClose, onSuccess }: Refun
             <Button variant="outline" type="button" onClick={onClose} disabled={loading}>
               Cancel
             </Button>
-            <Button type="submit" loading={loading} className="bg-error-600 hover:bg-error-700">
-              Confirm Refund
+            <Button type="submit" disabled={loading} className="bg-error-600 hover:bg-error-700">
+              {loading ? "Processing..." : "Confirm Refund"}
             </Button>
           </div>
         </form>

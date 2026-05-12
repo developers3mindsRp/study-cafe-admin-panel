@@ -3,7 +3,7 @@
  * Server-side search and pagination — no more limit=500 bulk fetch.
  */
 
-import React, { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Link } from "react-router";
 import { DataTable, type DataTableRef } from "./data-table/DataTable";
 import Badge from "../ui/badge/Badge";

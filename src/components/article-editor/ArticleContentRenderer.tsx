@@ -547,7 +547,7 @@ function renderLegacyContentWithRelated(
     if (!showTableOfContents) return html;
     return html.replace(
       /<(h[23])(?:\s+[^>]*)?>([\s\S]*?)<\/h[23]>/gi,
-      (match, tag, inner) => {
+      (_match, tag, inner) => {
         const rawText = inner.replace(/<[^>]*>?/gm, "").trim();
         const id = generateId(rawText);
         return `<${tag} id="${id}">${inner}</${tag}>`;
@@ -617,7 +617,6 @@ export default function ArticleContentRenderer({
     doc = JSON.parse(content) as JSONContent;
   } catch {
     if (typeof content === "string" && content.trim()) {
-      const parts: ReactNode[] = [];
       const tocItems: TOCItem[] = [];
 
       if (showTableOfContents) {
@@ -655,7 +654,7 @@ export default function ArticleContentRenderer({
                 __html: showTableOfContents
                   ? content.replace(
                     /<(h[23])(?:\s+[^>]*)?>([\s\S]*?)<\/h[23]>/gi,
-                    (match, tag, inner) => {
+                    (_match, tag, inner) => {
                       const rawText = inner.replace(/<[^>]*>?/gm, "").trim();
                       const id = generateId(rawText);
                       return `<${tag} id="${id}">${inner}</${tag}>`;

@@ -25,7 +25,7 @@ export default function BannerCreate() {
 
   return (
     <>
-      <PageMeta title="Create Banner | StudyCafe Admin" />
+      <PageMeta title="Create Banner | StudyCafe Admin" description="Create a new marketing banner" />
       <PageBreadcrumb pageTitle="Create Banner" />
       <div className="mx-auto max-w-4xl">
         <BannerForm onSubmit={handleSubmit} loading={loading} />

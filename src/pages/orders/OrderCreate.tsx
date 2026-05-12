@@ -8,8 +8,9 @@ import Label from "../../components/form/Label";
 import { createOrder, CreateOrderPayload, applyCouponAdmin } from "../../api/orders";
 import { fetchCourses, Course } from "../../api/courses";
 import { plansApi, Plan } from "../../api/plans";
-import { usersApi, User } from "../../api/users";
+import { usersApi } from "../../api/users";
 import AsyncSelect from "react-select/async";
+import type { CSSObjectWithLabel } from "react-select";
 import { CloseLineIcon } from "../../icons";
 
 export default function OrderCreate() {
@@ -171,7 +172,7 @@ export default function OrderCreate() {
                 placeholder="Type name or email..."
                 className="text-sm text-gray-800 dark:text-gray-200"
                 styles={{
-                  control: (base) => ({
+                  control: (base: CSSObjectWithLabel) => ({
                     ...base,
                     minHeight: "44px",
                     borderRadius: "0.5rem",
@@ -211,7 +212,7 @@ export default function OrderCreate() {
                 placeholder={`Search ${formData.type}...`}
                 className="text-sm text-gray-800 dark:text-gray-200"
                 styles={{
-                  control: (base) => ({
+                  control: (base: CSSObjectWithLabel) => ({
                     ...base,
                     minHeight: "44px",
                     borderRadius: "0.5rem",

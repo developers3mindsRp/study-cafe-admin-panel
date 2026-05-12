@@ -109,7 +109,7 @@ export default function BannerList() {
 
   return (
     <>
-      <PageMeta title="Banners | StudyCafe Admin" />
+      <PageMeta title="Banners | StudyCafe Admin" description="Manage site banners" />
       <PageBreadcrumb
         pageTitle="Banners"
         actions={

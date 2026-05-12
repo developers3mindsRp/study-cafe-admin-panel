@@ -1,16 +1,16 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import Button from "../../components/ui/button/Button";
 import Input from "../../components/form/input/InputField";
-import Select from "../../components/form/Select";
 import Label from "../../components/form/Label";
 import { fetchOrderByOrderId, updateOrder, UpdateOrderPayload, OrderRecord } from "../../api/orders";
 import { fetchCourses, Course } from "../../api/courses";
 import { plansApi, Plan } from "../../api/plans";
 import { usersApi } from "../../api/users";
 import AsyncSelect from "react-select/async";
+import type { CSSObjectWithLabel } from "react-select";
 
 export default function OrderEdit() {
   const navigate = useNavigate();
@@ -121,7 +121,7 @@ export default function OrderEdit() {
                 value={order?.user_id ? { value: String(order.user_id), label: initialUserLabel || `User ID: ${order.user_id}` } : null}
                 className="text-sm text-gray-800 dark:text-gray-200"
                 styles={{
-                  control: (base) => ({
+                  control: (base: CSSObjectWithLabel) => ({
                     ...base,
                     minHeight: "44px",
                     borderRadius: "0.5rem",
@@ -153,7 +153,7 @@ export default function OrderEdit() {
                 value={order?.entity_id ? { value: String(order.entity_id), label: initialEntityLabel || `ID: ${order.entity_id}` } : null}
                 className="text-sm text-gray-800 dark:text-gray-200"
                 styles={{
-                  control: (base) => ({
+                  control: (base: CSSObjectWithLabel) => ({
                     ...base,
                     minHeight: "44px",
                     borderRadius: "0.5rem",

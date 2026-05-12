@@ -47,7 +47,7 @@ export default function OrderView() {
           .catch(console.error);
       } else if (order.type === "membership") {
         plansApi.get(order.entity_id)
-          .then(res => { if (res.data) setEntityName(res.data.name); })
+          .then((plan) => { if (plan) setEntityName(plan.name); })
           .catch(console.error);
       }
     }
