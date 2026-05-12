@@ -317,11 +317,20 @@ export default function UserView() {
                                             <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">Course</th>
                                             <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">Batch</th>
                                             <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">Enrolled On</th>
+                                            <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">Access</th>
+                                            <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">Order</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                                         {enrollments.map((enrollment, idx) => (
-                                            <tr key={enrollment.enrollment_id} className="hover:bg-gray-50 dark:hover:bg-white/[0.02]">
+                                            <tr
+                                                key={
+                                                    enrollment.enrollment_id != null
+                                                        ? String(enrollment.enrollment_id)
+                                                        : `course-${enrollment.course_id ?? idx}`
+                                                }
+                                                className="hover:bg-gray-50 dark:hover:bg-white/[0.02]"
+                                            >
                                                 <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{idx + 1}</td>
                                                 <td className="px-4 py-3 text-gray-900 dark:text-white font-medium">
                                                     {enrollment.course_title ?? <span className="italic text-gray-400">Unknown</span>}
@@ -337,6 +346,14 @@ export default function UserView() {
                                                             year: "numeric",
                                                         })
                                                         : "—"}
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <Badge size="sm" color="success">
+                                                        {(enrollment.purchase_status ?? "paid").replace(/-/g, " ")}
+                                                    </Badge>
+                                                </td>
+                                                <td className="px-4 py-3 text-gray-500 dark:text-gray-400 font-mono text-xs">
+                                                    {enrollment.order_id ?? <span className="italic">—</span>}
                                                 </td>
                                             </tr>
                                         ))}

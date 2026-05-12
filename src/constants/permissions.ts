@@ -98,6 +98,14 @@ export const PERM_DOWNLOADS_DELETE = "downloads:delete";
 // Admin (panel gate)
 export const PERM_ADMIN_ACCESS = "admin:access";
 
+// Banners
+export const PERM_BANNERS_LIST = "banners:list";
+export const PERM_BANNERS_VIEW = "banners:view";
+export const PERM_BANNERS_CREATE = "banners:create";
+export const PERM_BANNERS_EDIT = "banners:edit";
+export const PERM_BANNERS_DELETE = "banners:delete";
+
+
 // Admin users (CRUD for panel users)
 export const PERM_ADMIN_USERS_LIST = "admin_users:list";
 export const PERM_ADMIN_USERS_VIEW = "admin_users:view";
@@ -174,6 +182,11 @@ export const ALL_PERMISSIONS = [
   PERM_ADMIN_USERS_CREATE,
   PERM_ADMIN_USERS_EDIT,
   PERM_ADMIN_USERS_DELETE,
+  PERM_BANNERS_LIST,
+  PERM_BANNERS_VIEW,
+  PERM_BANNERS_CREATE,
+  PERM_BANNERS_EDIT,
+  PERM_BANNERS_DELETE,
 ] as const;
 
 export type Permission = (typeof ALL_PERMISSIONS)[number];

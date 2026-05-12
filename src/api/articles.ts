@@ -43,6 +43,8 @@ export interface ArticleRecord {
   related_articles?: RelatedArticle[];
   /** Downloadable PDF / judgment URL stored as rel_download_url on the backend. */
   rel_download_url?: string | null;
+  /** JSON payload for Case Citation metadata */
+  citation?: Record<string, any> | null;
 }
 
 export interface ArticleListParams {

@@ -49,6 +49,8 @@ export default function ArticleCreate() {
         article_type_ids: formData.article_type_ids ?? [],
         court_ids: formData.court_ids ?? [],
         blog_access_tier: formData.blog_access_tier,
+        rel_download_url: formData.rel_download_url || null,
+        citation: formData.citation || null,
       };
       await articlesApi.create(payload);
       navigate("/articles");

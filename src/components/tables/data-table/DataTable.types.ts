@@ -18,6 +18,7 @@ export interface DataTableFetchParams {
   search: string;
   sortBy: string;
   sortOrder: "ASC" | "DESC";
+  [key: string]: any;
 }
 
 export interface DataTableFetchResult<T> {

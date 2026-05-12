@@ -41,6 +41,7 @@ export default function DatePicker({
       minDate,
       maxDate,
       onChange,
+      closeOnSelect: mode !== "range", // Stay open for range selection
     });
 
     return () => {

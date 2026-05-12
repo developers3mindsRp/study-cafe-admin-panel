@@ -84,6 +84,8 @@ import LiveSessions from "./pages/courses/LiveSessions";
 import CourseReviewList from "./pages/courses/CourseReviewList";
 import OrderList from "./pages/orders/OrderList";
 import OrderView from "./pages/orders/OrderView";
+import OrderCreate from "./pages/orders/OrderCreate";
+import OrderEdit from "./pages/orders/OrderEdit";
 import PromoCodeList from "./pages/promo-codes/PromoCodeList";
 import PromoCodeCreate from "./pages/promo-codes/PromoCodeCreate";
 import PromoCodeEdit from "./pages/promo-codes/PromoCodeEdit";
@@ -96,6 +98,9 @@ import AffiliateHistory from "./pages/affiliate/AffiliateHistory";
 import WithdrawalRequests from "./pages/affiliate/WithdrawalRequests";
 import FilesPage from "./pages/downloads/FilesPage";
 import CategoriesPage from "./pages/downloads/CategoriesPage";
+import BannerList from "./pages/banners/BannerList";
+import BannerCreate from "./pages/banners/BannerCreate";
+import BannerEdit from "./pages/banners/BannerEdit";
 
 function RootLayout() {
   return (
@@ -210,8 +215,14 @@ const router = createBrowserRouter(
           <Route path="/orders" element={<RequirePermissionRoute permissions={["orders:list"]} />}>
             <Route index element={<OrderList />} />
           </Route>
+          <Route path="/orders/create" element={<RequirePermissionRoute permissions={["orders:list"]} />}>
+            <Route index element={<OrderCreate />} />
+          </Route>
           <Route path="/orders/:orderId" element={<RequirePermissionRoute permissions={["orders:view"]} />}>
             <Route index element={<OrderView />} />
+          </Route>
+          <Route path="/orders/:orderId/edit" element={<RequirePermissionRoute permissions={["orders:view"]} />}>
+            <Route index element={<OrderEdit />} />
           </Route>
 
           {/* Coupons */}
@@ -348,6 +359,17 @@ const router = createBrowserRouter(
           </Route>
           <Route path="/downloads/categories" element={<RequirePermissionRoute permissions={["downloads:list"]} />}>
             <Route index element={<CategoriesPage />} />
+          </Route>
+
+          {/* Banners */}
+          <Route path="/banners" element={<RequirePermissionRoute permissions={["banners:list"]} />}>
+            <Route index element={<BannerList />} />
+          </Route>
+          <Route path="/banners/create" element={<RequirePermissionRoute permissions={["banners:edit"]} />}>
+            <Route index element={<BannerCreate />} />
+          </Route>
+          <Route path="/banners/:id/edit" element={<RequirePermissionRoute permissions={["banners:edit"]} />}>
+            <Route index element={<BannerEdit />} />
           </Route>
 
           {/* Forms */}

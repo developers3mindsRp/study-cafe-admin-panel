@@ -114,6 +114,7 @@ const navItems: NavItem[] = [
       { name: "Disclaimer", path: "/content/disclaimer", requiredPermission: ["content:list", "content:view", "content:edit"] },
       { name: "Refund Policy", path: "/content/refund-policy", requiredPermission: ["content:list", "content:view", "content:edit"] },
       { name: "Footer", path: "/content/footer", requiredPermission: ["content:list", "content:view", "content:edit"] },
+      { name: "Banners", path: "/banners", requiredPermission: ["banners:list"] },
     ],
     requiredPermission: ["content:list", "content:view", "content:edit"],
   },
@@ -255,7 +256,10 @@ const AppSidebar: React.FC = () => {
 
   // const isActive = (path: string) => location.pathname === path;
   const isActive = useCallback(
-    (path: string) => location.pathname === path,
+    (path: string) => {
+      if (path === "/") return location.pathname === "/";
+      return location.pathname === path || location.pathname.startsWith(`${path}/`);
+    },
     [location.pathname]
   );
 

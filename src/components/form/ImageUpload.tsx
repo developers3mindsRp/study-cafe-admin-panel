@@ -78,8 +78,13 @@ export default function ImageUpload({
         setUploading(true);
         const { url } = await uploadImage(file);
         onChange(url);
-      } catch (e) {
-        const message = e instanceof Error ? e.message : "Upload failed";
+      } catch (e: any) {
+        let message = "Upload failed";
+        if (e.response?.data?.error) {
+          message = e.response.data.error;
+        } else if (e.message) {
+          message = e.message;
+        }
         setError(message);
       } finally {
         setUploading(false);

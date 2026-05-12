@@ -20,6 +20,61 @@ interface ArticleContentRendererProps {
   relatedArticles?: RelatedArticle[];
   /** Base URL for article links (e.g. "" for relative "/blogs/slug", or "https://studycafe.in") */
   articleUrlBase?: string;
+  /** Whether to show a Table of Contents */
+  showTableOfContents?: boolean;
+}
+
+interface TOCItem {
+  id: string;
+  text: string;
+  level: number;
+}
+
+function extractText(node: JSONContent): string {
+  if (node.type === "text" && node.text) return node.text;
+  if (!node.content) return "";
+  return node.content.map(extractText).join("");
+}
+
+function generateId(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .trim();
+}
+
+function TableOfContents({ items }: { items: TOCItem[] }) {
+  if (items.length === 0) return null;
+
+  return (
+    <div className="my-8 rounded-xl border border-gray-200 bg-gray-50 p-6 dark:border-gray-800 dark:bg-white/[0.03]">
+      <h3 className="mb-4 text-lg font-bold text-gray-900 dark:text-white">Table of Contents</h3>
+      <nav>
+        <ul className="space-y-2">
+          {items.map((item) => (
+            <li
+              key={item.id}
+              style={{ paddingLeft: `${(item.level - 2) * 1.5}rem` }}
+              className="text-sm"
+            >
+              <a
+                href={`#${item.id}`}
+                className="text-blue-600 hover:underline dark:text-blue-400"
+                onClick={(e) => {
+                  e.preventDefault();
+                  document.getElementById(item.id)?.scrollIntoView({ behavior: "smooth" });
+                }}
+              >
+                {item.text}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+    </div>
+  );
 }
 
 interface NodeAttrs {
@@ -347,11 +402,13 @@ function renderNode(node: JSONContent, index: number): ReactNode {
         3: "text-lg md:text-xl font-semibold mt-5 mb-2",
       };
       const baseClass = `text-gray-900 dark:text-white ${headingClasses[level] || headingClasses[2]} ${alignClass}`;
+      const text = extractText(node);
+      const id = generateId(text);
       const content = renderTextContent(node);
-      
-      if (level === 1) return <h1 key={key} className={baseClass}>{content}</h1>;
-      if (level === 2) return <h2 key={key} className={baseClass}>{content}</h2>;
-      return <h3 key={key} className={baseClass}>{content}</h3>;
+
+      if (level === 1) return <h1 key={key} id={id} className={baseClass}>{content}</h1>;
+      if (level === 2) return <h2 key={key} id={id} className={baseClass}>{content}</h2>;
+      return <h3 key={key} id={id} className={baseClass}>{content}</h3>;
     }
 
     case "bulletList":
@@ -478,12 +535,26 @@ const RELATED_SHORTCODE_REGEX = /\[related\s+id="(\d+)"\]/gi;
 function renderLegacyContentWithRelated(
   content: string,
   relatedArticles: RelatedArticle[],
-  articleUrlBase: string
+  articleUrlBase: string,
+  showTableOfContents: boolean
 ): ReactNode {
   const mapById = new Map(relatedArticles.map((a) => [a.id, a]));
   const parts: ReactNode[] = [];
   let lastIndex = 0;
   let key = 0;
+
+  const injectIds = (html: string) => {
+    if (!showTableOfContents) return html;
+    return html.replace(
+      /<(h[23])(?:\s+[^>]*)?>([\s\S]*?)<\/h[23]>/gi,
+      (match, tag, inner) => {
+        const rawText = inner.replace(/<[^>]*>?/gm, "").trim();
+        const id = generateId(rawText);
+        return `<${tag} id="${id}">${inner}</${tag}>`;
+      }
+    );
+  };
+
   RELATED_SHORTCODE_REGEX.lastIndex = 0;
   let m: RegExpExecArray | null;
   while ((m = RELATED_SHORTCODE_REGEX.exec(content)) !== null) {
@@ -494,7 +565,7 @@ function renderLegacyContentWithRelated(
         <div
           key={`html-${key++}`}
           className="prose prose-sm dark:prose-invert max-w-none text-gray-800 dark:text-white/90"
-          dangerouslySetInnerHTML={{ __html: before }}
+          dangerouslySetInnerHTML={{ __html: injectIds(before) }}
         />
       );
     }
@@ -526,7 +597,7 @@ function renderLegacyContentWithRelated(
       <div
         key={`html-${key++}`}
         className="prose prose-sm dark:prose-invert max-w-none text-gray-800 dark:text-white/90"
-        dangerouslySetInnerHTML={{ __html: tail }}
+        dangerouslySetInnerHTML={{ __html: injectIds(tail) }}
       />
     );
   }
@@ -538,6 +609,7 @@ export default function ArticleContentRenderer({
   className = "",
   relatedArticles = [],
   articleUrlBase = "",
+  showTableOfContents = false,
 }: ArticleContentRendererProps) {
   let doc: JSONContent | null = null;
 
@@ -545,21 +617,55 @@ export default function ArticleContentRenderer({
     doc = JSON.parse(content) as JSONContent;
   } catch {
     if (typeof content === "string" && content.trim()) {
+      const parts: ReactNode[] = [];
+      const tocItems: TOCItem[] = [];
+
+      if (showTableOfContents) {
+        // Simple regex to find h2 and h3 in HTML
+        const headingRegex = /<(h[23])(?:\s+[^>]*)?>([\s\S]*?)<\/h[23]>/gi;
+        let match;
+        while ((match = headingRegex.exec(content)) !== null) {
+          const tag = match[1].toLowerCase();
+          const level = tag === "h2" ? 2 : 3;
+          // Strip HTML tags from heading text
+          const rawText = match[2].replace(/<[^>]*>?/gm, "").trim();
+          if (rawText) {
+            tocItems.push({
+              id: generateId(rawText),
+              text: rawText,
+              level,
+            });
+          }
+        }
+      }
+
       RELATED_SHORTCODE_REGEX.lastIndex = 0;
       const hasShortcode = RELATED_SHORTCODE_REGEX.test(content);
       RELATED_SHORTCODE_REGEX.lastIndex = 0;
-      if (hasShortcode) {
-        return (
-          <div className={`article-content ${className}`}>
-            {renderLegacyContentWithRelated(content, relatedArticles, articleUrlBase)}
-          </div>
-        );
-      }
+
       return (
-        <div
-          className={`article-content prose prose-sm dark:prose-invert max-w-none ${className}`}
-          dangerouslySetInnerHTML={{ __html: content }}
-        />
+        <div className={`article-content ${className}`}>
+          {showTableOfContents && <TableOfContents items={tocItems} />}
+          {hasShortcode ? (
+            renderLegacyContentWithRelated(content, relatedArticles, articleUrlBase, showTableOfContents)
+          ) : (
+            <div
+              className="prose prose-sm dark:prose-invert max-w-none"
+              dangerouslySetInnerHTML={{
+                __html: showTableOfContents
+                  ? content.replace(
+                    /<(h[23])(?:\s+[^>]*)?>([\s\S]*?)<\/h[23]>/gi,
+                    (match, tag, inner) => {
+                      const rawText = inner.replace(/<[^>]*>?/gm, "").trim();
+                      const id = generateId(rawText);
+                      return `<${tag} id="${id}">${inner}</${tag}>`;
+                    }
+                  )
+                  : content,
+              }}
+            />
+          )}
+        </div>
       );
     }
     return (
@@ -579,8 +685,29 @@ export default function ArticleContentRenderer({
     );
   }
 
+  const tocItems: TOCItem[] = [];
+  if (showTableOfContents) {
+    doc.content.forEach((node) => {
+      if (node.type === "heading") {
+        const level = (node.attrs?.level as number) || 1;
+        // Usually only include H2 and H3 in TOC
+        if (level >= 2 && level <= 3) {
+          const text = extractText(node);
+          if (text.trim()) {
+            tocItems.push({
+              id: generateId(text),
+              text,
+              level,
+            });
+          }
+        }
+      }
+    });
+  }
+
   return (
     <div className={`article-content ${className}`}>
+      {showTableOfContents && <TableOfContents items={tocItems} />}
       {doc.content.map((node, index) => renderNode(node, index))}
     </div>
   );

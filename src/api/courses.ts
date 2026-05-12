@@ -287,12 +287,17 @@ export async function removeBatchEnrollment(enrollmentId: number): Promise<void>
 }
 
 export interface UserEnrollmentRecord {
-  enrollment_id: number;
-  batch_id: number;
+  enrollment_id: number | null;
+  batch_id: number | null;
   batch_name: string | null;
   course_id: number | null;
   course_title: string | null;
   enrolled_at: string | null;
+  /** Order row id from order-service (paid purchases only). */
+  order_id?: string | null;
+  /** e.g. completed — aligned with GET /orders/my-purchases rows */
+  purchase_status?: string | null;
+  from_purchase?: boolean;
 }
 
 export async function fetchUserEnrollments(userId: number): Promise<UserEnrollmentRecord[]> {

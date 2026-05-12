@@ -168,7 +168,7 @@ export default function ArticlePreview() {
 
               {/* Article Body */}
               {hasBody ? (
-                <ArticleContentRenderer content={body} />
+                <ArticleContentRenderer content={body} showTableOfContents={true} />
               ) : (
                 <div className="rounded-xl border-2 border-dashed border-gray-700  py-16 text-center">
                   <p className="text-gray-500">

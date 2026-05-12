@@ -76,6 +76,7 @@ export default function ArticleEdit() {
         court_ids: formData.court_ids ?? [],
         blog_access_tier: formData.blog_access_tier,
         rel_download_url: formData.rel_download_url || null,
+        citation: formData.citation || null,
       };
       await articlesApi.update(id, payload);
       navigate("/articles");
@@ -121,6 +122,7 @@ export default function ArticleEdit() {
     tag_ids: article.tag_ids ?? [],
     article_type_ids: article.article_type_ids ?? [],
     court_ids: article.court_ids ?? [],
+    citation: article.citation ?? null,
   };
 
   return (

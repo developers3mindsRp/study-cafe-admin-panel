@@ -12,9 +12,8 @@ export async function uploadImage(file: File): Promise<{ url: string }> {
       "Content-Type": "multipart/form-data",
     },
   });
-  const url = (res.data && typeof res.data === "object" && "url" in res.data)
-    ? (res.data as { url: string }).url
-    : null;
+  const body = res.data as any;
+  const url = body?.data?.url || body?.url;
   if (!url || typeof url !== "string") throw new Error("Upload did not return a URL");
   return { url };
 }
