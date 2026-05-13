@@ -159,6 +159,11 @@ const navItems: NavItem[] = [
     name: "SEO Metadata",
     subItems: [
       { name: "List", path: "/seo-metadata", requiredPermission: ["seo:list", "seo:view"] },
+      {
+        name: "Site pages (URLs)",
+        path: "/seo-metadata/site-pages",
+        requiredPermission: ["seo:list", "seo:view"],
+      },
       { name: "Create", path: "/seo-metadata/create", requiredPermission: ["seo:create"] },
     ],
     requiredPermission: ["seo:list", "seo:view", "seo:create", "seo:edit", "seo:delete"],

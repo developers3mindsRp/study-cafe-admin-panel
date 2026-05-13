@@ -34,6 +34,14 @@ export function slugifyForSeo(input: string): string {
   return base.length <= MAX_SLUG_LEN ? base : base.slice(0, MAX_SLUG_LEN).replace(/-+$/g, "");
 }
 
+/** Path for global SEO rows: trimmed, leading `/`, casing preserved. Empty = none selected. */
+export function normalizeAdminSeoPath(input: string): string {
+  const t = (input ?? "").trim();
+  if (t === "") return "";
+  if (t === "/") return "/";
+  return t.startsWith("/") ? t : `/${t}`;
+}
+
 /**
  * Normalizes a static site path: `/About Us` → `/about-us`, preserves `/` root.
  * Slugifies each path segment; keeps leading slash.

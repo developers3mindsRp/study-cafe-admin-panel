@@ -1,10 +1,44 @@
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import BackLink from "../../components/common/BackLink";
 import SEOMetadataForm, { type SEOMetadataFormData } from "./SEOMetadataForm";
-import { fetchSeoMetadataById, updateSeoMetadata } from "../../api/seo";
+import {
+  fetchSeoEligiblePages,
+  fetchSeoMetadataById,
+  updateSeoMetadata,
+  type SeoEligiblePage,
+} from "../../api/seo";
+import { normalizeAdminSeoPath } from "../../lib/slug";
+
+function sortSeoPages(a: SeoEligiblePage, b: SeoEligiblePage): number {
+  const pa = normalizeAdminSeoPath(a.path);
+  const pb = normalizeAdminSeoPath(b.path);
+  if (pa === "/") return -1;
+  if (pb === "/") return 1;
+  return pa.localeCompare(pb);
+}
+
+/** Ensure the edited row's path appears even if absent from eligible API (legacy rows). */
+function mergeEditPageOptions(
+  eligible: SeoEligiblePage[],
+  current:
+    Pick<SEOMetadataFormData, "pageSlug" | "pageName">
+    | null,
+): SeoEligiblePage[] {
+  if (!current) return [...eligible].sort(sortSeoPages);
+  const p = normalizeAdminSeoPath(current.pageSlug);
+  if (!p) return [...eligible].sort(sortSeoPages);
+  const has = eligible.some((o) => normalizeAdminSeoPath(o.path) === p);
+  const next = has
+    ? [...eligible]
+    : [
+      ...eligible,
+      { path: p, label: (current.pageName || p).trim() || p },
+    ];
+  return next.sort(sortSeoPages);
+}
 
 export default function SEOMetadataEdit() {
   const { id } = useParams();
@@ -12,38 +46,55 @@ export default function SEOMetadataEdit() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [defaultValues, setDefaultValues] = useState<SEOMetadataFormData | null>(null);
+  const [defaultValues, setDefaultValues] = useState<SEOMetadataFormData | null>(
+    null,
+  );
+  const [eligiblePages, setEligiblePages] = useState<SeoEligiblePage[]>([]);
 
   useEffect(() => {
-    if (id) {
-      loadSeoMetadata(parseInt(id, 10));
-    }
+    if (!id) return;
+    let cancelled = false;
+    const metadataId = parseInt(id, 10);
+
+    (async () => {
+      setLoading(true);
+      try {
+        const [entry, routes] = await Promise.all([
+          fetchSeoMetadataById(metadataId),
+          fetchSeoEligiblePages(),
+        ]);
+        if (cancelled) return;
+        setEligiblePages([...routes].sort(sortSeoPages));
+        setDefaultValues({
+          pageName: entry.pageName,
+          pageSlug: entry.pageSlug,
+          metaTitle: entry.metaTitle,
+          metaDescription: entry.metaDescription,
+          metaKeywords: entry.metaKeywords,
+          canonicalUrl: entry.canonicalUrl,
+          ogTitle: entry.ogTitle,
+          ogDescription: entry.ogDescription,
+          ogImageUrl: entry.ogImageUrl,
+          robots: (entry.robots as SEOMetadataFormData["robots"]) || "index, follow",
+        });
+        setError(null);
+      } catch (err: unknown) {
+        console.error("Failed to load SEO metadata", err);
+        if (!cancelled) setError("Failed to load SEO metadata");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
-  const loadSeoMetadata = async (metadataId: number) => {
-    try {
-      setLoading(true);
-      const data = await fetchSeoMetadataById(metadataId);
-      setDefaultValues({
-        pageName: data.pageName,
-        pageSlug: data.pageSlug,
-        metaTitle: data.metaTitle,
-        metaDescription: data.metaDescription,
-        metaKeywords: data.metaKeywords,
-        canonicalUrl: data.canonicalUrl,
-        ogTitle: data.ogTitle,
-        ogDescription: data.ogDescription,
-        ogImageUrl: data.ogImageUrl,
-        robots: (data.robots as any) || "index, follow",
-      });
-      setError(null);
-    } catch (err: any) {
-      console.error("Failed to load SEO metadata", err);
-      setError("Failed to load SEO metadata");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const pageOptions = useMemo(
+    () => mergeEditPageOptions(eligiblePages, defaultValues),
+    [eligiblePages, defaultValues],
+  );
 
   const handleSubmit = async (formData: SEOMetadataFormData) => {
     if (!id) return;
@@ -62,9 +113,13 @@ export default function SEOMetadataEdit() {
         robots: formData.robots,
       });
       navigate("/seo-metadata");
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Failed to update SEO metadata", err);
-      alert(err.response?.data?.message || "Failed to update SEO metadata");
+      const msg =
+        err && typeof err === "object" && "response" in err
+          ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
+          : undefined;
+      alert(msg || "Failed to update SEO metadata");
     } finally {
       setSaving(false);
     }
@@ -101,6 +156,9 @@ export default function SEOMetadataEdit() {
         mode="edit"
         defaultValues={defaultValues}
         loading={saving}
+        pagesLoading={false}
+        disablePageSelect
+        pageOptions={pageOptions}
         onSubmit={handleSubmit}
       />
     </>

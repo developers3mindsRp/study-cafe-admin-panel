@@ -1,5 +1,10 @@
 import { api } from "./axios";
 
+export interface SeoEligiblePage {
+  path: string;
+  label: string;
+}
+
 export interface SEOMetadata {
     id: number;
     pageName: string;
@@ -42,6 +47,21 @@ const mapFrontendToBackend = (data: Partial<Omit<SEOMetadata, "id">>) => ({
     og_image_url: data.ogImageUrl,
     robots: data.robots,
 });
+
+export const fetchSeoEligiblePages = async (): Promise<SeoEligiblePage[]> => {
+    const { data } = await api.get("/admin/platform/seo-metadata/eligible-pages");
+    const rows = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.data)
+            ? data.data
+            : [];
+    return rows
+        .map((r: { path?: string; label?: string }) => ({
+            path: String(r?.path ?? "").trim(),
+            label: String(r?.label ?? r?.path ?? "").trim(),
+        }))
+        .filter((r: SeoEligiblePage) => r.path.length > 0);
+};
 
 export const fetchSeoMetadata = async (): Promise<SEOMetadata[]> => {
     const { data } = await api.get("/admin/platform/seo-metadata");
