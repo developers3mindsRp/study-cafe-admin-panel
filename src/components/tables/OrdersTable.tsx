@@ -7,8 +7,16 @@ import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { Link } from "react-router";
 import { DataTable, type DataTableRef } from "./data-table/DataTable";
 import Badge from "../ui/badge/Badge";
-import { EyeIcon, PencilIcon, DollarLineIcon, TrashBinIcon } from "../../icons";
-import { deleteOrder, fetchOrders, orderStatusAllowsRefund, type OrderRecord } from "../../api/orders";
+import { DownloadIcon, EyeIcon, PencilIcon, DollarLineIcon, TrashBinIcon } from "../../icons";
+import {
+  deleteOrder,
+  fetchAllOrdersForExport,
+  fetchOrders,
+  orderStatusAllowsRefund,
+  type OrderRecord,
+} from "../../api/orders";
+import { exportRowsToExcel } from "../../utils/exportToExcel";
+import { ORDER_EXPORT_COLUMNS } from "../../utils/orderExportColumns";
 import type { DataTableFetchParams, DataTableFetchResult } from "./data-table/DataTable.types";
 import RefundModal from "../../pages/orders/RefundModal";
 import Select from "../form/Select";
@@ -42,6 +50,7 @@ export function OrdersTable() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [filters, setFilters] = useState({ ...ORDERS_FILTER_INITIAL });
   const [filterBarKey, setFilterBarKey] = useState(0);
+  const [exporting, setExporting] = useState(false);
 
   const hasActiveFilters = useMemo(
     () =>
@@ -60,6 +69,41 @@ export function OrdersTable() {
     setFilters({ ...ORDERS_FILTER_INITIAL });
     setFilterBarKey((k) => k + 1);
   }, []);
+
+  const handleExportExcel = useCallback(async () => {
+    const q = tableRef.current?.getQueryState();
+    if (!q) return;
+    setExporting(true);
+    try {
+      const rows = await fetchAllOrdersForExport({
+        search: q.search.trim() !== "" ? q.search : undefined,
+        sortBy: q.sortBy,
+        sortOrder: q.sortOrder,
+        dateFrom: filters.dateFrom || undefined,
+        dateTo: filters.dateTo || undefined,
+        courseId: filters.courseId || undefined,
+        type: filters.type || undefined,
+        amountMin: filters.amountMin.trim() !== "" ? filters.amountMin : undefined,
+        amountMax: filters.amountMax.trim() !== "" ? filters.amountMax : undefined,
+      });
+      exportRowsToExcel({
+        filename: `orders-export-${new Date().toISOString().slice(0, 10)}`,
+        sheetName: "Orders",
+        columns: ORDER_EXPORT_COLUMNS,
+        rows,
+      });
+    } catch (err: unknown) {
+      const msg =
+        err && typeof err === "object" && "response" in err
+          ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
+          : err instanceof Error
+            ? err.message
+            : "Export failed";
+      alert(msg || "Export failed");
+    } finally {
+      setExporting(false);
+    }
+  }, [filters]);
 
   useEffect(() => {
     fetchCourses().then(setCourses).catch(console.error);
@@ -111,8 +155,12 @@ export function OrdersTable() {
       try {
         await deleteOrder(order.id);
         tableRef.current?.refetch();
-      } catch (err: any) {
-        alert(err.response?.data?.message || "Failed to delete order");
+      } catch (err: unknown) {
+        const msg =
+          err && typeof err === "object" && "response" in err
+            ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
+            : undefined;
+        alert(msg || "Failed to delete order");
       }
     }
   };
@@ -327,6 +375,17 @@ export function OrdersTable() {
             onClick={clearAllFilters}
           >
             Clear filters
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={exporting}
+            className="h-11 shrink-0 px-3 text-xs whitespace-nowrap"
+            startIcon={<DownloadIcon className="size-4 shrink-0" />}
+            onClick={handleExportExcel}
+          >
+            {exporting ? "Exporting…" : "Export Excel"}
           </Button>
         </div>
       </div>

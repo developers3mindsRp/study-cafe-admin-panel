@@ -94,6 +94,39 @@ export async function fetchOrders(params?: {
   return res.data;
 }
 
+const ORDERS_EXPORT_PAGE_SIZE = 500;
+
+export type FetchOrdersExportParams = Omit<
+  NonNullable<Parameters<typeof fetchOrders>[0]>,
+  "limit" | "offset"
+>;
+
+/** Loads every order page matching the same filters as the list (max 500 per request). */
+export async function fetchAllOrdersForExport(
+  params: FetchOrdersExportParams
+): Promise<OrderRecord[]> {
+  const all: OrderRecord[] = [];
+  let offset = 0;
+  let total: number | undefined;
+
+  for (;;) {
+    const res = await fetchOrders({
+      ...params,
+      limit: ORDERS_EXPORT_PAGE_SIZE,
+      offset,
+    });
+    const chunk = res.orders ?? [];
+    if (chunk.length === 0) break;
+    if (total === undefined) total = res.total;
+    all.push(...chunk);
+    offset += chunk.length;
+    if (chunk.length < ORDERS_EXPORT_PAGE_SIZE) break;
+    if (total != null && offset >= total) break;
+  }
+
+  return all;
+}
+
 export async function fetchOrderByOrderId(orderId: string): Promise<OrderRecord | null> {
   try {
     const res = await api.get<OrderRecord>(`/admin/orders/${encodeURIComponent(orderId)}`);
