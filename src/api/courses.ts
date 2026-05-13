@@ -201,24 +201,35 @@ export async function fetchBatchesList(params: {
     query.course_id = params.courseId;
   }
   const res = await api.get("/admin/batches", { params: query });
+  // After axios interceptor: { data, total, page, limit, ... } (meta flattened to root).
+  // Without interceptor: { success, data, meta } — support nested meta too.
   const body = res.data as {
     data: BatchRecordWithCourse[];
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-    hasNextPage: boolean;
-    hasPreviousPage: boolean;
+    total?: number;
+    page?: number;
+    limit?: number;
+    totalPages?: number;
+    hasNextPage?: boolean;
+    hasPreviousPage?: boolean;
+    meta?: {
+      total: number;
+      page: number;
+      limit: number;
+      totalPages: number;
+      hasNextPage: boolean;
+      hasPreviousPage: boolean;
+    };
   };
+  const m = body.meta ?? body;
   return {
     rows: Array.isArray(body.data) ? body.data : [],
     meta: {
-      total: Number(body.total) || 0,
-      page: Number(body.page) || 1,
-      limit: Number(body.limit) || 10,
-      totalPages: Number(body.totalPages) || 0,
-      hasNextPage: Boolean(body.hasNextPage),
-      hasPreviousPage: Boolean(body.hasPreviousPage),
+      total: Number(m.total) || 0,
+      page: Number(m.page) || 1,
+      limit: Number(m.limit) || 10,
+      totalPages: Number(m.totalPages) || 0,
+      hasNextPage: Boolean(m.hasNextPage),
+      hasPreviousPage: Boolean(m.hasPreviousPage),
     },
   };
 }

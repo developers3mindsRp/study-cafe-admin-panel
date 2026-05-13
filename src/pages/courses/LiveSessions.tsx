@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, Fragment } from "react";
+import { useState, useEffect, useCallback, Fragment, useRef } from "react";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import Badge from "../../components/ui/badge/Badge";
@@ -27,6 +27,216 @@ import { CourseSearchSelect } from "../../components/courses/CourseSearchSelect"
 function fmtDate(d: string | null) {
     if (!d) return "—";
     return new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+}
+
+function fmtDisplayDate(val: string) {
+    if (!val) return "";
+    const [y, m, d] = val.split("-");
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    return `${d} ${months[Number(m) - 1]} ${y}`;
+}
+
+/* ─── Calendar Date Picker ────────────────────────────────────────── */
+
+function CalendarPicker({
+    value,
+    onChange,
+    placeholder = "Pick a date",
+    label,
+}: {
+    value: string;
+    onChange: (v: string) => void;
+    placeholder?: string;
+    label?: string;
+}) {
+    const [open, setOpen] = useState(false);
+    const [viewYear, setViewYear] = useState<number>(() => {
+        if (value) return Number(value.split("-")[0]);
+        return new Date().getFullYear();
+    });
+    const [viewMonth, setViewMonth] = useState<number>(() => {
+        if (value) return Number(value.split("-")[1]) - 1;
+        return new Date().getMonth();
+    });
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    // Close on outside click
+    useEffect(() => {
+        if (!open) return;
+        function onDown(e: MouseEvent) {
+            if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+                setOpen(false);
+            }
+        }
+        document.addEventListener("mousedown", onDown);
+        return () => document.removeEventListener("mousedown", onDown);
+    }, [open]);
+
+    const MONTHS = ["January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"];
+    const DAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+
+    function prevMonth() {
+        if (viewMonth === 0) { setViewMonth(11); setViewYear(y => y - 1); }
+        else setViewMonth(m => m - 1);
+    }
+    function nextMonth() {
+        if (viewMonth === 11) { setViewMonth(0); setViewYear(y => y + 1); }
+        else setViewMonth(m => m + 1);
+    }
+
+    // Build grid: leading blanks + days of month
+    const firstDow = new Date(viewYear, viewMonth, 1).getDay();
+    const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+    const cells: (number | null)[] = [
+        ...Array(firstDow).fill(null),
+        ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
+    ];
+    // Pad to full rows
+    while (cells.length % 7 !== 0) cells.push(null);
+
+    const selectedDay = value ? Number(value.split("-")[2]) : null;
+    const selectedMonth = value ? Number(value.split("-")[1]) - 1 : null;
+    const selectedYear = value ? Number(value.split("-")[0]) : null;
+
+    const today = new Date();
+    const todayDay = today.getDate();
+    const todayMonth = today.getMonth();
+    const todayYear = today.getFullYear();
+
+    function selectDay(day: number) {
+        const mm = String(viewMonth + 1).padStart(2, "0");
+        const dd = String(day).padStart(2, "0");
+        onChange(`${viewYear}-${mm}-${dd}`);
+        setOpen(false);
+    }
+
+    function clearDate(e: React.MouseEvent) {
+        e.stopPropagation();
+        onChange("");
+    }
+
+    return (
+        <div ref={containerRef} className="relative">
+            {label && (
+                <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                    {label}
+                </label>
+            )}
+            {/* Trigger */}
+            <button
+                type="button"
+                onClick={() => setOpen(o => !o)}
+                className="flex w-full items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-left transition hover:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:ring-brand-500"
+            >
+                <svg className="size-4 shrink-0 text-gray-400 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" strokeWidth="2" />
+                    <line x1="16" y1="2" x2="16" y2="6" strokeWidth="2" />
+                    <line x1="8" y1="2" x2="8" y2="6" strokeWidth="2" />
+                    <line x1="3" y1="10" x2="21" y2="10" strokeWidth="2" />
+                </svg>
+                <span className={`flex-1 truncate ${value ? "text-gray-800 dark:text-white" : "text-gray-400 dark:text-gray-500"}`}>
+                    {value ? fmtDisplayDate(value) : placeholder}
+                </span>
+                {value && (
+                    <span
+                        role="button"
+                        tabIndex={0}
+                        onClick={clearDate}
+                        onKeyDown={(e) => e.key === "Enter" && clearDate(e as unknown as React.MouseEvent)}
+                        className="shrink-0 rounded-full p-0.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-600"
+                        aria-label="Clear date"
+                    >
+                        <svg className="size-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </span>
+                )}
+            </button>
+
+            {/* Dropdown calendar */}
+            {open && (
+                <div className="absolute left-0 top-full z-50 mt-1.5 w-72 rounded-xl border border-gray-200 bg-white p-4 shadow-lg dark:border-gray-700 dark:bg-gray-800">
+                    {/* Month / Year nav */}
+                    <div className="mb-3 flex items-center justify-between">
+                        <button type="button" onClick={prevMonth}
+                            className="flex size-7 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700">
+                            <svg className="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+                            </svg>
+                        </button>
+                        <span className="text-sm font-semibold text-gray-800 dark:text-white">
+                            {MONTHS[viewMonth]} {viewYear}
+                        </span>
+                        <button type="button" onClick={nextMonth}
+                            className="flex size-7 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700">
+                            <svg className="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    {/* Day-of-week headers */}
+                    <div className="mb-1 grid grid-cols-7 text-center">
+                        {DAYS.map((d) => (
+                            <span key={d} className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                                {d}
+                            </span>
+                        ))}
+                    </div>
+
+                    {/* Day cells */}
+                    <div className="grid grid-cols-7 gap-y-0.5">
+                        {cells.map((day, idx) => {
+                            if (!day) return <span key={idx} />;
+                            const isSelected =
+                                day === selectedDay &&
+                                viewMonth === selectedMonth &&
+                                viewYear === selectedYear;
+                            const isToday =
+                                day === todayDay &&
+                                viewMonth === todayMonth &&
+                                viewYear === todayYear;
+                            return (
+                                <button
+                                    key={idx}
+                                    type="button"
+                                    onClick={() => selectDay(day)}
+                                    className={`
+                                        mx-auto flex size-8 items-center justify-center rounded-full text-sm transition
+                                        ${isSelected
+                                            ? "bg-brand-500 font-semibold text-white"
+                                            : isToday
+                                                ? "border border-brand-400 font-semibold text-brand-600 hover:bg-brand-50 dark:text-brand-400 dark:hover:bg-brand-500/10"
+                                                : "text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
+                                        }
+                                    `}
+                                >
+                                    {day}
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                    {/* Today shortcut */}
+                    <div className="mt-3 border-t border-gray-100 pt-2 dark:border-gray-700">
+                        <button
+                            type="button"
+                            onClick={() => {
+                                const mm = String(todayMonth + 1).padStart(2, "0");
+                                const dd = String(todayDay).padStart(2, "0");
+                                onChange(`${todayYear}-${mm}-${dd}`);
+                                setOpen(false);
+                            }}
+                            className="w-full rounded-lg py-1.5 text-xs font-medium text-brand-600 hover:bg-brand-50 dark:text-brand-400 dark:hover:bg-brand-500/10"
+                        >
+                            Today
+                        </button>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
 }
 
 /* ─── Create Batch Modal ──────────────────────────────────────────── */
@@ -77,9 +287,12 @@ function CreateBatchPanel({
                     />
                 </div>
                 <div>
-                    <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Start Date</label>
-                    <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)}
-                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white" />
+                    <CalendarPicker
+                        label="Start Date"
+                        value={startDate}
+                        onChange={setStartDate}
+                        placeholder="Pick start date"
+                    />
                 </div>
                 <div>
                     <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Room Link</label>

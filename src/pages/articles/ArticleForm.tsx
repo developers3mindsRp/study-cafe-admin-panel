@@ -346,7 +346,9 @@ export default function ArticleForm({
 
   return (
     <>
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit}>
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+          <div className="space-y-6">
         {/* Title + Meta (Fixed Top) */}
         <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] sm:p-6">
           <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">
@@ -621,111 +623,6 @@ export default function ArticleForm({
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-3 pt-2">
-        <Link to="/articles">
-          <Button variant="outline" size="sm">
-            Back to list
-          </Button>
-        </Link>
-        <p className="w-full text-xs text-gray-500 dark:text-gray-400 lg:w-auto lg:py-2">
-          Tip: press Enter in a field to save as draft. Use the panel on the right to publish or schedule.
-        </p>
-      </div>
-
-        <aside className="mt-8 space-y-4 lg:sticky lg:top-6 lg:mt-0">
-          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-xs dark:border-gray-800 dark:bg-white/[0.03]">
-            <h3 className="text-base font-semibold text-gray-800 dark:text-white/90">
-              Publish
-            </h3>
-            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              Choose how this article should go live. Drafts stay private until you publish or schedule.
-            </p>
-
-            <div className={`mt-4 inline-flex rounded-full px-3 py-1 text-xs font-medium ring-1 ring-inset ${sidebarBadgeClass(formData.status)}`}>
-              {sidebarBadgeLabel(formData.status)}
-            </div>
-
-            {formData.status === "Scheduled" && formData.scheduled_publish_at_local ? (
-              <p className="mt-2 text-xs text-gray-600 dark:text-gray-300">
-                Goes live{" "}
-                <span className="font-medium">
-                  {new Date(formData.scheduled_publish_at_local).toLocaleString()}
-                </span>
-              </p>
-            ) : null}
-
-            <div className="mt-5 flex flex-col gap-2">
-              <button
-                type="button"
-                disabled={loading}
-                onClick={() => runSubmit({ type: "draft" })}
-                className="inline-flex w-full items-center justify-center rounded-lg px-4 py-2.5 text-sm font-medium ring-1 ring-inset ring-gray-300 bg-white text-gray-800 hover:bg-gray-50 disabled:opacity-50 dark:bg-gray-900 dark:text-white dark:ring-gray-700 dark:hover:bg-white/[0.06]"
-              >
-                {loading ? "Saving…" : "Save draft"}
-              </button>
-              <button
-                type="button"
-                disabled={loading}
-                onClick={() => runSubmit({ type: "publish_now" })}
-                className="inline-flex w-full items-center justify-center rounded-lg px-4 py-2.5 text-sm font-medium text-white bg-brand-500 shadow-theme-xs hover:bg-brand-600 disabled:opacity-50"
-              >
-                {loading ? "Saving…" : "Publish now"}
-              </button>
-              <button
-                type="button"
-                disabled={loading}
-                onClick={handlePreview}
-                className="inline-flex w-full items-center justify-center rounded-lg px-4 py-2.5 text-sm font-medium ring-1 ring-inset ring-gray-300 bg-white text-gray-800 hover:bg-gray-50 dark:bg-gray-900 dark:text-white dark:ring-gray-700 dark:hover:bg-white/[0.06]"
-              >
-                Preview
-              </button>
-            </div>
-
-            <div className="mt-6 border-t border-gray-200 pt-5 dark:border-gray-800">
-              <Label>Schedule for later</Label>
-              <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">
-                Article will appear on the public site at the time you pick (your local timezone).
-              </p>
-              <input
-                type="datetime-local"
-                min={minDatetimeLocalValue(1)}
-                value={formData.scheduled_publish_at_local}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    scheduled_publish_at_local: e.target.value,
-                  }))
-                }
-                className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-800 dark:border-gray-800 dark:bg-white/[0.03] dark:text-white/90"
-              />
-              <button
-                type="button"
-                disabled={loading}
-                onClick={() => runSubmit({ type: "schedule" })}
-                className="mt-3 inline-flex w-full items-center justify-center rounded-lg px-4 py-2.5 text-sm font-medium text-brand-700 ring-1 ring-inset ring-brand-200 bg-brand-50 hover:bg-brand-100 disabled:opacity-50 dark:bg-brand-500/10 dark:text-brand-300 dark:ring-brand-500/30"
-              >
-                {loading ? "Saving…" : "Schedule publish"}
-              </button>
-            </div>
-
-            {mode === "edit" ? (
-              <div className="mt-4 border-t border-gray-200 pt-4 dark:border-gray-800">
-                <button
-                  type="button"
-                  disabled={loading}
-                  onClick={() => {
-                    if (!window.confirm("Archive this article? It will be hidden from the public blog.")) return;
-                    runSubmit({ type: "archive" });
-                  }}
-                  className="inline-flex w-full items-center justify-center rounded-lg px-4 py-2.5 text-sm font-medium text-error-600 ring-1 ring-inset ring-error-200 hover:bg-error-50 disabled:opacity-50 dark:text-error-400 dark:ring-error-500/30 dark:hover:bg-error-500/10"
-                >
-                  Archive article
-                </button>
-              </div>
-            ) : null}
-          </div>
-        </aside>
-
         {/* Case Citation */}
         <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] sm:p-6">
           <h3 className="mb-4 text-lg font-semibold text-gray-800 dark:text-white/90">
@@ -960,6 +857,112 @@ export default function ArticleForm({
           </div>
         )}
 
+      <div className="flex flex-wrap gap-3 pt-2">
+        <Link to="/articles">
+          <Button variant="outline" size="sm">
+            Back to list
+          </Button>
+        </Link>
+        <p className="w-full text-xs text-gray-500 dark:text-gray-400 lg:w-auto lg:py-2">
+          Tip: press Enter in a field to save as draft. Use the panel on the right to publish or schedule.
+        </p>
+      </div>
+          </div>
+
+        <aside className="space-y-4 lg:sticky lg:top-6 lg:self-start">
+          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-xs dark:border-gray-800 dark:bg-white/[0.03]">
+            <h3 className="text-base font-semibold text-gray-800 dark:text-white/90">
+              Publish
+            </h3>
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              Choose how this article should go live. Drafts stay private until you publish or schedule.
+            </p>
+
+            <div className={`mt-4 inline-flex rounded-full px-3 py-1 text-xs font-medium ring-1 ring-inset ${sidebarBadgeClass(formData.status)}`}>
+              {sidebarBadgeLabel(formData.status)}
+            </div>
+
+            {formData.status === "Scheduled" && formData.scheduled_publish_at_local ? (
+              <p className="mt-2 text-xs text-gray-600 dark:text-gray-300">
+                Goes live{" "}
+                <span className="font-medium">
+                  {new Date(formData.scheduled_publish_at_local).toLocaleString()}
+                </span>
+              </p>
+            ) : null}
+
+            <div className="mt-5 flex flex-col gap-2">
+              <button
+                type="button"
+                disabled={loading}
+                onClick={() => runSubmit({ type: "draft" })}
+                className="inline-flex w-full items-center justify-center rounded-lg px-4 py-2.5 text-sm font-medium ring-1 ring-inset ring-gray-300 bg-white text-gray-800 hover:bg-gray-50 disabled:opacity-50 dark:bg-gray-900 dark:text-white dark:ring-gray-700 dark:hover:bg-white/[0.06]"
+              >
+                {loading ? "Saving…" : "Save draft"}
+              </button>
+              <button
+                type="button"
+                disabled={loading}
+                onClick={() => runSubmit({ type: "publish_now" })}
+                className="inline-flex w-full items-center justify-center rounded-lg px-4 py-2.5 text-sm font-medium text-white bg-brand-500 shadow-theme-xs hover:bg-brand-600 disabled:opacity-50"
+              >
+                {loading ? "Saving…" : "Publish now"}
+              </button>
+              <button
+                type="button"
+                disabled={loading}
+                onClick={handlePreview}
+                className="inline-flex w-full items-center justify-center rounded-lg px-4 py-2.5 text-sm font-medium ring-1 ring-inset ring-gray-300 bg-white text-gray-800 hover:bg-gray-50 dark:bg-gray-900 dark:text-white dark:ring-gray-700 dark:hover:bg-white/[0.06]"
+              >
+                Preview
+              </button>
+            </div>
+
+            <div className="mt-6 border-t border-gray-200 pt-5 dark:border-gray-800">
+              <Label>Schedule for later</Label>
+              <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">
+                Article will appear on the public site at the time you pick (your local timezone).
+              </p>
+              <input
+                type="datetime-local"
+                min={minDatetimeLocalValue(1)}
+                value={formData.scheduled_publish_at_local}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    scheduled_publish_at_local: e.target.value,
+                  }))
+                }
+                className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-800 dark:border-gray-800 dark:bg-white/[0.03] dark:text-white/90"
+              />
+              <button
+                type="button"
+                disabled={loading}
+                onClick={() => runSubmit({ type: "schedule" })}
+                className="mt-3 inline-flex w-full items-center justify-center rounded-lg px-4 py-2.5 text-sm font-medium text-brand-700 ring-1 ring-inset ring-brand-200 bg-brand-50 hover:bg-brand-100 disabled:opacity-50 dark:bg-brand-500/10 dark:text-brand-300 dark:ring-brand-500/30"
+              >
+                {loading ? "Saving…" : "Schedule publish"}
+              </button>
+            </div>
+
+            {mode === "edit" ? (
+              <div className="mt-4 border-t border-gray-200 pt-4 dark:border-gray-800">
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={() => {
+                    if (!window.confirm("Archive this article? It will be hidden from the public blog.")) return;
+                    runSubmit({ type: "archive" });
+                  }}
+                  className="inline-flex w-full items-center justify-center rounded-lg px-4 py-2.5 text-sm font-medium text-error-600 ring-1 ring-inset ring-error-200 hover:bg-error-50 disabled:opacity-50 dark:text-error-400 dark:ring-error-500/30 dark:hover:bg-error-500/10"
+                >
+                  Archive article
+                </button>
+              </div>
+            ) : null}
+          </div>
+        </aside>
+        </div>
       </form>
 
       <Modal
