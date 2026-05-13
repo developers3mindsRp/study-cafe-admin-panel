@@ -12,6 +12,8 @@ import type { DataTableProps, DataTableColumn } from "./DataTable.types";
 
 export interface DataTableRef {
   refetch: () => Promise<void>;
+  /** Current toolbar query (search, sort) for exports / server refetch with same view. */
+  getQueryState: () => { search: string; sortBy: string; sortOrder: "ASC" | "DESC" };
 }
 
 function DataTableInner<T extends object>({
@@ -54,7 +56,14 @@ function DataTableInner<T extends object>({
     initialSortOrder: initialSortOrder ?? defaultSortOrder,
   });
 
-  useImperativeHandle(ref, () => ({ refetch }), [refetch]);
+  useImperativeHandle(
+    ref,
+    () => ({
+      refetch,
+      getQueryState: () => ({ search, sortBy, sortOrder }),
+    }),
+    [refetch, search, sortBy, sortOrder]
+  );
 
   const handleSort = (key: string) => {
     if (!enableSorting) return;

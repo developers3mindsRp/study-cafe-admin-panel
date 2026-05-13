@@ -57,6 +57,10 @@ export async function fetchOrders(params?: {
   dateTo?: string;
   courseId?: number | string;
   type?: string;
+  /** Inclusive min order amount (same currency as stored on orders). */
+  amountMin?: number | string;
+  /** Inclusive max order amount. */
+  amountMax?: number | string;
 }): Promise<FetchOrdersResult> {
   const res = await api.get<any>("/admin/orders", { params: params ?? {} });
 
@@ -88,6 +92,39 @@ export async function fetchOrders(params?: {
   }
 
   return res.data;
+}
+
+const ORDERS_EXPORT_PAGE_SIZE = 500;
+
+export type FetchOrdersExportParams = Omit<
+  NonNullable<Parameters<typeof fetchOrders>[0]>,
+  "limit" | "offset"
+>;
+
+/** Loads every order page matching the same filters as the list (max 500 per request). */
+export async function fetchAllOrdersForExport(
+  params: FetchOrdersExportParams
+): Promise<OrderRecord[]> {
+  const all: OrderRecord[] = [];
+  let offset = 0;
+  let total: number | undefined;
+
+  for (;;) {
+    const res = await fetchOrders({
+      ...params,
+      limit: ORDERS_EXPORT_PAGE_SIZE,
+      offset,
+    });
+    const chunk = res.orders ?? [];
+    if (chunk.length === 0) break;
+    if (total === undefined) total = res.total;
+    all.push(...chunk);
+    offset += chunk.length;
+    if (chunk.length < ORDERS_EXPORT_PAGE_SIZE) break;
+    if (total != null && offset >= total) break;
+  }
+
+  return all;
 }
 
 export async function fetchOrderByOrderId(orderId: string): Promise<OrderRecord | null> {
@@ -127,13 +164,22 @@ export async function createOrder(data: CreateOrderPayload): Promise<OrderRecord
 }
 
 export interface UpdateOrderPayload {
-  status?: "pending" | "paid" | "failed" | "cancelled";
+  status?: "pending" | "paid" | "failed" | "cancelled" | "completed" | "refunded";
   buyer_name?: string;
   buyer_email?: string;
   buyer_mobile?: string;
   buyer_gst?: string;
   affiliate?: string;
   amount?: number | string;
+  /** Same order type only — backend revokes old fulfillment then re-grants when paid/completed. */
+  entity_id?: string;
+  /** Course orders only; omit to auto-resolve batch when changing course. */
+  batch_id?: number | string | null;
+  refund_amount?: number | string | null;
+  refund_remarks?: string | null;
+  coupon_code?: string | null;
+  coupon_discount?: number | string | null;
+  original_amount?: number | string | null;
 }
 
 export async function updateOrder(id: number, data: UpdateOrderPayload): Promise<OrderRecord> {

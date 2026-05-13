@@ -14,6 +14,8 @@ type PropsType = {
   minDate?: DateOption;
   maxDate?: DateOption;
   label?: string;
+  /** Merged into the label element (e.g. compact filter bars). */
+  labelClassName?: string;
   placeholder?: string;
   dateFormat?: string;
   required?: boolean;
@@ -24,6 +26,7 @@ export default function DatePicker({
   mode,
   onChange,
   label,
+  labelClassName,
   defaultDate,
   minDate,
   maxDate,
@@ -34,7 +37,9 @@ export default function DatePicker({
   useEffect(() => {
     const flatPickr = flatpickr(`#${id}`, {
       mode: mode || "single",
-      static: true,
+      /** Inline calendar is clipped by overflow (e.g. orders filter row). */
+      static: false,
+      appendTo: document.body,
       monthSelectorType: "static",
       dateFormat,
       defaultDate,
@@ -42,6 +47,9 @@ export default function DatePicker({
       maxDate,
       onChange,
       closeOnSelect: mode !== "range", // Stay open for range selection
+      onReady: (_dates, _dateStr, instance) => {
+        instance.calendarContainer.style.zIndex = "10050";
+      },
     });
 
     return () => {
@@ -49,11 +57,15 @@ export default function DatePicker({
         flatPickr.destroy();
       }
     };
-  }, [mode, onChange, id, defaultDate]);
+  }, [mode, onChange, id, defaultDate, minDate, maxDate, dateFormat]);
 
   return (
     <div>
-      {label && <Label htmlFor={id}>{label}</Label>}
+      {label && (
+        <Label htmlFor={id} className={labelClassName}>
+          {label}
+        </Label>
+      )}
 
       <div className="relative">
         <input
