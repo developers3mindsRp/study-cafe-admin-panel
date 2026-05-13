@@ -57,6 +57,10 @@ export async function fetchOrders(params?: {
   dateTo?: string;
   courseId?: number | string;
   type?: string;
+  /** Inclusive min order amount (same currency as stored on orders). */
+  amountMin?: number | string;
+  /** Inclusive max order amount. */
+  amountMax?: number | string;
 }): Promise<FetchOrdersResult> {
   const res = await api.get<any>("/admin/orders", { params: params ?? {} });
 
@@ -127,13 +131,22 @@ export async function createOrder(data: CreateOrderPayload): Promise<OrderRecord
 }
 
 export interface UpdateOrderPayload {
-  status?: "pending" | "paid" | "failed" | "cancelled";
+  status?: "pending" | "paid" | "failed" | "cancelled" | "completed" | "refunded";
   buyer_name?: string;
   buyer_email?: string;
   buyer_mobile?: string;
   buyer_gst?: string;
   affiliate?: string;
   amount?: number | string;
+  /** Same order type only — backend revokes old fulfillment then re-grants when paid/completed. */
+  entity_id?: string;
+  /** Course orders only; omit to auto-resolve batch when changing course. */
+  batch_id?: number | string | null;
+  refund_amount?: number | string | null;
+  refund_remarks?: string | null;
+  coupon_code?: string | null;
+  coupon_discount?: number | string | null;
+  original_amount?: number | string | null;
 }
 
 export async function updateOrder(id: number, data: UpdateOrderPayload): Promise<OrderRecord> {

@@ -3,26 +3,28 @@
  * Server-side search and pagination — no more limit=500 bulk fetch.
  */
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { Link } from "react-router";
 import { DataTable, type DataTableRef } from "./data-table/DataTable";
 import Badge from "../ui/badge/Badge";
-import { EyeIcon, PencilIcon, DollarLineIcon } from "../../icons";
-import { fetchOrders, orderStatusAllowsRefund, type OrderRecord } from "../../api/orders";
+import { EyeIcon, PencilIcon, DollarLineIcon, TrashBinIcon } from "../../icons";
+import { deleteOrder, fetchOrders, orderStatusAllowsRefund, type OrderRecord } from "../../api/orders";
 import type { DataTableFetchParams, DataTableFetchResult } from "./data-table/DataTable.types";
 import RefundModal from "../../pages/orders/RefundModal";
 import Select from "../form/Select";
 import { fetchCourses, type Course } from "../../api/courses";
 import DatePicker from "../form/date-picker";
-import { deleteOrder } from "../../api/orders";
-import { TrashBinIcon } from "../../icons";
+import AmountRangeDropdown from "../form/AmountRangeDropdown";
+import Button from "../ui/button/Button";
 
-export interface OrdersTableProps {
-  filterStatus?: string;
-  filterType?: string;
-  filterAmountMin?: string;
-  filterAmountMax?: string;
-}
+const ORDERS_FILTER_INITIAL = {
+  dateFrom: "",
+  dateTo: "",
+  courseId: "",
+  type: "",
+  amountMin: "",
+  amountMax: "",
+};
 
 function statusColor(s: string) {
   if (s === "paid" || s === "completed") return "success";
@@ -38,12 +40,26 @@ export function OrdersTable() {
   
   // Filters
   const [courses, setCourses] = useState<Course[]>([]);
-  const [filters, setFilters] = useState({
-    dateFrom: "",
-    dateTo: "",
-    courseId: "",
-    type: "",
-  });
+  const [filters, setFilters] = useState({ ...ORDERS_FILTER_INITIAL });
+  const [filterBarKey, setFilterBarKey] = useState(0);
+
+  const hasActiveFilters = useMemo(
+    () =>
+      Boolean(
+        filters.dateFrom ||
+          filters.dateTo ||
+          filters.courseId ||
+          filters.type ||
+          filters.amountMin.trim() ||
+          filters.amountMax.trim(),
+      ),
+    [filters],
+  );
+
+  const clearAllFilters = useCallback(() => {
+    setFilters({ ...ORDERS_FILTER_INITIAL });
+    setFilterBarKey((k) => k + 1);
+  }, []);
 
   useEffect(() => {
     fetchCourses().then(setCourses).catch(console.error);
@@ -55,13 +71,18 @@ export function OrdersTable() {
     const { page, limit, search, sortBy, sortOrder } = params;
     const offset = (page - 1) * limit;
     
-    const result = await fetchOrders({ 
-      limit, 
-      offset, 
-      search: search ?? "", 
-      sortBy, 
+    const result = await fetchOrders({
+      limit,
+      offset,
+      search: search ?? "",
+      sortBy,
       sortOrder,
-      ...filters 
+      dateFrom: filters.dateFrom,
+      dateTo: filters.dateTo,
+      courseId: filters.courseId || undefined,
+      type: filters.type || undefined,
+      amountMin: filters.amountMin.trim() !== "" ? filters.amountMin : undefined,
+      amountMax: filters.amountMax.trim() !== "" ? filters.amountMax : undefined,
     });
     
     const total = result.total ?? result.orders.length;
@@ -235,52 +256,78 @@ export function OrdersTable() {
   ];
 
   const typeOptions = [
-    { value: "", label: "All Types" },
+    { value: "", label: "All types" },
     { value: "course", label: "Course" },
-    { value: "membership", label: "Membership" },
-    { value: "payment_link", label: "Payment Link" },
+    { value: "membership", label: "Member" },
+    { value: "payment_link", label: "Pay link" },
   ];
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-xs dark:border-gray-800 dark:bg-white/[0.03] sm:grid-cols-2 lg:grid-cols-4">
-        <div>
-          <label className="mb-1.5 block text-xs font-medium text-gray-700 dark:text-gray-400">Course</label>
-          <Select
-            options={courseOptions}
-            defaultValue={filters.courseId}
-            onChange={(val) => setFilters(f => ({ ...f, courseId: val }))}
-            placeholder="Filter by Course"
-          />
-        </div>
-        <div>
-          <label className="mb-1.5 block text-xs font-medium text-gray-700 dark:text-gray-400">Type</label>
-          <Select
-            options={typeOptions}
-            defaultValue={filters.type}
-            onChange={(val) => setFilters(f => ({ ...f, type: val }))}
-            placeholder="Filter by Type"
-          />
-        </div>
-        <div className="lg:col-span-2">
-          <DatePicker
-            id="dateRange"
-            label="Date Range"
-            mode="range"
-            placeholder="Select Date Range"
-            onChange={(dates) => {
-              if (dates.length === 2) {
-                const [start, end] = dates;
-                setFilters(f => ({ 
-                  ...f, 
-                  dateFrom: start ? start.toISOString().split('T')[0] : "", 
-                  dateTo: end ? end.toISOString().split('T')[0] : "" 
-                }));
-              } else if (dates.length === 0) {
-                setFilters(f => ({ ...f, dateFrom: "", dateTo: "" }));
-              }
-            }}
-          />
+      <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-theme-xs dark:border-gray-800 dark:bg-white/[0.03] sm:p-5">
+        <div className="flex min-w-0 flex-nowrap items-end gap-3 overflow-x-auto pb-0.5">
+          <div className="min-w-[10rem] max-w-[22rem] flex-[1.2] shrink-0">
+            <label className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-400">Course</label>
+            <Select
+              key={`course-${filterBarKey}`}
+              options={courseOptions}
+              defaultValue={filters.courseId}
+              onChange={(val) => setFilters(f => ({ ...f, courseId: val }))}
+              placeholder="Filter by Course"
+            />
+          </div>
+          <div className="w-[7.25rem] shrink-0 sm:w-[8rem]">
+            <label className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-400">Type</label>
+            <Select
+              key={`type-${filterBarKey}`}
+              options={typeOptions}
+              defaultValue={filters.type}
+              onChange={(val) => setFilters(f => ({ ...f, type: val }))}
+              placeholder="Type"
+            />
+          </div>
+          <div className="w-[10rem] shrink-0 sm:w-[10.5rem]">
+            <AmountRangeDropdown
+              key={`amount-${filterBarKey}`}
+              id="orderAmountRange"
+              label="Amount"
+              amountMin={filters.amountMin}
+              amountMax={filters.amountMax}
+              onChange={(next) => setFilters((f) => ({ ...f, ...next }))}
+            />
+          </div>
+          <div className="min-w-[12rem] flex-1 shrink-0 basis-[13rem]">
+            <DatePicker
+              key={`date-${filterBarKey}`}
+              id="dateRange"
+              label="Date range"
+              labelClassName="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-400"
+              mode="range"
+              placeholder="Select Date Range"
+              onChange={(dates) => {
+                if (dates.length === 2) {
+                  const [start, end] = dates;
+                  setFilters(f => ({
+                    ...f,
+                    dateFrom: start ? start.toISOString().split('T')[0] : "",
+                    dateTo: end ? end.toISOString().split('T')[0] : "",
+                  }));
+                } else if (dates.length === 0) {
+                  setFilters(f => ({ ...f, dateFrom: "", dateTo: "" }));
+                }
+              }}
+            />
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={!hasActiveFilters}
+            className="h-11 shrink-0 px-3 text-xs whitespace-nowrap"
+            onClick={clearAllFilters}
+          >
+            Clear filters
+          </Button>
         </div>
       </div>
 
