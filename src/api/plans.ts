@@ -132,6 +132,22 @@ export async function createMembershipOrder(
     return res.data.data ?? (res.data as unknown as CreateOrderResponse);
 }
 
+export interface BulkMembershipResult {
+  email: string;
+  status: "granted" | "user_not_found" | "error";
+  message?: string;
+}
+
+export async function bulkGrantMembershipByEmails(payload: {
+  emails: string[];
+  membershipType: string;
+  startsAt: string;
+  expiresAt: string;
+}): Promise<BulkMembershipResult[]> {
+  const res = await api.post<BulkMembershipResult[]>("/admin/memberships/bulk", payload);
+  return Array.isArray(res.data) ? res.data : [];
+}
+
 export const comparisonFeaturesApi = {
     async list(): Promise<ComparisonFeature[]> {
         const { data } = await api.get<ComparisonFeature[]>(CF_BASE);

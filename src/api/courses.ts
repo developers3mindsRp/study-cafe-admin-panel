@@ -338,3 +338,20 @@ export async function fetchCourseBatches(courseId: number): Promise<{ id: number
     return [];
   }
 }
+
+export interface BulkEnrollResult {
+  email: string;
+  status: "enrolled" | "already_enrolled" | "user_not_found" | "error";
+  message?: string;
+}
+
+export async function bulkEnrollByEmails(
+  batchId: number,
+  emails: string[]
+): Promise<BulkEnrollResult[]> {
+  const res = await api.post<BulkEnrollResult[]>(
+    `/admin/batches/${batchId}/enrollments/bulk`,
+    { emails }
+  );
+  return Array.isArray(res.data) ? res.data : [];
+}

@@ -19,18 +19,37 @@ export interface UsersTableProps {
   onDeleteClick?: (user: User) => void;
   filterRole?: string;
   filterStatus?: string;
+  filterEmail?: string;
+  filterMembership?: string;
+  filterJoinedFrom?: string;
+  filterJoinedTo?: string;
 }
 
 export const UsersTable = forwardRef<DataTableRef, UsersTableProps>(
-  function UsersTable({ onDeleteClick, filterRole = "", filterStatus = "" }, ref) {
+  function UsersTable(
+    {
+      onDeleteClick,
+      filterRole = "",
+      filterStatus = "",
+      filterEmail = "",
+      filterMembership = "",
+      filterJoinedFrom = "",
+      filterJoinedTo = "",
+    },
+    ref
+  ) {
     const fetchData = useCallback(
       (params: DataTableFetchParams): Promise<DataTableFetchResult<User>> =>
         fetchUsersPaginated({
           ...params,
           ...(filterRole ? { role: filterRole } : {}),
           ...(filterStatus ? { status: filterStatus } : {}),
+          ...(filterEmail ? { email: filterEmail } : {}),
+          ...(filterMembership ? { membership: filterMembership } : {}),
+          ...(filterJoinedFrom ? { joinedFrom: filterJoinedFrom } : {}),
+          ...(filterJoinedTo ? { joinedTo: filterJoinedTo } : {}),
         }),
-      [filterRole, filterStatus]
+      [filterRole, filterStatus, filterEmail, filterMembership, filterJoinedFrom, filterJoinedTo]
     );
 
     const columns = [
@@ -47,10 +66,23 @@ export const UsersTable = forwardRef<DataTableRef, UsersTableProps>(
         render: (row: User) => row.email,
       },
       {
-        key: "phone",
-        header: "Phone",
+        key: "designation",
+        header: "Designation",
         sortable: false,
-        render: (row: User) => row.phone || "—",
+        render: (row: User) => (
+          <div>
+            <div>{row.designation || "—"}</div>
+            {row.profession && (
+              <div className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{row.profession}</div>
+            )}
+          </div>
+        ),
+      },
+      {
+        key: "state",
+        header: "State",
+        sortable: false,
+        render: (row: User) => row.state || "—",
       },
       {
         key: "membership",
@@ -88,34 +120,31 @@ export const UsersTable = forwardRef<DataTableRef, UsersTableProps>(
         align: "end" as const,
         sortable: false,
         render: (row: User) => (
-          <div className="flex items-center justify-end gap-2">
+          <div className="flex items-center justify-end gap-1">
             <Link
               to={`/users/${row.id}`}
-              className="inline-flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-2 text-sm text-gray-600 transition hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
+              className="inline-flex items-center justify-center rounded-lg p-2 text-gray-500 transition hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
               title="View"
             >
               <EyeIcon className="size-4 shrink-0 fill-current" />
-              View
             </Link>
             <RequirePermission permissions={[PERM_ADMIN_USERS_EDIT]} fallback={null}>
               <Link
                 to={`/users/${row.id}/edit`}
-                className="inline-flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-2 text-sm text-gray-600 transition hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
+                className="inline-flex items-center justify-center rounded-lg p-2 text-gray-500 transition hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
                 title="Edit"
               >
                 <PencilIcon className="size-4 shrink-0 fill-current" />
-                Edit
               </Link>
             </RequirePermission>
             <RequirePermission permissions={[PERM_ADMIN_USERS_DELETE]} fallback={null}>
               <button
                 type="button"
                 onClick={() => onDeleteClick?.(row)}
-                className="inline-flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-2 text-sm text-gray-600 transition hover:bg-error-50 hover:text-error-500 dark:text-gray-400 dark:hover:bg-error-500/10 dark:hover:text-error-400"
+                className="inline-flex items-center justify-center rounded-lg p-2 text-gray-500 transition hover:bg-error-50 hover:text-error-500 dark:text-gray-400 dark:hover:bg-error-500/10 dark:hover:text-error-400"
                 title="Delete"
               >
                 <TrashBinIcon className="size-4 shrink-0 fill-current" />
-                Delete
               </button>
             </RequirePermission>
           </div>
@@ -125,7 +154,7 @@ export const UsersTable = forwardRef<DataTableRef, UsersTableProps>(
 
     return (
       <DataTable<User>
-        key={`${filterRole}|${filterStatus}`}
+        key={`${filterRole}|${filterStatus}|${filterEmail}|${filterMembership}|${filterJoinedFrom}|${filterJoinedTo}`}
         ref={ref}
         columns={columns}
         fetchData={fetchData}
