@@ -5,6 +5,7 @@ import CourseForm, { type CourseFormData } from "./CourseForm";
 import { createCourse, createBatch } from "../../api/courses";
 import { useState } from "react";
 import { getApiErrorMessage } from "../../lib/apiError";
+import { toast } from "react-toastify";
 
 export default function CourseCreate() {
   const navigate = useNavigate();
@@ -74,15 +75,19 @@ export default function CourseCreate() {
             start_date: data.default_batch_start_date || null,
             meet_link: data.default_batch_meet_link || null,
           });
+          toast.success("Course created successfully!");
         } catch (batchErr) {
           console.error("Course created but default batch creation failed", batchErr);
+          toast.warning("Course created, but the default batch could not be set up. You can add batches manually from the course.");
         }
+      } else {
+        toast.success("Course created successfully!");
       }
 
       navigate("/courses");
     } catch (err: unknown) {
       console.error("Failed to create course", err);
-      alert(getApiErrorMessage(err, "Failed to create course"));
+      toast.error(getApiErrorMessage(err, "Failed to create course. Please try again."));
     } finally {
       setLoading(false);
     }
