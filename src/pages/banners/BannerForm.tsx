@@ -3,6 +3,7 @@ import Label from "../../components/form/Label";
 import Input from "../../components/form/input/InputField";
 import ImageUpload from "../../components/form/ImageUpload";
 import Button from "../../components/ui/button/Button";
+import { CMS_IMAGE_UPLOAD_PLACEHOLDER } from "../../constants/cmsImageUpload";
 import { BannerRecord } from "../../api/banners";
 
 interface BannerFormProps {
@@ -43,15 +44,17 @@ export default function BannerForm({ initialData, onSubmit, loading }: BannerFor
             <div>
               <Label>Desktop Image</Label>
               <ImageUpload
-                value={formData.desktop_image_url}
+                value={formData.desktop_image_url ?? ""}
                 onChange={(url) => setFormData({ ...formData, desktop_image_url: url })}
+                placeholder={CMS_IMAGE_UPLOAD_PLACEHOLDER}
               />
             </div>
             <div>
               <Label>Mobile Image</Label>
               <ImageUpload
-                value={formData.mobile_image_url}
+                value={formData.mobile_image_url ?? ""}
                 onChange={(url) => setFormData({ ...formData, mobile_image_url: url })}
+                placeholder={CMS_IMAGE_UPLOAD_PLACEHOLDER}
               />
             </div>
           </div>

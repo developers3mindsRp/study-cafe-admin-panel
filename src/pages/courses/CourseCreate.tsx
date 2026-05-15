@@ -1,14 +1,54 @@
-import { useNavigate } from "react-router";
+import { useNavigate, useSearchParams } from "react-router";
+import { useState, useEffect } from "react";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import CourseForm, { type CourseFormData } from "./CourseForm";
-import { createCourse, createBatch } from "../../api/courses";
-import { useState } from "react";
+import { createCourse, createBatch, fetchCourse, type Course } from "../../api/courses";
 import { getApiErrorMessage } from "../../lib/apiError";
+import { buildCourseDuplicateInitial } from "../../lib/courseDuplicate";
 
 export default function CourseCreate() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const duplicateFrom = searchParams.get("duplicateFrom")?.trim() || "";
   const [loading, setLoading] = useState(false);
+  const [duplicateInitial, setDuplicateInitial] = useState<Course | null>(null);
+  const [duplicateLoadError, setDuplicateLoadError] = useState<string | null>(null);
+  const [duplicateLoading, setDuplicateLoading] = useState(Boolean(duplicateFrom));
+
+  useEffect(() => {
+    if (!duplicateFrom) {
+      setDuplicateInitial(null);
+      setDuplicateLoadError(null);
+      setDuplicateLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setDuplicateLoading(true);
+    setDuplicateLoadError(null);
+    fetchCourse(duplicateFrom)
+      .then((c) => {
+        if (cancelled) return;
+        if (!c) {
+          setDuplicateLoadError("Course not found.");
+          setDuplicateInitial(null);
+          return;
+        }
+        setDuplicateInitial(buildCourseDuplicateInitial(c));
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setDuplicateLoadError("Could not load course to duplicate.");
+          setDuplicateInitial(null);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setDuplicateLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [duplicateFrom]);
 
   const handleSubmit = async (data: CourseFormData) => {
     try {
@@ -88,11 +128,50 @@ export default function CourseCreate() {
     }
   };
 
+  if (duplicateFrom && duplicateLoading) {
+    return (
+      <>
+        <PageMeta title="Duplicate Course | StudyCafe Admin" description="Create a course from an existing one" />
+        <PageBreadcrumb pageTitle="Duplicate Course" />
+        <div className="py-12 text-center text-gray-500 dark:text-gray-400">Loading course…</div>
+      </>
+    );
+  }
+
+  if (duplicateFrom && duplicateLoadError) {
+    return (
+      <>
+        <PageMeta title="Duplicate Course | StudyCafe Admin" description="Create a course from an existing one" />
+        <PageBreadcrumb pageTitle="Duplicate Course" />
+        <div className="rounded-xl border border-error-200 bg-error-50 px-4 py-6 text-center text-error-800 dark:border-error-900/50 dark:bg-error-950/30 dark:text-error-200">
+          <p className="mb-4">{duplicateLoadError}</p>
+          <button
+            type="button"
+            className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600"
+            onClick={() => navigate("/courses/create", { replace: true })}
+          >
+            Start blank course instead
+          </button>
+        </div>
+      </>
+    );
+  }
+
+  const isDuplicate = Boolean(duplicateFrom && duplicateInitial);
+
   return (
     <>
-      <PageMeta title="Create Course | StudyCafe Admin" description="Create a new course" />
-      <PageBreadcrumb pageTitle="Create Course" />
-      <CourseForm onSubmit={handleSubmit} loading={loading} />
+      <PageMeta
+        title={isDuplicate ? "Duplicate Course | StudyCafe Admin" : "Create Course | StudyCafe Admin"}
+        description={isDuplicate ? "Review cloned fields and save as a new course" : "Create a new course"}
+      />
+      <PageBreadcrumb pageTitle={isDuplicate ? "Duplicate course" : "Create Course"} />
+      <CourseForm
+        key={duplicateFrom || "new"}
+        initial={duplicateInitial ?? undefined}
+        onSubmit={handleSubmit}
+        loading={loading}
+      />
     </>
   );
 }

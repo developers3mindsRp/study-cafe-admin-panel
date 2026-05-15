@@ -14,8 +14,15 @@ const safeJsonParse = (str: string | null | undefined, fallback: any = []) => {
     try { return JSON.parse(str); } catch { return fallback; }
 };
 
+function apiErrorMessage(err: unknown, fallback: string): string {
+    const ax = err as { response?: { data?: { message?: string; error?: string } }; message?: string };
+    return ax.response?.data?.message || ax.response?.data?.error || ax.message || fallback;
+}
+
 export default function CoursePageSettings() {
     const [loading, setLoading] = useState(true);
+    const [settingsError, setSettingsError] = useState<string | null>(null);
+    const [coursesWarning, setCoursesWarning] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
     const [alumniLogos, setAlumniLogos] = useState<any[]>([]);
     const [featuredInLogos, setFeaturedInLogos] = useState<any[]>([]);
@@ -25,17 +32,23 @@ export default function CoursePageSettings() {
 
     useEffect(() => {
         (async () => {
+            setSettingsError(null);
+            setCoursesWarning(null);
             try {
-                const [settings, courseList] = await Promise.all([
-                    fetchCoursePageSettings(),
-                    fetchCourses(),
-                ]);
+                const settings = await fetchCoursePageSettings();
                 setAlumniLogos(safeJsonParse(settings.alumni_logos, []));
                 setFeaturedInLogos(safeJsonParse(settings.featured_in_logos, []));
                 setTrendingCourseIds(safeJsonParse(settings.trending_course_ids, []));
+            } catch (err) {
+                console.error("Failed to load course page settings", err);
+                setSettingsError(apiErrorMessage(err, "Failed to load course page settings."));
+            }
+            try {
+                const courseList = await fetchCourses();
                 setCourses(courseList);
             } catch (err) {
-                console.error("Failed to load settings", err);
+                console.error("Failed to load courses for trending picker", err);
+                setCoursesWarning(apiErrorMessage(err, "Could not load the course list for the trending picker."));
             } finally {
                 setLoading(false);
             }
@@ -53,7 +66,7 @@ export default function CoursePageSettings() {
             alert("Settings saved successfully!");
         } catch (err) {
             console.error("Failed to save settings", err);
-            alert("Failed to save settings");
+            alert(apiErrorMessage(err, "Failed to save settings"));
         } finally {
             setSaving(false);
         }
@@ -81,7 +94,16 @@ export default function CoursePageSettings() {
             <PageBreadcrumb pageTitle="Course Page Settings" />
 
             <div className="space-y-6">
-                {/* Alumni Logos */}
+                {settingsError && (
+                    <p className="rounded-lg border border-error-200 bg-error-50 px-4 py-3 text-sm text-error-700 dark:border-error-500/30 dark:bg-error-500/10 dark:text-error-400">
+                        {settingsError}
+                    </p>
+                )}
+                {coursesWarning && (
+                    <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
+                        {coursesWarning}
+                    </p>
+                )}
                 <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] sm:p-6">
                     <h3 className="mb-1 text-lg font-semibold text-gray-800 dark:text-white/90">Our Alumni at Leading Companies</h3>
                     <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">Logos of companies where alumni work. Displayed on all course detail pages.</p>
@@ -202,7 +224,7 @@ export default function CoursePageSettings() {
 
                 {/* Save */}
                 <div className="flex justify-end gap-2">
-                    <Button type="button" size="sm" onClick={handleSave} disabled={saving}>
+                    <Button type="button" size="sm" onClick={handleSave} disabled={saving || !!settingsError}>
                         {saving ? "Saving…" : "Save All Settings"}
                     </Button>
                 </div>

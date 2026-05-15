@@ -1,3 +1,4 @@
+import { NavMenuProvider } from "../context/NavMenuContext";
 import { SidebarProvider, useSidebar } from "../context/SidebarContext";
 import { Outlet } from "react-router";
 import AppHeader from "./AppHeader";
@@ -29,9 +30,11 @@ const LayoutContent: React.FC = () => {
 
 const AppLayout: React.FC = () => {
   return (
-    <SidebarProvider>
-      <LayoutContent />
-    </SidebarProvider>
+    <NavMenuProvider>
+      <SidebarProvider>
+        <LayoutContent />
+      </SidebarProvider>
+    </NavMenuProvider>
   );
 };
 

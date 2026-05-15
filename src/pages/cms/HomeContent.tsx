@@ -6,6 +6,7 @@ import Input from "../../components/form/input/InputField";
 import Button from "../../components/ui/button/Button";
 import TextArea from "../../components/form/input/TextArea";
 import ImageUpload from "../../components/form/ImageUpload";
+import { CMS_IMAGE_UPLOAD_PLACEHOLDER } from "../../constants/cmsImageUpload";
 import { fetchCmsPageBySlug, updateCmsPage } from "../../api/cmsPages";
 
 const SLUG = "home";
@@ -126,7 +127,7 @@ export default function HomeContent() {
                 onChange={(imageUrl) =>
                   setHero((prev) => ({ ...prev, imageUrl }))
                 }
-                placeholder="Drop or select image"
+                placeholder={CMS_IMAGE_UPLOAD_PLACEHOLDER}
               />
             </div>
 
@@ -138,7 +139,7 @@ export default function HomeContent() {
                 onChange={(backgroundImageUrl) =>
                   setHero((prev) => ({ ...prev, backgroundImageUrl }))
                 }
-                placeholder="Drop or select image"
+                placeholder={CMS_IMAGE_UPLOAD_PLACEHOLDER}
               />
             </div>
           </div>

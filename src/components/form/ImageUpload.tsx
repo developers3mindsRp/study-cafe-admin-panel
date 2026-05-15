@@ -3,6 +3,8 @@ import { useDropzone } from "react-dropzone";
 import { uploadImage } from "../../api/uploads";
 import { getImageUrl } from "../../utils/image.utils";
 
+/** All callers (Home content, Banners, courses, etc.) use the same API: `uploadImage` → POST /admin/upload. */
+
 const IMAGE_ACCEPT = {
   "image/png": [".png"],
   "image/jpeg": [".jpg", ".jpeg"],

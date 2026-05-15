@@ -15,9 +15,12 @@ export const api = axios.create({
   baseURL,
   /** Slow DB / cold connections (e.g. remote MySQL); avoid false timeouts on admin lists */
   timeout: 120_000,
-  headers: {
-    "Content-Type": "application/json",
-  },
+  /**
+   * Do not set a default Content-Type here. Axios merges instance headers before
+   * transformRequest; if `application/json` stays set, FormData is JSON-stringified
+   * (see axios defaults transformRequest) and uploads never reach multer as multipart.
+   * Plain object bodies still get `application/json` from transformRequest.
+   */
 });
 
 let refreshInFlight: Promise<string | null> | null = null;
@@ -59,6 +62,9 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const token = getStoredToken();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
+  }
+  if (config.data instanceof FormData) {
+    config.headers.delete("Content-Type");
   }
   return config;
 });

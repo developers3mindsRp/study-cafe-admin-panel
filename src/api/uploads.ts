@@ -7,11 +7,7 @@ import { api } from "./axios";
 export async function uploadImage(file: File): Promise<{ url: string }> {
   const formData = new FormData();
   formData.append("file", file);
-  const res = await api.post<{ url: string }>("/admin/upload", formData, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
-  });
+  const res = await api.post<{ url: string }>("/admin/upload", formData);
   const body = res.data as any;
   const url = body?.data?.url || body?.url;
   if (!url || typeof url !== "string") throw new Error("Upload did not return a URL");
@@ -25,7 +21,6 @@ export async function uploadFile(
   const formData = new FormData();
   formData.append("file", file);
   const res = await api.post<{ url: string }>("/admin/upload-file", formData, {
-    headers: { "Content-Type": "multipart/form-data" },
     onUploadProgress: onProgress
       ? (e) => {
           if (e.total) onProgress(Math.round((e.loaded * 100) / e.total));
