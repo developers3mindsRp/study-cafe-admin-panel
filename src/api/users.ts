@@ -78,7 +78,14 @@ export async function fetchUserMemberships(userId: string | number): Promise<Use
 
 /** Server-side paginated list for DataTable. Adapts list() response to DataTable meta shape. */
 export async function fetchUsersPaginated(
-  params: DataTableFetchParams & { role?: string; status?: string }
+  params: DataTableFetchParams & {
+    role?: string;
+    status?: string;
+    email?: string;
+    membership?: string;
+    joinedFrom?: string;
+    joinedTo?: string;
+  }
 ): Promise<DataTableFetchResult<User>> {
   const res = await usersApi.list({
     page: params.page,
@@ -88,6 +95,10 @@ export async function fetchUsersPaginated(
     sortOrder: params.sortOrder,
     ...(params.role ? { role: params.role } : {}),
     ...(params.status ? { status: params.status } : {}),
+    ...(params.email ? { email: params.email } : {}),
+    ...(params.membership ? { membership: params.membership } : {}),
+    ...(params.joinedFrom ? { joined_from: params.joinedFrom } : {}),
+    ...(params.joinedTo ? { joined_to: params.joinedTo } : {}),
   });
   const totalPages = res.pages ?? (res.total ? Math.ceil(res.total / res.limit) : 0);
   return {

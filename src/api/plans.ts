@@ -57,14 +57,23 @@ export interface UpgradeSummaryTargetPlan {
 export interface UpgradeSummaryPricing {
     targetAmount: number;
     deductAmount: number;
+    couponDiscount: number;
     finalAmount: number;
     gstAmount: number;
     grandTotal: number;
 }
 
+export interface UpgradeSummaryCoupon {
+    code: string;
+    discountAmount: number;
+}
+
 export interface UpgradeSummaryResponse {
+    canUpgrade: boolean;
+    message?: string;
     currentPlan: UpgradeSummaryCurrentPlan | null;
     targetPlan: UpgradeSummaryTargetPlan;
+    coupon: UpgradeSummaryCoupon | null;
     pricing: UpgradeSummaryPricing;
 }
 
@@ -100,10 +109,13 @@ export const plansApi = createCrudApi<Plan>(BASE_URL)({
     },
 });
 
-export async function fetchUpgradeSummary(targetPlanId: number): Promise<UpgradeSummaryResponse> {
+export async function fetchUpgradeSummary(
+    targetPlanId: number,
+    couponCode?: string
+): Promise<UpgradeSummaryResponse> {
     const res = await api.post<{ success: boolean; data: UpgradeSummaryResponse }>(
         '/platform/membership/upgrade-summary',
-        { targetPlanId }
+        { targetPlanId, ...(couponCode?.trim() ? { couponCode: couponCode.trim() } : {}) }
     );
     return res.data.data ?? (res.data as unknown as UpgradeSummaryResponse);
 }
@@ -118,6 +130,22 @@ export async function createMembershipOrder(
         couponCode: couponCode || undefined,
     });
     return res.data.data ?? (res.data as unknown as CreateOrderResponse);
+}
+
+export interface BulkMembershipResult {
+  email: string;
+  status: "granted" | "user_not_found" | "error";
+  message?: string;
+}
+
+export async function bulkGrantMembershipByEmails(payload: {
+  emails: string[];
+  membershipType: string;
+  startsAt: string;
+  expiresAt: string;
+}): Promise<BulkMembershipResult[]> {
+  const res = await api.post<BulkMembershipResult[]>("/admin/memberships/bulk", payload);
+  return Array.isArray(res.data) ? res.data : [];
 }
 
 export const comparisonFeaturesApi = {

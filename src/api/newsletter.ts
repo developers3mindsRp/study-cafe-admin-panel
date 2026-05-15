@@ -74,3 +74,17 @@ export const sendNewsletter = async (
     const res = await api.post<SendNewsletterResult>("/admin/platform/newsletter/send", payload);
     return res.data;
 };
+
+// ── Sync membership members ────────────────────────────────────────
+
+export interface SyncMembersResult {
+    synced_count: number;
+    already_subscribed_count: number;
+}
+
+export const syncMembershipSubscribers = async (planSlugs: string[]): Promise<SyncMembersResult> => {
+    const res = await api.post<SyncMembersResult>("/admin/platform/newsletter/sync-members", {
+        plan_slugs: planSlugs,
+    });
+    return res.data;
+};
