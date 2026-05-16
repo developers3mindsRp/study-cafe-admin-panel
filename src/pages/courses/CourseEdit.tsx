@@ -5,6 +5,7 @@ import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import CourseForm, { type CourseFormData } from "./CourseForm";
 import { fetchCourse, updateCourse } from "../../api/courses";
 import { getApiErrorMessage } from "../../lib/apiError";
+import { toast } from "react-toastify";
 
 export default function CourseEdit() {
   const { id } = useParams<{ id: string }>();
@@ -77,10 +78,11 @@ export default function CourseEdit() {
           Math.max(0, Number(data.affiliate_commission)) || 0,
         ),
       });
+      toast.success("Course updated successfully!");
       navigate("/courses");
     } catch (err: unknown) {
       console.error("Failed to update course", err);
-      alert(getApiErrorMessage(err, "Failed to update course"));
+      toast.error(getApiErrorMessage(err, "Failed to update course. Please try again."));
     } finally {
       setLoading(false);
     }
