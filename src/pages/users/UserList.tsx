@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { Link } from "react-router";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
@@ -9,7 +9,17 @@ import {
   PERM_ADMIN_USERS_CREATE,
   PERM_USERS_COURSE_ALLOTMENT,
 } from "../../constants/permissions";
-import { usersApi, type User } from "../../api/users";
+import {
+  fetchAllUsersForExport,
+  usersApi,
+  usersListFiltersAreActive,
+  usersListFiltersFromValues,
+  type User,
+} from "../../api/users";
+import { exportRowsToExcel } from "../../utils/exportToExcel";
+import { USER_EXPORT_COLUMNS } from "../../utils/userExportColumns";
+import { DownloadIcon } from "../../icons";
+import Button from "../../components/ui/button/Button";
 import { UsersTable } from "../../components/tables";
 import type { DataTableRef } from "../../components/tables/data-table";
 import { FilterBar, useFilterState } from "../../components/filters";
@@ -81,6 +91,42 @@ function UserListContent() {
   const [isAllotmentModalOpen, setIsAllotmentModalOpen] = useState(false);
   const [isMembershipModalOpen, setIsMembershipModalOpen] = useState(false);
   const { values, set, reset, hasActive } = useFilterState();
+  const [exporting, setExporting] = useState(false);
+
+  const listFilters = useMemo(() => usersListFiltersFromValues(values), [values]);
+  const filtersActive = useMemo(() => usersListFiltersAreActive(listFilters), [listFilters]);
+
+  const handleExportExcel = useCallback(async () => {
+    const q = tableRef.current?.getQueryState();
+    if (!q) return;
+    setExporting(true);
+    try {
+      const rows = await fetchAllUsersForExport({
+        filters: listFilters,
+        search: q.search,
+        sortBy: q.sortBy,
+        sortOrder: q.sortOrder,
+      });
+      const datePart = new Date().toISOString().slice(0, 10);
+      const filteredPart = filtersActive || q.search.trim() ? "-filtered" : "";
+      exportRowsToExcel({
+        filename: `users-export-${datePart}${filteredPart}`,
+        sheetName: "Users",
+        columns: USER_EXPORT_COLUMNS,
+        rows,
+      });
+    } catch (err: unknown) {
+      const msg =
+        err && typeof err === "object" && "response" in err
+          ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
+          : err instanceof Error
+            ? err.message
+            : "Export failed";
+      alert(msg || "Export failed");
+    } finally {
+      setExporting(false);
+    }
+  }, [listFilters, filtersActive]);
 
   const handleDeleteClick = (user: User) => {
     setDeleteTarget(user);
@@ -151,16 +197,24 @@ function UserListContent() {
           onChange={set}
           onReset={reset}
           hasActive={hasActive}
+          actions={
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={exporting}
+              className="h-10 whitespace-nowrap"
+              startIcon={<DownloadIcon className="size-4 shrink-0" />}
+              onClick={handleExportExcel}
+            >
+              {exporting ? "Exporting…" : filtersActive ? "Export filtered" : "Export Excel"}
+            </Button>
+          }
         />
         <UsersTable
           ref={tableRef}
           onDeleteClick={handleDeleteClick}
-          filterEmail={values.email ?? ""}
-          filterStatus={values.status ?? ""}
-          filterMembership={values.membership ?? ""}
-          filterRole={values.role ?? ""}
-          filterJoinedFrom={values.joinedFrom ?? ""}
-          filterJoinedTo={values.joinedTo ?? ""}
+          filters={listFilters}
         />
       </div>
 

@@ -1,4 +1,5 @@
 import { api } from "./axios";
+import { fetchAllPaginatedForExport } from "../utils/fetchAllPaginatedForExport";
 
 /** Refund is only valid once payment succeeded (matches order-service refund rules). */
 export function orderStatusAllowsRefund(status: string | null | undefined): boolean {
@@ -44,6 +45,58 @@ export interface FetchOrdersResult {
   total: number;
   limit: number;
   offset: number;
+}
+
+/** Toolbar filters on the orders list (shared by table + Excel export). */
+export type OrdersListFilters = {
+  dateFrom: string;
+  dateTo: string;
+  courseId: string;
+  type: string;
+  amountMin: string;
+  amountMax: string;
+};
+
+export type BuildOrdersListParamsInput = {
+  filters: OrdersListFilters;
+  search?: string;
+  sortBy?: string;
+  sortOrder?: string;
+  limit?: number;
+  offset?: number;
+};
+
+/** One query shape for list, export, and API — keeps filtered export in sync with the grid. */
+export function buildOrdersListParams(input: BuildOrdersListParamsInput) {
+  const { filters, search, sortBy, sortOrder, limit, offset } = input;
+  const params: NonNullable<Parameters<typeof fetchOrders>[0]> = {};
+
+  if (limit != null) params.limit = limit;
+  if (offset != null) params.offset = offset;
+  if (search?.trim()) params.search = search.trim();
+  if (sortBy) params.sortBy = sortBy;
+  if (sortOrder) params.sortOrder = sortOrder;
+  if (filters.dateFrom) params.dateFrom = filters.dateFrom;
+  if (filters.dateTo) params.dateTo = filters.dateTo;
+  if (filters.courseId) params.courseId = filters.courseId;
+  if (filters.type) params.type = filters.type;
+  const min = filters.amountMin.trim();
+  const max = filters.amountMax.trim();
+  if (min) params.amountMin = min;
+  if (max) params.amountMax = max;
+
+  return params;
+}
+
+export function ordersListFiltersAreActive(filters: OrdersListFilters): boolean {
+  return Boolean(
+    filters.dateFrom ||
+      filters.dateTo ||
+      filters.courseId ||
+      filters.type ||
+      filters.amountMin.trim() ||
+      filters.amountMax.trim(),
+  );
 }
 
 export async function fetchOrders(params?: {
@@ -96,35 +149,19 @@ export async function fetchOrders(params?: {
 
 const ORDERS_EXPORT_PAGE_SIZE = 500;
 
-export type FetchOrdersExportParams = Omit<
-  NonNullable<Parameters<typeof fetchOrders>[0]>,
-  "limit" | "offset"
->;
-
-/** Loads every order page matching the same filters as the list (max 500 per request). */
+/** Loads every order page matching list filters + search/sort (max 500 per request). */
 export async function fetchAllOrdersForExport(
-  params: FetchOrdersExportParams
+  params: Omit<BuildOrdersListParamsInput, "limit" | "offset">,
 ): Promise<OrderRecord[]> {
-  const all: OrderRecord[] = [];
-  let offset = 0;
-  let total: number | undefined;
-
-  for (;;) {
-    const res = await fetchOrders({
-      ...params,
-      limit: ORDERS_EXPORT_PAGE_SIZE,
-      offset,
-    });
-    const chunk = res.orders ?? [];
-    if (chunk.length === 0) break;
-    if (total === undefined) total = res.total;
-    all.push(...chunk);
-    offset += chunk.length;
-    if (chunk.length < ORDERS_EXPORT_PAGE_SIZE) break;
-    if (total != null && offset >= total) break;
-  }
-
-  return all;
+  const query = buildOrdersListParams(params);
+  return fetchAllPaginatedForExport({
+    pageSize: ORDERS_EXPORT_PAGE_SIZE,
+    fetchPage: async (page, limit) => {
+      const offset = (page - 1) * limit;
+      const res = await fetchOrders({ ...query, limit, offset });
+      return { data: res.orders ?? [], total: res.total ?? 0 };
+    },
+  });
 }
 
 export async function fetchOrderByOrderId(orderId: string): Promise<OrderRecord | null> {

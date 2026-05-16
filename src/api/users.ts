@@ -5,9 +5,10 @@
  * Only custom types and extensions live here — CRUD methods come free.
  */
 
-import { createCrudApi } from "./apiFactory";
+import { createCrudApi, type ListQuery } from "./apiFactory";
 import { api } from "./axios";
 import type { DataTableFetchParams, DataTableFetchResult } from "../components/tables/data-table";
+import { fetchAllPaginatedForExport } from "../utils/fetchAllPaginatedForExport";
 
 export interface User {
   id: string;
@@ -76,30 +77,83 @@ export async function fetchUserMemberships(userId: string | number): Promise<Use
   }
 }
 
-/** Server-side paginated list for DataTable. Adapts list() response to DataTable meta shape. */
+/** Toolbar filters on the users list (shared by table + Excel export). */
+export type UsersListFilters = {
+  email: string;
+  status: string;
+  membership: string;
+  role: string;
+  joinedFrom: string;
+  joinedTo: string;
+};
+
+export type BuildUsersListParamsInput = {
+  filters: UsersListFilters;
+  page?: number;
+  limit?: number;
+  search?: string;
+  sortBy?: string;
+  sortOrder?: "ASC" | "DESC";
+};
+
+/** One query shape for list + export — keeps filtered export in sync with the grid. */
+export function buildUsersListParams(input: BuildUsersListParamsInput): ListQuery {
+  const { filters, page, limit, search, sortBy, sortOrder } = input;
+  const params: ListQuery = {};
+
+  if (page != null) params.page = page;
+  if (limit != null) params.limit = limit;
+  if (search?.trim()) params.search = search.trim();
+  if (sortBy) params.sortBy = sortBy;
+  if (sortOrder) params.sortOrder = sortOrder;
+
+  const email = filters.email.trim();
+  if (email) params.email = email;
+  if (filters.status) params.status = filters.status;
+  if (filters.membership) params.membership = filters.membership;
+  if (filters.role) params.role = filters.role;
+  if (filters.joinedFrom) params.joined_from = filters.joinedFrom;
+  if (filters.joinedTo) params.joined_to = filters.joinedTo;
+
+  return params;
+}
+
+export function usersListFiltersAreActive(filters: UsersListFilters): boolean {
+  return Boolean(
+    filters.email.trim() ||
+      filters.status ||
+      filters.membership ||
+      filters.role ||
+      filters.joinedFrom ||
+      filters.joinedTo,
+  );
+}
+
+export function usersListFiltersFromValues(values: Record<string, string | undefined>): UsersListFilters {
+  return {
+    email: values.email ?? "",
+    status: values.status ?? "",
+    membership: values.membership ?? "",
+    role: values.role ?? "",
+    joinedFrom: values.joinedFrom ?? "",
+    joinedTo: values.joinedTo ?? "",
+  };
+}
+
+/** Server-side paginated list for DataTable. */
 export async function fetchUsersPaginated(
-  params: DataTableFetchParams & {
-    role?: string;
-    status?: string;
-    email?: string;
-    membership?: string;
-    joinedFrom?: string;
-    joinedTo?: string;
-  }
+  params: DataTableFetchParams & { filters: UsersListFilters },
 ): Promise<DataTableFetchResult<User>> {
-  const res = await usersApi.list({
-    page: params.page,
-    limit: params.limit,
-    search: params.search || undefined,
-    sortBy: params.sortBy || undefined,
-    sortOrder: params.sortOrder,
-    ...(params.role ? { role: params.role } : {}),
-    ...(params.status ? { status: params.status } : {}),
-    ...(params.email ? { email: params.email } : {}),
-    ...(params.membership ? { membership: params.membership } : {}),
-    ...(params.joinedFrom ? { joined_from: params.joinedFrom } : {}),
-    ...(params.joinedTo ? { joined_to: params.joinedTo } : {}),
-  });
+  const res = await usersApi.list(
+    buildUsersListParams({
+      filters: params.filters,
+      page: params.page,
+      limit: params.limit,
+      search: params.search,
+      sortBy: params.sortBy,
+      sortOrder: params.sortOrder,
+    }),
+  );
   const totalPages = res.pages ?? (res.total ? Math.ceil(res.total / res.limit) : 0);
   return {
     data: res.data ?? [],
@@ -112,4 +166,17 @@ export async function fetchUsersPaginated(
       hasPreviousPage: (res.page ?? 1) > 1,
     },
   };
+}
+
+/** Loads every user page matching list filters + search/sort. */
+export async function fetchAllUsersForExport(
+  params: Omit<BuildUsersListParamsInput, "page" | "limit">,
+): Promise<User[]> {
+  const query = buildUsersListParams(params);
+  return fetchAllPaginatedForExport({
+    fetchPage: async (page, limit) => {
+      const res = await usersApi.list({ ...query, page, limit });
+      return { data: res.data ?? [], total: res.total ?? 0 };
+    },
+  });
 }

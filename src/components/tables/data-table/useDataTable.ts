@@ -3,7 +3,7 @@
  * Fetches when page, limit, search, sortBy, or sortOrder change.
  */
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import type {
   DataTableMeta,
   DataTableFetchParams,
@@ -43,6 +43,14 @@ export function useDataTable<T = Record<string, unknown>>(
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState(initialSortBy);
   const [sortOrder, setSortOrder] = useState<"ASC" | "DESC">(initialSortOrder);
+
+  const fetchDataRef = useRef(fetchData);
+  useEffect(() => {
+    if (fetchDataRef.current !== fetchData) {
+      fetchDataRef.current = fetchData;
+      setPage(1);
+    }
+  }, [fetchData]);
 
   const load = useCallback(async () => {
     setLoading(true);

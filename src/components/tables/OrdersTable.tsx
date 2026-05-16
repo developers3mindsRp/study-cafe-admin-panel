@@ -9,11 +9,14 @@ import { DataTable, type DataTableRef } from "./data-table/DataTable";
 import Badge from "../ui/badge/Badge";
 import { DownloadIcon, EyeIcon, PencilIcon, DollarLineIcon, TrashBinIcon } from "../../icons";
 import {
+  buildOrdersListParams,
   deleteOrder,
   fetchAllOrdersForExport,
   fetchOrders,
   orderStatusAllowsRefund,
+  ordersListFiltersAreActive,
   type OrderRecord,
+  type OrdersListFilters,
 } from "../../api/orders";
 import { exportRowsToExcel } from "../../utils/exportToExcel";
 import { ORDER_EXPORT_COLUMNS } from "../../utils/orderExportColumns";
@@ -25,7 +28,7 @@ import DatePicker from "../form/date-picker";
 import AmountRangeDropdown from "../form/AmountRangeDropdown";
 import Button from "../ui/button/Button";
 
-const ORDERS_FILTER_INITIAL = {
+const ORDERS_FILTER_INITIAL: OrdersListFilters = {
   dateFrom: "",
   dateTo: "",
   courseId: "",
@@ -53,15 +56,7 @@ export function OrdersTable() {
   const [exporting, setExporting] = useState(false);
 
   const hasActiveFilters = useMemo(
-    () =>
-      Boolean(
-        filters.dateFrom ||
-          filters.dateTo ||
-          filters.courseId ||
-          filters.type ||
-          filters.amountMin.trim() ||
-          filters.amountMax.trim(),
-      ),
+    () => ordersListFiltersAreActive(filters),
     [filters],
   );
 
@@ -76,18 +71,15 @@ export function OrdersTable() {
     setExporting(true);
     try {
       const rows = await fetchAllOrdersForExport({
-        search: q.search.trim() !== "" ? q.search : undefined,
+        filters,
+        search: q.search,
         sortBy: q.sortBy,
         sortOrder: q.sortOrder,
-        dateFrom: filters.dateFrom || undefined,
-        dateTo: filters.dateTo || undefined,
-        courseId: filters.courseId || undefined,
-        type: filters.type || undefined,
-        amountMin: filters.amountMin.trim() !== "" ? filters.amountMin : undefined,
-        amountMax: filters.amountMax.trim() !== "" ? filters.amountMax : undefined,
       });
+      const datePart = new Date().toISOString().slice(0, 10);
+      const filteredPart = hasActiveFilters || q.search.trim() ? "-filtered" : "";
       exportRowsToExcel({
-        filename: `orders-export-${new Date().toISOString().slice(0, 10)}`,
+        filename: `orders-export-${datePart}${filteredPart}`,
         sheetName: "Orders",
         columns: ORDER_EXPORT_COLUMNS,
         rows,
@@ -103,7 +95,7 @@ export function OrdersTable() {
     } finally {
       setExporting(false);
     }
-  }, [filters]);
+  }, [filters, hasActiveFilters]);
 
   useEffect(() => {
     fetchCourses().then(setCourses).catch(console.error);
@@ -115,19 +107,16 @@ export function OrdersTable() {
     const { page, limit, search, sortBy, sortOrder } = params;
     const offset = (page - 1) * limit;
     
-    const result = await fetchOrders({
-      limit,
-      offset,
-      search: search ?? "",
-      sortBy,
-      sortOrder,
-      dateFrom: filters.dateFrom,
-      dateTo: filters.dateTo,
-      courseId: filters.courseId || undefined,
-      type: filters.type || undefined,
-      amountMin: filters.amountMin.trim() !== "" ? filters.amountMin : undefined,
-      amountMax: filters.amountMax.trim() !== "" ? filters.amountMax : undefined,
-    });
+    const result = await fetchOrders(
+      buildOrdersListParams({
+        filters,
+        search: search ?? "",
+        sortBy,
+        sortOrder,
+        limit,
+        offset,
+      }),
+    );
     
     const total = result.total ?? result.orders.length;
     const totalPages = Math.max(1, Math.ceil(total / limit));
@@ -385,7 +374,11 @@ export function OrdersTable() {
             startIcon={<DownloadIcon className="size-4 shrink-0" />}
             onClick={handleExportExcel}
           >
-            {exporting ? "Exporting…" : "Export Excel"}
+            {exporting
+              ? "Exporting…"
+              : hasActiveFilters
+                ? "Export filtered"
+                : "Export Excel"}
           </Button>
         </div>
       </div>
