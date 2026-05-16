@@ -16,12 +16,14 @@ export default defineConfig({
     }),
   ],
   server: {
+    port: 5173,
     proxy: {
       "/api": {
         target: "http://localhost:3000",
         changeOrigin: true,
         /** Avoid proxy abort while gateway waits on slow DB / downstream services */
         proxyTimeout: 120_000,
+        timeout: 120_000,
       },
     },
   },

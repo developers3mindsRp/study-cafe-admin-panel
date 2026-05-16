@@ -168,6 +168,74 @@ export async function fetchUsersPaginated(
   };
 }
 
+export type UserImportRow = {
+  rowNumber?: number;
+  email: string;
+  password?: string;
+  name?: string;
+  first_name?: string;
+  last_name?: string;
+  phone?: string;
+  role?: string;
+  status?: string;
+  membership?: string;
+  designation?: string;
+  profession?: string;
+  company?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  linkedin?: string;
+  facebook?: string;
+  twitter?: string;
+  instagram?: string;
+  youtube?: string;
+  bio?: string;
+};
+
+export type UserImportFieldError = {
+  field: string;
+  message: string;
+};
+
+export type UserImportResult = {
+  rowNumber?: number;
+  email: string;
+  status: "created" | "updated" | "skipped" | "error";
+  userCreated?: boolean;
+  membershipGranted?: boolean;
+  coursesEnrolled?: number;
+  coursesSkipped?: number;
+  message?: string;
+  fieldErrors?: UserImportFieldError[];
+};
+
+export type UserImportSummary = {
+  results: UserImportResult[];
+  imported: number;
+  failed: number;
+  skipped: number;
+};
+
+export async function importUsersFromCsv(payload: {
+  rows: UserImportRow[];
+  startsAt?: string;
+  expiresAt?: string;
+}): Promise<UserImportSummary> {
+  const res = await api.post<UserImportSummary>("/admin/users/import", payload);
+  const data = res.data;
+  if (data && Array.isArray(data.results)) return data;
+  if (Array.isArray(data)) {
+    return {
+      results: data as unknown as UserImportResult[],
+      imported: (data as UserImportResult[]).filter((r) => r.status === "created" || r.status === "updated").length,
+      failed: (data as UserImportResult[]).filter((r) => r.status === "error").length,
+      skipped: (data as UserImportResult[]).filter((r) => r.status === "skipped").length,
+    };
+  }
+  return { results: [], imported: 0, failed: 0, skipped: 0 };
+}
+
 /** Loads every user page matching list filters + search/sort. */
 export async function fetchAllUsersForExport(
   params: Omit<BuildUsersListParamsInput, "page" | "limit">,

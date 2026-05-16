@@ -26,6 +26,7 @@ import { FilterBar, useFilterState } from "../../components/filters";
 import type { FilterFieldDef } from "../../components/filters";
 import { CourseAllotmentModal } from "./components/CourseAllotmentModal";
 import { MembershipAllotmentModal } from "./components/MembershipAllotmentModal";
+import { UserImportModal } from "./components/UserImportModal";
 
 const userFilterFields: FilterFieldDef[] = [
   {
@@ -90,6 +91,7 @@ function UserListContent() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isAllotmentModalOpen, setIsAllotmentModalOpen] = useState(false);
   const [isMembershipModalOpen, setIsMembershipModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const { values, set, reset, hasActive } = useFilterState();
   const [exporting, setExporting] = useState(false);
 
@@ -180,6 +182,15 @@ function UserListContent() {
               </button>
             </RequirePermission>
             <RequirePermission permissions={[PERM_ADMIN_USERS_CREATE]} fallback={null}>
+              <button
+                type="button"
+                onClick={() => setIsImportModalOpen(true)}
+                className="inline-flex items-center justify-center gap-2 rounded-lg border border-brand-500 px-4 py-3 text-sm font-medium text-brand-600 transition hover:bg-brand-50 dark:border-brand-400 dark:text-brand-400 dark:hover:bg-brand-500/10"
+              >
+                Import Users
+              </button>
+            </RequirePermission>
+            <RequirePermission permissions={[PERM_ADMIN_USERS_CREATE]} fallback={null}>
               <Link
                 to="/users/create"
                 className="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-medium text-white transition bg-brand-500 shadow-theme-xs hover:bg-brand-600"
@@ -234,6 +245,12 @@ function UserListContent() {
       <MembershipAllotmentModal
         isOpen={isMembershipModalOpen}
         onClose={() => setIsMembershipModalOpen(false)}
+      />
+
+      <UserImportModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        onImported={() => tableRef.current?.refetch()}
       />
     </>
   );
