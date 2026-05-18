@@ -82,6 +82,7 @@ export async function fetchUsersPaginated(
     role?: string;
     status?: string;
     email?: string;
+    state?: string;
     membership?: string;
     joinedFrom?: string;
     joinedTo?: string;
@@ -96,6 +97,7 @@ export async function fetchUsersPaginated(
     ...(params.role ? { role: params.role } : {}),
     ...(params.status ? { status: params.status } : {}),
     ...(params.email ? { email: params.email } : {}),
+    ...(params.state ? { state: params.state } : {}),
     ...(params.membership ? { membership: params.membership } : {}),
     ...(params.joinedFrom ? { joined_from: params.joinedFrom } : {}),
     ...(params.joinedTo ? { joined_to: params.joinedTo } : {}),
@@ -112,4 +114,51 @@ export async function fetchUsersPaginated(
       hasPreviousPage: (res.page ?? 1) > 1,
     },
   };
+}
+
+const USERS_EXPORT_PAGE_SIZE = 500;
+
+/** Params aligned with list filters + optional search/sort (for export). */
+export type FetchUsersExportParams = {
+  search?: string;
+  sortBy?: string;
+  sortOrder?: "ASC" | "DESC";
+  role?: string;
+  status?: string;
+  email?: string;
+  state?: string;
+  membership?: string;
+  joinedFrom?: string;
+  joinedTo?: string;
+};
+
+export async function fetchAllUsersForExport(params: FetchUsersExportParams): Promise<User[]> {
+  const all: User[] = [];
+  let page = 1;
+  let totalPages = 1;
+
+  for (;;) {
+    const res = await usersApi.list({
+      page,
+      limit: USERS_EXPORT_PAGE_SIZE,
+      search: params.search?.trim() !== "" ? params.search : undefined,
+      sortBy: params.sortBy || undefined,
+      sortOrder: params.sortOrder,
+      ...(params.role ? { role: params.role } : {}),
+      ...(params.status ? { status: params.status } : {}),
+      ...(params.email ? { email: params.email } : {}),
+      ...(params.state ? { state: params.state } : {}),
+      ...(params.membership ? { membership: params.membership } : {}),
+      ...(params.joinedFrom ? { joined_from: params.joinedFrom } : {}),
+      ...(params.joinedTo ? { joined_to: params.joinedTo } : {}),
+    });
+    const chunk = res.data ?? [];
+    all.push(...chunk);
+    totalPages = res.pages ?? (res.total ? Math.ceil(res.total / USERS_EXPORT_PAGE_SIZE) : 0);
+    if (chunk.length < USERS_EXPORT_PAGE_SIZE) break;
+    if (totalPages > 0 && page >= totalPages) break;
+    page += 1;
+  }
+
+  return all;
 }

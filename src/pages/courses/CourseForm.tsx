@@ -11,7 +11,7 @@ import IncludesInfoEditor, { type IncludesInfoItem } from "./components/Includes
 import CourseIncludesEditor, { type CourseIncludeItem } from "./components/CourseIncludesEditor";
 import { COURSE_PREVIEW_STATE_KEY, COURSE_RESTORE_STATE_KEY } from "./CoursePreview";
 import { fetchCourseCats, type Course, type CourseCat } from "../../api/courses";
-import { adminUsersApi, type AdminPanelUser } from "../../api/adminUsers";
+import { usersApi, type User } from "../../api/users";
 import { CourseCatMultiSelect } from "./components/CourseCatMultiSelect";
 import { AuthorUserSelect } from "./components/AuthorUserSelect";
 import MetaFieldsForm, { type SEOMetaFields } from "../../components/form/MetaFieldsForm";
@@ -223,10 +223,37 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
     }
   }, [restoredData]);
 
-  const [adminUsers, setAdminUsers] = useState<AdminPanelUser[]>([]);
+  const [authorUsers, setAuthorUsers] = useState<User[]>([]);
   const [courseCats, setCourseCats] = useState<CourseCat[]>([]);
   useEffect(() => {
-    adminUsersApi.list().then(setAdminUsers).catch(() => {});
+    let cancelled = false;
+    (async () => {
+      try {
+        const acc: User[] = [];
+        const limit = 500;
+        let page = 1;
+        for (;;) {
+          const res = await usersApi.list({
+            page,
+            limit,
+            sortBy: "name",
+            sortOrder: "ASC",
+          });
+          if (cancelled) return;
+          const chunk = res.data ?? [];
+          acc.push(...chunk);
+          const pages = res.pages ?? 1;
+          if (page >= pages || chunk.length === 0) break;
+          page += 1;
+        }
+        if (!cancelled) setAuthorUsers(acc);
+      } catch {
+        if (!cancelled) setAuthorUsers([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
   useEffect(() => {
     fetchCourseCats().then(setCourseCats).catch(() => {});
@@ -234,10 +261,19 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
 
   const handleAuthorSelect = (userId: string) => {
     updateField('author_user_id', userId);
-    const user = adminUsers.find((u) => String(u.id) === userId);
+    const user = authorUsers.find((u) => String(u.id) === userId);
     if (user) {
-      updateField('author_name', user.name || '');
-      updateField('author_role', user.role || '');
+      updateField(
+        'author_name',
+        user.name?.trim() ||
+          user.display_name?.trim() ||
+          user.email?.trim() ||
+          '',
+      );
+      updateField(
+        'author_role',
+        user.role?.trim() || user.designation?.trim() || user.profession?.trim() || '',
+      );
     }
   };
 
@@ -691,7 +727,7 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
               <div>
                 <Label>Author</Label>
                 <AuthorUserSelect
-                  users={adminUsers}
+                  users={authorUsers}
                   value={form.author_user_id}
                   onChange={handleAuthorSelect}
                   disabled={loading}

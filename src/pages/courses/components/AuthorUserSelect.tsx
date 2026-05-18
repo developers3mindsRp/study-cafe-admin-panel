@@ -1,9 +1,15 @@
 import { useState, useEffect, useRef } from "react";
-import type { AdminPanelUser } from "../../../api/adminUsers";
+import type { User } from "../../../api/users";
 
-function userLabel(u: AdminPanelUser): string {
-  const name = u.name?.trim() || u.email || `User #${u.id}`;
-  return `${name} — ${u.role || "—"}`;
+function userLabel(u: User): string {
+  const name =
+    u.name?.trim() ||
+    u.display_name?.trim() ||
+    u.email?.trim() ||
+    `User #${u.id}`;
+  const roleHint =
+    u.role?.trim() || u.designation?.trim() || u.profession?.trim() || "—";
+  return `${name} — ${roleHint}`;
 }
 
 export function AuthorUserSelect({
@@ -13,7 +19,7 @@ export function AuthorUserSelect({
   disabled = false,
   placeholder = "Select an author",
 }: {
-  users: AdminPanelUser[];
+  users: User[];
   value: string;
   onChange: (userId: string) => void;
   disabled?: boolean;
@@ -31,8 +37,11 @@ export function AuthorUserSelect({
     if (!q) return true;
     return (
       (u.name || "").toLowerCase().includes(q) ||
+      (u.display_name || "").toLowerCase().includes(q) ||
       (u.email || "").toLowerCase().includes(q) ||
       (u.role || "").toLowerCase().includes(q) ||
+      (u.designation || "").toLowerCase().includes(q) ||
+      (u.profession || "").toLowerCase().includes(q) ||
       String(u.id).includes(q)
     );
   });
@@ -84,7 +93,7 @@ export function AuthorUserSelect({
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search by name, email, or role…"
+              placeholder="Search by name, email, role…"
               className="w-full rounded-md border border-gray-200 px-2 py-1.5 text-xs text-gray-800 outline-none focus:border-brand-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
             />
           </div>

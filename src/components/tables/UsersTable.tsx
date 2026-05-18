@@ -20,6 +20,7 @@ export interface UsersTableProps {
   filterRole?: string;
   filterStatus?: string;
   filterEmail?: string;
+  filterState?: string;
   filterMembership?: string;
   filterJoinedFrom?: string;
   filterJoinedTo?: string;
@@ -32,6 +33,7 @@ export const UsersTable = forwardRef<DataTableRef, UsersTableProps>(
       filterRole = "",
       filterStatus = "",
       filterEmail = "",
+      filterState = "",
       filterMembership = "",
       filterJoinedFrom = "",
       filterJoinedTo = "",
@@ -45,11 +47,12 @@ export const UsersTable = forwardRef<DataTableRef, UsersTableProps>(
           ...(filterRole ? { role: filterRole } : {}),
           ...(filterStatus ? { status: filterStatus } : {}),
           ...(filterEmail ? { email: filterEmail } : {}),
+          ...(filterState ? { state: filterState } : {}),
           ...(filterMembership ? { membership: filterMembership } : {}),
           ...(filterJoinedFrom ? { joinedFrom: filterJoinedFrom } : {}),
           ...(filterJoinedTo ? { joinedTo: filterJoinedTo } : {}),
         }),
-      [filterRole, filterStatus, filterEmail, filterMembership, filterJoinedFrom, filterJoinedTo]
+      [filterRole, filterStatus, filterEmail, filterState, filterMembership, filterJoinedFrom, filterJoinedTo]
     );
 
     const columns = [
@@ -154,7 +157,7 @@ export const UsersTable = forwardRef<DataTableRef, UsersTableProps>(
 
     return (
       <DataTable<User>
-        key={`${filterRole}|${filterStatus}|${filterEmail}|${filterMembership}|${filterJoinedFrom}|${filterJoinedTo}`}
+        key={`${filterRole}|${filterStatus}|${filterEmail}|${filterState}|${filterMembership}|${filterJoinedFrom}|${filterJoinedTo}`}
         ref={ref}
         columns={columns}
         fetchData={fetchData}
