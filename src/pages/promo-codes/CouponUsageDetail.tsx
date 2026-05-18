@@ -276,8 +276,8 @@ function CouponUsageDetailContent() {
           columns={columns}
           fetchData={fetchData}
           searchPlaceholder="Search user, order ID…"
-          defaultSortBy="created_at"
-          defaultSortOrder="DESC"
+          initialSortBy="created_at"
+          initialSortOrder="DESC"
           emptyMessage="No one has used this coupon yet."
         />
       </div>
