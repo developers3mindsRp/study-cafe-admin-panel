@@ -2,6 +2,14 @@ import type { User } from "../api/users";
 import type { ExcelColumn } from "./exportToExcel";
 import { exportStr } from "./exportHelpers";
 
+/** Row shape from list API may include nested Role. */
+export type UserExportRow = User & { Role?: { id?: number; name?: string } };
+
+export function membershipDisplay(m: string | null | undefined): string {
+  const t = m?.trim();
+  return t ? t : "Free";
+}
+
 function roleLabel(row: User & { Role?: { name?: string } }): string {
   return exportStr(row.Role?.name ?? row.role);
 }
@@ -21,7 +29,7 @@ export const USER_EXPORT_COLUMNS: ExcelColumn<User>[] = [
   { header: "Status", accessor: (r) => exportStr(r.status) },
   {
     header: "Membership",
-    accessor: (r) => exportStr(r.plan ?? r.membership ?? ""),
+    accessor: (r) => membershipDisplay(r.plan ?? r.membership ?? ""),
   },
   { header: "Designation", accessor: (r) => exportStr(r.designation) },
   { header: "Profession", accessor: (r) => exportStr(r.profession) },
@@ -42,3 +50,31 @@ export const USER_EXPORT_COLUMNS: ExcelColumn<User>[] = [
   },
   { header: "Joined", accessor: (r) => exportStr(r.created_at) },
 ];
+
+/** Sheet rows: State | Count (sorted by state label). */
+export function usersStateSummaryAoa(rows: UserExportRow[]): (string | number)[][] {
+  const counts = new Map<string, number>();
+  for (const r of rows) {
+    const key = r.state?.trim() ? r.state.trim() : "(blank)";
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  const header: (string | number)[] = ["State", "Count"];
+  const body = [...counts.entries()]
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([k, c]) => [k, c]);
+  return [header, ...body];
+}
+
+/** Sheet rows: Membership | Count (sorted by membership label). */
+export function usersMembershipSummaryAoa(rows: UserExportRow[]): (string | number)[][] {
+  const counts = new Map<string, number>();
+  for (const r of rows) {
+    const key = membershipDisplay(r.membership);
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  const header: (string | number)[] = ["Membership", "Count"];
+  const body = [...counts.entries()]
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([k, c]) => [k, c]);
+  return [header, ...body];
+}

@@ -83,6 +83,7 @@ export type UsersListFilters = {
   status: string;
   membership: string;
   role: string;
+  state: string;
   joinedFrom: string;
   joinedTo: string;
 };
@@ -112,6 +113,8 @@ export function buildUsersListParams(input: BuildUsersListParamsInput): ListQuer
   if (filters.status) params.status = filters.status;
   if (filters.membership) params.membership = filters.membership;
   if (filters.role) params.role = filters.role;
+  const state = filters.state.trim();
+  if (state) params.state = state;
   if (filters.joinedFrom) params.joined_from = filters.joinedFrom;
   if (filters.joinedTo) params.joined_to = filters.joinedTo;
 
@@ -124,6 +127,7 @@ export function usersListFiltersAreActive(filters: UsersListFilters): boolean {
       filters.status ||
       filters.membership ||
       filters.role ||
+      filters.state.trim() ||
       filters.joinedFrom ||
       filters.joinedTo,
   );
@@ -135,6 +139,7 @@ export function usersListFiltersFromValues(values: Record<string, string | undef
     status: values.status ?? "",
     membership: values.membership ?? "",
     role: values.role ?? "",
+    state: values.state ?? "",
     joinedFrom: values.joinedFrom ?? "",
     joinedTo: values.joinedTo ?? "",
   };

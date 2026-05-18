@@ -17,7 +17,12 @@ import {
   type User,
 } from "../../api/users";
 import { exportRowsToExcel } from "../../utils/exportToExcel";
-import { USER_EXPORT_COLUMNS } from "../../utils/userExportColumns";
+import {
+  USER_EXPORT_COLUMNS,
+  usersMembershipSummaryAoa,
+  usersStateSummaryAoa,
+  type UserExportRow,
+} from "../../utils/userExportColumns";
 import { DownloadIcon } from "../../icons";
 import Button from "../../components/ui/button/Button";
 import { UsersTable } from "../../components/tables";
@@ -26,7 +31,9 @@ import { FilterBar, useFilterState } from "../../components/filters";
 import type { FilterFieldDef } from "../../components/filters";
 import { CourseAllotmentModal } from "./components/CourseAllotmentModal";
 import { MembershipAllotmentModal } from "./components/MembershipAllotmentModal";
+import { UserExportModal } from "./components/UserExportModal";
 import { UserImportModal } from "./components/UserImportModal";
+import { USER_MEMBERSHIP_FILTER_OPTIONS } from "./constants/userMembershipOptions";
 
 const userFilterFields: FilterFieldDef[] = [
   {
@@ -34,6 +41,12 @@ const userFilterFields: FilterFieldDef[] = [
     id: "email",
     label: "Email",
     placeholder: "Filter by email…",
+  },
+  {
+    type: "text",
+    id: "state",
+    label: "State",
+    placeholder: "Filter by state…",
   },
   {
     type: "select",
@@ -50,12 +63,7 @@ const userFilterFields: FilterFieldDef[] = [
     id: "membership",
     label: "Membership",
     placeholder: "All plans",
-    options: [
-      { value: "free", label: "Free" },
-      { value: "basic", label: "Basic" },
-      { value: "pro", label: "Pro" },
-      { value: "premium", label: "Premium" },
-    ],
+    options: [...USER_MEMBERSHIP_FILTER_OPTIONS],
   },
   {
     type: "select",
@@ -91,6 +99,7 @@ function UserListContent() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isAllotmentModalOpen, setIsAllotmentModalOpen] = useState(false);
   const [isMembershipModalOpen, setIsMembershipModalOpen] = useState(false);
+  const [exportModalOpen, setExportModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const { values, set, reset, hasActive } = useFilterState();
   const [exporting, setExporting] = useState(false);
@@ -130,6 +139,53 @@ function UserListContent() {
     }
   }, [listFilters, filtersActive]);
 
+  const handleExportConfirm = useCallback(
+    async (opts: { membership: string; state: string }) => {
+      const q = tableRef.current?.getQueryState();
+      if (!q) return;
+      setExporting(true);
+      try {
+        const rows = await fetchAllUsersForExport({
+          filters: {
+            email: values.email ?? "",
+            role: values.role ?? "",
+            status: values.status ?? "",
+            state: opts.state,
+            membership: opts.membership,
+            joinedFrom: values.joinedFrom ?? "",
+            joinedTo: values.joinedTo ?? "",
+          },
+          search: q.search,
+          sortBy: q.sortBy,
+          sortOrder: q.sortOrder,
+        });
+        const exportRows = rows as UserExportRow[];
+        exportRowsToExcel({
+          filename: `users-export-${new Date().toISOString().slice(0, 10)}`,
+          sheetName: "Users",
+          columns: USER_EXPORT_COLUMNS,
+          rows: exportRows,
+          extraSheets: [
+            { name: "By state", aoa: usersStateSummaryAoa(exportRows) },
+            { name: "By membership", aoa: usersMembershipSummaryAoa(exportRows) },
+          ],
+        });
+        setExportModalOpen(false);
+      } catch (err: unknown) {
+        const msg =
+          err && typeof err === "object" && "response" in err
+            ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
+            : err instanceof Error
+              ? err.message
+              : "Export failed";
+        alert(msg || "Export failed");
+      } finally {
+        setExporting(false);
+      }
+    },
+    [values]
+  );
+
   const handleDeleteClick = (user: User) => {
     setDeleteTarget(user);
     setIsDeleteModalOpen(true);
@@ -162,7 +218,15 @@ function UserListContent() {
       <PageBreadcrumb
         pageTitle="Users (Students)"
         actions={
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setExportModalOpen(true)}
+              className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-800"
+            >
+              <DownloadIcon className="size-4 shrink-0 fill-current" />
+              Export Excel
+            </button>
             <RequirePermission permissions={[PERM_USERS_COURSE_ALLOTMENT]} fallback={null}>
               <button
                 type="button"
@@ -245,6 +309,15 @@ function UserListContent() {
       <MembershipAllotmentModal
         isOpen={isMembershipModalOpen}
         onClose={() => setIsMembershipModalOpen(false)}
+      />
+
+      <UserExportModal
+        isOpen={exportModalOpen}
+        onClose={() => setExportModalOpen(false)}
+        onConfirm={handleExportConfirm}
+        initialMembership={values.membership ?? ""}
+        initialState={values.state ?? ""}
+        isExporting={exporting}
       />
 
       <UserImportModal
