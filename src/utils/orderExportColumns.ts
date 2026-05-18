@@ -1,17 +1,9 @@
 import type { OrderRecord } from "../api/orders";
 import type { ExcelColumn } from "./exportToExcel";
+import { exportNum, exportStr } from "./exportHelpers";
 
-function str(v: unknown): string {
-  if (v == null) return "";
-  if (typeof v === "number") return Number.isFinite(v) ? String(v) : "";
-  return String(v);
-}
-
-function num(v: string | number | null | undefined): number | string {
-  if (v == null || v === "") return "";
-  const n = Number(v);
-  return Number.isFinite(n) ? n : "";
-}
+const str = exportStr;
+const num = exportNum;
 
 /** All list/API fields suitable for admin order export. */
 export const ORDER_EXPORT_COLUMNS: ExcelColumn<OrderRecord>[] = [

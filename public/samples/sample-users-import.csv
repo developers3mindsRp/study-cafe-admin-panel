@@ -1,0 +1,4 @@
+email,password,name,first_name,last_name,phone,role,status,membership,designation,profession,company,city,state,country,linkedin,facebook,twitter,instagram,youtube,bio
+john.doe@example.com,Secret123,John Doe,John,Doe,+919876543210,student,active,premium,CA,Finance,Acme Corp,Mumbai,Maharashtra,India,,,,,,
+jane.smith@example.com,,Jane Smith,Jane,Smith,,student,active,basic,,,,,,,,,,,,
+new.user@example.com,,New User,,,+919800000001,student,active,,,,,,India,,,,,,

@@ -2,7 +2,7 @@
  * Users (Students) table using the reusable DataTable with server-side pagination, sort, and search.
  */
 
-import { forwardRef, useCallback } from "react";
+import { forwardRef, useCallback, useMemo } from "react";
 import { Link } from "react-router";
 import { DataTable, type DataTableRef } from "./data-table";
 import Badge from "../ui/badge/Badge";
@@ -12,47 +12,25 @@ import {
   PERM_ADMIN_USERS_EDIT,
   PERM_ADMIN_USERS_DELETE,
 } from "../../constants/permissions";
-import { fetchUsersPaginated, type User } from "../../api/users";
+import { fetchUsersPaginated, type User, type UsersListFilters } from "../../api/users";
 import type { DataTableFetchParams, DataTableFetchResult } from "./data-table/DataTable.types";
 
 export interface UsersTableProps {
   onDeleteClick?: (user: User) => void;
-  filterRole?: string;
-  filterStatus?: string;
-  filterEmail?: string;
-  filterState?: string;
-  filterMembership?: string;
-  filterJoinedFrom?: string;
-  filterJoinedTo?: string;
+  filters: UsersListFilters;
 }
 
 export const UsersTable = forwardRef<DataTableRef, UsersTableProps>(
   function UsersTable(
-    {
-      onDeleteClick,
-      filterRole = "",
-      filterStatus = "",
-      filterEmail = "",
-      filterState = "",
-      filterMembership = "",
-      filterJoinedFrom = "",
-      filterJoinedTo = "",
-    },
+    { onDeleteClick, filters },
     ref
   ) {
+    const filterKey = useMemo(() => JSON.stringify(filters), [filters]);
+
     const fetchData = useCallback(
       (params: DataTableFetchParams): Promise<DataTableFetchResult<User>> =>
-        fetchUsersPaginated({
-          ...params,
-          ...(filterRole ? { role: filterRole } : {}),
-          ...(filterStatus ? { status: filterStatus } : {}),
-          ...(filterEmail ? { email: filterEmail } : {}),
-          ...(filterState ? { state: filterState } : {}),
-          ...(filterMembership ? { membership: filterMembership } : {}),
-          ...(filterJoinedFrom ? { joinedFrom: filterJoinedFrom } : {}),
-          ...(filterJoinedTo ? { joinedTo: filterJoinedTo } : {}),
-        }),
-      [filterRole, filterStatus, filterEmail, filterState, filterMembership, filterJoinedFrom, filterJoinedTo]
+        fetchUsersPaginated({ ...params, filters }),
+      [filters],
     );
 
     const columns = [
@@ -157,7 +135,7 @@ export const UsersTable = forwardRef<DataTableRef, UsersTableProps>(
 
     return (
       <DataTable<User>
-        key={`${filterRole}|${filterStatus}|${filterEmail}|${filterState}|${filterMembership}|${filterJoinedFrom}|${filterJoinedTo}`}
+        key={filterKey}
         ref={ref}
         columns={columns}
         fetchData={fetchData}

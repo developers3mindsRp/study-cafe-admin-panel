@@ -8,6 +8,8 @@ export interface FilterBarProps {
   onReset: () => void;
   hasActive: boolean;
   className?: string;
+  /** Extra controls (e.g. Export) shown at the end of the filter row. */
+  actions?: React.ReactNode;
 }
 
 const selectClass =
@@ -211,6 +213,7 @@ export function FilterBar({
   onReset,
   hasActive,
   className = "",
+  actions,
 }: FilterBarProps) {
   if (fields.length === 0) return null;
 
@@ -270,15 +273,18 @@ export function FilterBar({
         }
       })}
 
-      {hasActive && (
-        <button
-          type="button"
-          onClick={onReset}
-          className="ml-auto self-end rounded-lg px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
-        >
-          Clear filters
-        </button>
-      )}
+      <div className="ml-auto flex shrink-0 items-end gap-2 self-end">
+        {hasActive && (
+          <button
+            type="button"
+            onClick={onReset}
+            className="rounded-lg px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
+          >
+            Clear filters
+          </button>
+        )}
+        {actions}
+      </div>
     </div>
   );
 }

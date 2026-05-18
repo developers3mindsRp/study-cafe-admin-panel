@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { Link } from "react-router";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
@@ -9,16 +9,13 @@ import {
   PERM_ADMIN_USERS_CREATE,
   PERM_USERS_COURSE_ALLOTMENT,
 } from "../../constants/permissions";
-import { usersApi, fetchAllUsersForExport, type User } from "../../api/users";
-import { UsersTable } from "../../components/tables";
-import type { DataTableRef } from "../../components/tables/data-table";
-import { FilterBar, useFilterState } from "../../components/filters";
-import type { FilterFieldDef } from "../../components/filters";
-import { CourseAllotmentModal } from "./components/CourseAllotmentModal";
-import { MembershipAllotmentModal } from "./components/MembershipAllotmentModal";
-import { UserExportModal } from "./components/UserExportModal";
-import { USER_MEMBERSHIP_FILTER_OPTIONS } from "./constants/userMembershipOptions";
-import { DownloadIcon } from "../../icons";
+import {
+  fetchAllUsersForExport,
+  usersApi,
+  usersListFiltersAreActive,
+  usersListFiltersFromValues,
+  type User,
+} from "../../api/users";
 import { exportRowsToExcel } from "../../utils/exportToExcel";
 import {
   USER_EXPORT_COLUMNS,
@@ -26,6 +23,17 @@ import {
   usersStateSummaryAoa,
   type UserExportRow,
 } from "../../utils/userExportColumns";
+import { DownloadIcon } from "../../icons";
+import Button from "../../components/ui/button/Button";
+import { UsersTable } from "../../components/tables";
+import type { DataTableRef } from "../../components/tables/data-table";
+import { FilterBar, useFilterState } from "../../components/filters";
+import type { FilterFieldDef } from "../../components/filters";
+import { CourseAllotmentModal } from "./components/CourseAllotmentModal";
+import { MembershipAllotmentModal } from "./components/MembershipAllotmentModal";
+import { UserExportModal } from "./components/UserExportModal";
+import { UserImportModal } from "./components/UserImportModal";
+import { USER_MEMBERSHIP_FILTER_OPTIONS } from "./constants/userMembershipOptions";
 
 const userFilterFields: FilterFieldDef[] = [
   {
@@ -92,8 +100,44 @@ function UserListContent() {
   const [isAllotmentModalOpen, setIsAllotmentModalOpen] = useState(false);
   const [isMembershipModalOpen, setIsMembershipModalOpen] = useState(false);
   const [exportModalOpen, setExportModalOpen] = useState(false);
-  const [exporting, setExporting] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const { values, set, reset, hasActive } = useFilterState();
+  const [exporting, setExporting] = useState(false);
+
+  const listFilters = useMemo(() => usersListFiltersFromValues(values), [values]);
+  const filtersActive = useMemo(() => usersListFiltersAreActive(listFilters), [listFilters]);
+
+  const handleExportExcel = useCallback(async () => {
+    const q = tableRef.current?.getQueryState();
+    if (!q) return;
+    setExporting(true);
+    try {
+      const rows = await fetchAllUsersForExport({
+        filters: listFilters,
+        search: q.search,
+        sortBy: q.sortBy,
+        sortOrder: q.sortOrder,
+      });
+      const datePart = new Date().toISOString().slice(0, 10);
+      const filteredPart = filtersActive || q.search.trim() ? "-filtered" : "";
+      exportRowsToExcel({
+        filename: `users-export-${datePart}${filteredPart}`,
+        sheetName: "Users",
+        columns: USER_EXPORT_COLUMNS,
+        rows,
+      });
+    } catch (err: unknown) {
+      const msg =
+        err && typeof err === "object" && "response" in err
+          ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
+          : err instanceof Error
+            ? err.message
+            : "Export failed";
+      alert(msg || "Export failed");
+    } finally {
+      setExporting(false);
+    }
+  }, [listFilters, filtersActive]);
 
   const handleExportConfirm = useCallback(
     async (opts: { membership: string; state: string }) => {
@@ -102,16 +146,18 @@ function UserListContent() {
       setExporting(true);
       try {
         const rows = await fetchAllUsersForExport({
-          search: q.search.trim() !== "" ? q.search : undefined,
+          filters: {
+            email: values.email ?? "",
+            role: values.role ?? "",
+            status: values.status ?? "",
+            state: opts.state,
+            membership: opts.membership,
+            joinedFrom: values.joinedFrom ?? "",
+            joinedTo: values.joinedTo ?? "",
+          },
+          search: q.search,
           sortBy: q.sortBy,
           sortOrder: q.sortOrder,
-          role: values.role ?? "",
-          status: values.status ?? "",
-          email: values.email ?? "",
-          state: opts.state,
-          membership: opts.membership,
-          joinedFrom: values.joinedFrom ?? "",
-          joinedTo: values.joinedTo ?? "",
         });
         const exportRows = rows as UserExportRow[];
         exportRowsToExcel({
@@ -126,17 +172,17 @@ function UserListContent() {
         });
         setExportModalOpen(false);
       } catch (err: unknown) {
-      const msg =
-        err && typeof err === "object" && "response" in err
-          ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
-          : err instanceof Error
-            ? err.message
-            : "Export failed";
-      alert(msg || "Export failed");
-    } finally {
-      setExporting(false);
-    }
-  },
+        const msg =
+          err && typeof err === "object" && "response" in err
+            ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
+            : err instanceof Error
+              ? err.message
+              : "Export failed";
+        alert(msg || "Export failed");
+      } finally {
+        setExporting(false);
+      }
+    },
     [values]
   );
 
@@ -200,6 +246,15 @@ function UserListContent() {
               </button>
             </RequirePermission>
             <RequirePermission permissions={[PERM_ADMIN_USERS_CREATE]} fallback={null}>
+              <button
+                type="button"
+                onClick={() => setIsImportModalOpen(true)}
+                className="inline-flex items-center justify-center gap-2 rounded-lg border border-brand-500 px-4 py-3 text-sm font-medium text-brand-600 transition hover:bg-brand-50 dark:border-brand-400 dark:text-brand-400 dark:hover:bg-brand-500/10"
+              >
+                Import Users
+              </button>
+            </RequirePermission>
+            <RequirePermission permissions={[PERM_ADMIN_USERS_CREATE]} fallback={null}>
               <Link
                 to="/users/create"
                 className="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-medium text-white transition bg-brand-500 shadow-theme-xs hover:bg-brand-600"
@@ -217,17 +272,24 @@ function UserListContent() {
           onChange={set}
           onReset={reset}
           hasActive={hasActive}
+          actions={
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={exporting}
+              className="h-10 whitespace-nowrap"
+              startIcon={<DownloadIcon className="size-4 shrink-0" />}
+              onClick={handleExportExcel}
+            >
+              {exporting ? "Exporting…" : filtersActive ? "Export filtered" : "Export Excel"}
+            </Button>
+          }
         />
         <UsersTable
           ref={tableRef}
           onDeleteClick={handleDeleteClick}
-          filterEmail={values.email ?? ""}
-          filterState={values.state ?? ""}
-          filterStatus={values.status ?? ""}
-          filterMembership={values.membership ?? ""}
-          filterRole={values.role ?? ""}
-          filterJoinedFrom={values.joinedFrom ?? ""}
-          filterJoinedTo={values.joinedTo ?? ""}
+          filters={listFilters}
         />
       </div>
 
@@ -256,6 +318,12 @@ function UserListContent() {
         initialMembership={values.membership ?? ""}
         initialState={values.state ?? ""}
         isExporting={exporting}
+      />
+
+      <UserImportModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        onImported={() => tableRef.current?.refetch()}
       />
     </>
   );

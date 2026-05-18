@@ -1,0 +1,51 @@
+/** CSV headers shared by export template and import (order matters). */
+export const USER_CSV_IMPORT_HEADERS = [
+  "email",
+  "password",
+  "name",
+  "first_name",
+  "last_name",
+  "phone",
+  "role",
+  "status",
+  "membership",
+  "designation",
+  "profession",
+  "company",
+  "city",
+  "state",
+  "country",
+  "linkedin",
+  "facebook",
+  "twitter",
+  "instagram",
+  "youtube",
+  "bio",
+] as const;
+
+export type UserCsvField = (typeof USER_CSV_IMPORT_HEADERS)[number];
+
+/** Header aliases → canonical field name */
+export const USER_CSV_HEADER_ALIASES: Record<UserCsvField, string[]> = {
+  email: ["email", "email address", "e-mail"],
+  password: ["password", "pwd"],
+  name: ["name", "full name", "fullname"],
+  first_name: ["first_name", "first name", "firstname"],
+  last_name: ["last_name", "last name", "lastname"],
+  phone: ["phone", "mobile", "phone number"],
+  role: ["role"],
+  status: ["status", "account status"],
+  membership: ["membership", "plan", "membership plan", "membership_type", "membership type"],
+  designation: ["designation"],
+  profession: ["profession"],
+  company: ["company"],
+  city: ["city"],
+  state: ["state"],
+  country: ["country"],
+  linkedin: ["linkedin"],
+  facebook: ["facebook"],
+  twitter: ["twitter", "x"],
+  instagram: ["instagram"],
+  youtube: ["youtube", "youtube channel"],
+  bio: ["bio", "about"],
+};
