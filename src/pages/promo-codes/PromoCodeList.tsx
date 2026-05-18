@@ -8,6 +8,7 @@ import { PencilIcon, TrashBinIcon } from "../../icons";
 import { useModal } from "../../hooks/useModal";
 import { RequirePermission } from "../../components/auth/RequirePermission";
 import { couponsApi, deleteCoupon, type Coupon } from "../../api/promoCodes";
+import { fetchCouponUsageSummary, type CouponUsageSummaryItem } from "../../api/couponUsage";
 import { FilterBar, useFilterState } from "../../components/filters";
 import type { FilterFieldDef } from "../../components/filters";
 import type { DataTableFetchParams, DataTableFetchResult } from "../../components/tables/data-table/DataTable.types";
@@ -82,6 +83,8 @@ function toMeta(total: number, page: number, limit: number): DataTableFetchResul
   return { total, page, limit, totalPages, hasNextPage: page < totalPages, hasPreviousPage: page > 1 };
 }
 
+type CouponRow = Coupon & { usage_count?: number };
+
 export default function PromoCodeList() {
   const [deleteTarget, setDeleteTarget] = useState<Coupon | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -119,9 +122,20 @@ export default function PromoCodeList() {
   };
 
   const fetchData = useCallback(
-    async (params: DataTableFetchParams): Promise<DataTableFetchResult<Coupon>> => {
-      const res = await couponsApi.list();
-      let data = res.data;
+    async (params: DataTableFetchParams): Promise<DataTableFetchResult<CouponRow>> => {
+      const [res, usageSummary] = await Promise.all([
+        couponsApi.list(),
+        fetchCouponUsageSummary().catch(() => [] as CouponUsageSummaryItem[]),
+      ]);
+
+      const usageMap = new Map<number, CouponUsageSummaryItem>();
+      for (const u of usageSummary) {
+        usageMap.set(Number(u.coupon_id), u);
+      }
+      let data: CouponRow[] = res.data.map((c) => {
+        const stats = usageMap.get(Number(c.id));
+        return { ...c, usage_count: stats?.usage_count ?? 0 };
+      });
 
       const search = (params.search ?? "").trim().toLowerCase();
       if (search) {
@@ -170,8 +184,8 @@ export default function PromoCodeList() {
       if (params.sortBy) {
         const { sortBy, sortOrder } = params;
         data = [...data].sort((a, b) => {
-          const va = (a as unknown as Record<string, unknown>)[sortBy];
-          const vb = (b as unknown as Record<string, unknown>)[sortBy];
+          const va = (a as Record<string, unknown>)[sortBy];
+          const vb = (b as Record<string, unknown>)[sortBy];
           if (typeof va === "string" && typeof vb === "string") {
             return sortOrder === "DESC" ? vb.localeCompare(va) : va.localeCompare(vb);
           }
@@ -198,7 +212,7 @@ export default function PromoCodeList() {
       key: "code",
       header: "Code",
       sortable: true,
-      render: (row: Coupon) => (
+      render: (row: CouponRow) => (
         <span className="font-medium text-gray-800 text-theme-sm dark:text-white/90">{row.code}</span>
       ),
     },
@@ -206,7 +220,7 @@ export default function PromoCodeList() {
       key: "discount",
       header: "Discount",
       sortable: false,
-      render: (row: Coupon) => {
+      render: (row: CouponRow) => {
         const value = row.value ?? 0;
         return (
           <span className="text-gray-500 text-theme-sm dark:text-gray-400">
@@ -219,7 +233,7 @@ export default function PromoCodeList() {
       key: "discount_on",
       header: "Discount On",
       sortable: true,
-      render: (row: Coupon) => (
+      render: (row: CouponRow) => (
         <span className="text-gray-500 text-theme-sm dark:text-gray-400">
           {row.discount_on ?? "—"}
         </span>
@@ -229,7 +243,7 @@ export default function PromoCodeList() {
       key: "validity",
       header: "Validity",
       sortable: false,
-      render: (row: Coupon) => (
+      render: (row: CouponRow) => (
         <div className="text-gray-500 text-theme-sm dark:text-gray-400">
           {formatDate(row.start_date)} → {formatDate(row.expire_date)}
         </div>
@@ -239,18 +253,38 @@ export default function PromoCodeList() {
       key: "status",
       header: "Status",
       sortable: true,
-      render: (row: Coupon) => (
+      render: (row: CouponRow) => (
         <span className={`rounded-full px-2 py-1 text-theme-xs font-semibold ${row.status === "publish" ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-500 dark:bg-white/[0.05] dark:text-gray-400"}`}>
           {row.status === "publish" ? "Published" : "Draft"}
         </span>
       ),
     },
     {
+      key: "usage_count",
+      header: "Usage",
+      sortable: true,
+      render: (row: CouponRow) => {
+        const count = row.usage_count ?? 0;
+        if (count === 0) {
+          return <span className="text-sm text-gray-400">0</span>;
+        }
+        return (
+          <Link
+            to={`/coupons/${row.id}/usage`}
+            className="inline-flex min-w-[2rem] items-center justify-center rounded-full bg-brand-50 px-2.5 py-1 text-sm font-semibold text-brand-600 transition hover:bg-brand-100 dark:bg-brand-500/15 dark:text-brand-400 dark:hover:bg-brand-500/25"
+            title="View who used this coupon"
+          >
+            {count}
+          </Link>
+        );
+      },
+    },
+    {
       key: "actions",
       header: "Actions",
       align: "end" as const,
       sortable: false,
-      render: (row: Coupon) => (
+      render: (row: CouponRow) => (
         <div className="flex items-center justify-end gap-2">
           <RequirePermission permissions={["admin:access"]} fallback={null}>
             <Link
@@ -305,7 +339,7 @@ export default function PromoCodeList() {
           onReset={reset}
           hasActive={hasActive}
         />
-        <DataTable<Coupon>
+        <DataTable<CouponRow>
           key={filterKey}
           ref={dataTableRef}
           columns={columns}

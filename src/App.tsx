@@ -93,6 +93,7 @@ import OrderEdit from "./pages/orders/OrderEdit";
 import PromoCodeList from "./pages/promo-codes/PromoCodeList";
 import PromoCodeCreate from "./pages/promo-codes/PromoCodeCreate";
 import PromoCodeEdit from "./pages/promo-codes/PromoCodeEdit";
+import CouponUsageDetail from "./pages/promo-codes/CouponUsageDetail";
 import PaymentLinkList from "./pages/payment-links/PaymentLinkList";
 import PaymentLinkCreate from "./pages/payment-links/PaymentLinkCreate";
 import PaymentLinkEdit from "./pages/payment-links/PaymentLinkEdit";
@@ -260,6 +261,9 @@ const router = createBrowserRouter(
           </Route>
           <Route path="/coupons/create" element={<RequirePermissionRoute permissions={["coupons:create"]} />}>
             <Route index element={<PromoCodeCreate />} />
+          </Route>
+          <Route path="/coupons/:id/usage" element={<RequirePermissionRoute permissions={["coupons:list"]} />}>
+            <Route index element={<CouponUsageDetail />} />
           </Route>
           <Route path="/coupons/:id/edit" element={<RequirePermissionRoute permissions={["coupons:edit"]} />}>
             <Route index element={<PromoCodeEdit />} />
