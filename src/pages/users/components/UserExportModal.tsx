@@ -252,7 +252,7 @@ export function UserExportModal({
                       : "Select a state…"}
                 </option>
                 {states.map((s) => (
-                  <option key={s.id} value={s.name}>
+                  <option key={s.name} value={s.name}>
                     {s.name}
                   </option>
                 ))}
