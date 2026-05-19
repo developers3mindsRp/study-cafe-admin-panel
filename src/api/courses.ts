@@ -66,6 +66,8 @@ export interface Course {
   categories?: Array<{ id: number; name: string; slug: string | null }>;
   /** Affiliate commission as a percent of paid order amount (0–100). */
   affiliate_commission?: number | string;
+  /** '1year' (default) or 'lifetime' — determines how long enrolled access lasts. */
+  validity?: 'lifetime' | '1year';
 }
 
 export interface CourseCat {

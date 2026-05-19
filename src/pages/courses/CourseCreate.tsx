@@ -106,6 +106,7 @@ export default function CourseCreate() {
           100,
           Math.max(0, Number(data.affiliate_commission)) || 0,
         ),
+        validity: data.validity ?? '1year',
       });
 
       // Auto-create the default batch from curriculum if curriculum was provided

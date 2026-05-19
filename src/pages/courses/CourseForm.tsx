@@ -68,6 +68,8 @@ export interface CourseFormData {
   og_image_url: string;
   /** Percent of order amount paid to referrer (0–100). */
   affiliate_commission: string;
+  /** '1year' (default) or 'lifetime' — determines enrolled access duration. */
+  validity: 'lifetime' | '1year';
 }
 
 const safeJsonParse = (str: string | null | undefined, fallback: any = []) => {
@@ -121,6 +123,7 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
         og_title: restoredData.og_title ?? "",
         og_description: restoredData.og_description ?? "",
         og_image_url: restoredData.og_image_url ?? "",
+        validity: restoredData.validity ?? '1year',
       };
     }
     return {
@@ -214,6 +217,7 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
         initial?.affiliate_commission != null && initial.affiliate_commission !== ""
           ? String(initial.affiliate_commission)
           : "0",
+      validity: (initial?.validity === 'lifetime' ? 'lifetime' : '1year') as 'lifetime' | '1year',
     };
   });
 
@@ -506,6 +510,17 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
                   className="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
                 />
                 <Label htmlFor="taxable" className="!mb-0 cursor-pointer">Taxable</Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="validity_lifetime"
+                  checked={form.validity === 'lifetime'}
+                  onChange={(e) => updateField('validity', e.target.checked ? 'lifetime' : '1year')}
+                  className="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
+                />
+                <Label htmlFor="validity_lifetime" className="!mb-0 cursor-pointer">Lifetime Access</Label>
+                <span className="text-xs text-gray-400">(By default, access is 1 year from purchase)</span>
               </div>
             </div>
           </div>
