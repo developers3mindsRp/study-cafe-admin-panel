@@ -29,6 +29,10 @@ import type { ArticleFormData } from "../../pages/articles/ArticleForm";
 export interface ArticlesTableProps {
   onDeleteClick?: (article: ArticleRecord) => void;
   filterStatus?: string;
+  filterCategoryId?: string;
+  filterAccessTier?: string;
+  filterDateFrom?: string;
+  filterDateTo?: string;
 }
 
 const statusColor = (status: string) =>
@@ -50,13 +54,30 @@ const statusLabel = (status: string) =>
       : status || "—";
 
 export const ArticlesTable = forwardRef<DataTableRef, ArticlesTableProps>(
-  function ArticlesTable({ onDeleteClick, filterStatus = "" }, ref) {
+  function ArticlesTable(
+    {
+      onDeleteClick,
+      filterStatus = "",
+      filterCategoryId = "",
+      filterAccessTier = "",
+      filterDateFrom = "",
+      filterDateTo = "",
+    },
+    ref
+  ) {
     const navigate = useNavigate();
 
     const fetchData = useCallback(
       (params: DataTableFetchParams): Promise<DataTableFetchResult<ArticleRecord>> =>
-        fetchArticlesPaginated({ ...params, ...(filterStatus ? { status: filterStatus } : {}) }),
-      [filterStatus]
+        fetchArticlesPaginated({
+          ...params,
+          ...(filterStatus ? { status: filterStatus } : {}),
+          ...(filterCategoryId ? { category_id: filterCategoryId } : {}),
+          ...(filterAccessTier ? { blog_access_tier: filterAccessTier } : {}),
+          ...(filterDateFrom ? { date_from: filterDateFrom } : {}),
+          ...(filterDateTo ? { date_to: filterDateTo } : {}),
+        }),
+      [filterStatus, filterCategoryId, filterAccessTier, filterDateFrom, filterDateTo]
     );
 
     const handlePreview = useCallback(async (articleId: number | string) => {
@@ -259,9 +280,11 @@ export const ArticlesTable = forwardRef<DataTableRef, ArticlesTableProps>(
       },
     ];
 
+    const filterKey = [filterStatus, filterCategoryId, filterAccessTier, filterDateFrom, filterDateTo].join("|");
+
     return (
       <DataTable<ArticleRecord>
-        key={filterStatus}
+        key={filterKey}
         ref={ref}
         columns={columns}
         fetchData={fetchData}

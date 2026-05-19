@@ -59,6 +59,10 @@ export interface ArticleRecord {
 
 export interface ArticleListParams {
   status?: string;
+  category_id?: string;
+  blog_access_tier?: string;
+  date_from?: string;
+  date_to?: string;
   limit?: number;
   offset?: number;
   page?: number;
@@ -88,7 +92,13 @@ export const articlesApi = createCrudApi<ArticleRecord>(BASE_URL)();
 
 /** Server-side paginated list for DataTable */
 export async function fetchArticlesPaginated(
-  params: DataTableFetchParams & { status?: string }
+  params: DataTableFetchParams & {
+    status?: string;
+    category_id?: string;
+    blog_access_tier?: string;
+    date_from?: string;
+    date_to?: string;
+  }
 ): Promise<DataTableFetchResult<ArticleRecord>> {
   const { data } = await api.get<any>(BASE_URL, {
     params: {
@@ -98,6 +108,10 @@ export async function fetchArticlesPaginated(
       sortBy: params.sortBy || undefined,
       sortOrder: params.sortOrder,
       ...(params.status ? { status: params.status } : {}),
+      ...(params.category_id ? { category_id: params.category_id } : {}),
+      ...(params.blog_access_tier ? { blog_access_tier: params.blog_access_tier } : {}),
+      ...(params.date_from ? { date_from: params.date_from } : {}),
+      ...(params.date_to ? { date_to: params.date_to } : {}),
     },
   });
 
@@ -126,6 +140,52 @@ export async function fetchArticles(params: ArticleListParams = {}) {
     sortOrder: params.sortOrder ?? "DESC",
   });
   return res.data;
+}
+
+export interface ArticlesExportParams {
+  status?: string;
+  category_id?: string;
+  blog_access_tier?: string;
+  date_from?: string;
+  date_to?: string;
+  search?: string;
+  sortBy?: string;
+  sortOrder?: "ASC" | "DESC";
+}
+
+/** Fetch all matching articles for export (walks all pages). */
+export async function fetchAllArticlesForExport(
+  params: ArticlesExportParams = {}
+): Promise<ArticleRecord[]> {
+  const PAGE_SIZE = 100;
+  const all: ArticleRecord[] = [];
+  let page = 1;
+  let total: number | undefined;
+
+  for (;;) {
+    const result = await fetchArticlesPaginated({
+      page,
+      limit: PAGE_SIZE,
+      search: params.search ?? "",
+      sortBy: params.sortBy ?? "created_at",
+      sortOrder: params.sortOrder ?? "DESC",
+      ...(params.status ? { status: params.status } : {}),
+      ...(params.category_id ? { category_id: params.category_id } : {}),
+      ...(params.blog_access_tier ? { blog_access_tier: params.blog_access_tier } : {}),
+      ...(params.date_from ? { date_from: params.date_from } : {}),
+      ...(params.date_to ? { date_to: params.date_to } : {}),
+    });
+
+    const chunk = result.data ?? [];
+    if (chunk.length === 0) break;
+    if (total === undefined) total = result.meta.total;
+    all.push(...chunk);
+    if (chunk.length < PAGE_SIZE) break;
+    if (total != null && all.length >= total) break;
+    page += 1;
+  }
+
+  return all;
 }
 
 // Taxonomy option shape

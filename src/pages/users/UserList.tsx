@@ -10,10 +10,12 @@ import {
   PERM_USERS_COURSE_ALLOTMENT,
 } from "../../constants/permissions";
 import {
+  emptyUsersListFilters,
   fetchAllUsersForExport,
   usersApi,
   usersListFiltersAreActive,
   usersListFiltersFromValues,
+  type UsersListFilters,
   type User,
 } from "../../api/users";
 import { exportRowsToExcel } from "../../utils/exportToExcel";
@@ -31,7 +33,10 @@ import { FilterBar, useFilterState } from "../../components/filters";
 import type { FilterFieldDef } from "../../components/filters";
 import { CourseAllotmentModal } from "./components/CourseAllotmentModal";
 import { MembershipAllotmentModal } from "./components/MembershipAllotmentModal";
-import { UserExportModal } from "./components/UserExportModal";
+import {
+  UserExportModal,
+  type UserExportSelection,
+} from "./components/UserExportModal";
 import { UserImportModal } from "./components/UserImportModal";
 import { USER_MEMBERSHIP_FILTER_OPTIONS } from "./constants/userMembershipOptions";
 
@@ -140,28 +145,27 @@ function UserListContent() {
   }, [listFilters, filtersActive]);
 
   const handleExportConfirm = useCallback(
-    async (opts: { membership: string; state: string }) => {
-      const q = tableRef.current?.getQueryState();
-      if (!q) return;
+    async (selection: UserExportSelection) => {
       setExporting(true);
       try {
-        const rows = await fetchAllUsersForExport({
-          filters: {
-            email: values.email ?? "",
-            role: values.role ?? "",
-            status: values.status ?? "",
-            state: opts.state,
-            membership: opts.membership,
-            joinedFrom: values.joinedFrom ?? "",
-            joinedTo: values.joinedTo ?? "",
-          },
-          search: q.search,
-          sortBy: q.sortBy,
-          sortOrder: q.sortOrder,
-        });
+        const filters: UsersListFilters = emptyUsersListFilters();
+        if (selection.category === "membership") filters.membership = selection.value;
+        else if (selection.category === "course") filters.courseId = selection.value;
+        else if (selection.category === "state") filters.state = selection.value;
+
+        const rows = await fetchAllUsersForExport({ filters });
         const exportRows = rows as UserExportRow[];
+
+        const slug = selection.label
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-+|-+$/g, "")
+          .slice(0, 40);
+        const datePart = new Date().toISOString().slice(0, 10);
+        const filename = `users-export-${selection.category}-${slug || "all"}-${datePart}`;
+
         exportRowsToExcel({
-          filename: `users-export-${new Date().toISOString().slice(0, 10)}`,
+          filename,
           sheetName: "Users",
           columns: USER_EXPORT_COLUMNS,
           rows: exportRows,
@@ -183,7 +187,7 @@ function UserListContent() {
         setExporting(false);
       }
     },
-    [values]
+    []
   );
 
   const handleDeleteClick = (user: User) => {
@@ -315,8 +319,6 @@ function UserListContent() {
         isOpen={exportModalOpen}
         onClose={() => setExportModalOpen(false)}
         onConfirm={handleExportConfirm}
-        initialMembership={values.membership ?? ""}
-        initialState={values.state ?? ""}
         isExporting={exporting}
       />
 

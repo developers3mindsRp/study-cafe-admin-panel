@@ -18,12 +18,18 @@ export function AuthorUserSelect({
   onChange,
   disabled = false,
   placeholder = "Select an author",
+  usersLoading = false,
+  usersError = false,
+  onRetry,
 }: {
   users: User[];
   value: string;
   onChange: (userId: string) => void;
   disabled?: boolean;
   placeholder?: string;
+  usersLoading?: boolean;
+  usersError?: boolean;
+  onRetry?: () => void;
 }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
@@ -67,12 +73,12 @@ export function AuthorUserSelect({
     <div ref={containerRef} className="relative w-full">
       <button
         type="button"
-        disabled={disabled}
-        onClick={() => !disabled && setOpen((o) => !o)}
+        disabled={disabled || usersLoading}
+        onClick={() => !(disabled || usersLoading) && setOpen((o) => !o)}
         className="flex h-11 w-full items-center justify-between rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-left text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
       >
         <span className={displayLabel ? "truncate text-gray-800 dark:text-white" : "truncate text-gray-400"}>
-          {displayLabel || placeholder}
+          {usersLoading ? "Loading users…" : (displayLabel || placeholder)}
         </span>
         <svg
           className={`h-4 w-4 shrink-0 text-gray-400 transition-transform ${open ? "rotate-180" : ""}`}
@@ -98,19 +104,38 @@ export function AuthorUserSelect({
             />
           </div>
           <ul className="max-h-52 overflow-y-auto py-1">
-            <li>
-              <button
-                type="button"
-                onClick={() => pick("")}
-                className="w-full px-3 py-2 text-left text-sm text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700"
-              >
-                {placeholder}
-              </button>
-            </li>
-            {filtered.length === 0 && (
-              <li className="px-3 py-2 text-xs italic text-gray-400">No users match your search</li>
+            {usersLoading ? (
+              <li className="px-3 py-3 text-xs text-gray-400 text-center">Loading users…</li>
+            ) : usersError ? (
+              <li className="px-3 py-2 text-xs text-center">
+                <span className="text-error-500 dark:text-error-400">Failed to load users.</span>{" "}
+                {onRetry && (
+                  <button
+                    type="button"
+                    onClick={onRetry}
+                    className="underline text-brand-600 dark:text-brand-400 hover:no-underline"
+                  >
+                    Retry
+                  </button>
+                )}
+              </li>
+            ) : (
+              <>
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => pick("")}
+                    className="w-full px-3 py-2 text-left text-sm text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700"
+                  >
+                    {placeholder}
+                  </button>
+                </li>
+                {filtered.length === 0 && (
+                  <li className="px-3 py-2 text-xs italic text-gray-400">No users match your search</li>
+                )}
+              </>
             )}
-            {filtered.map((u) => {
+            {!usersLoading && !usersError && filtered.map((u) => {
               const active = String(u.id) === value;
               return (
                 <li key={u.id}>

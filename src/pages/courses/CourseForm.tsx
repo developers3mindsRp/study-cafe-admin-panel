@@ -11,7 +11,7 @@ import IncludesInfoEditor, { type IncludesInfoItem } from "./components/Includes
 import CourseIncludesEditor, { type CourseIncludeItem } from "./components/CourseIncludesEditor";
 import { COURSE_PREVIEW_STATE_KEY, COURSE_RESTORE_STATE_KEY } from "./CoursePreview";
 import { fetchCourseCats, type Course, type CourseCat } from "../../api/courses";
-import { usersApi, type User } from "../../api/users";
+import { usersApi, fetchAdminPanelUsers, type User } from "../../api/users";
 import { CourseCatMultiSelect } from "./components/CourseCatMultiSelect";
 import { AuthorUserSelect } from "./components/AuthorUserSelect";
 import MetaFieldsForm, { type SEOMetaFields } from "../../components/form/MetaFieldsForm";
@@ -224,12 +224,19 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
   }, [restoredData]);
 
   const [authorUsers, setAuthorUsers] = useState<User[]>([]);
+  const [authorUsersLoading, setAuthorUsersLoading] = useState(false);
+  const [authorUsersError, setAuthorUsersError] = useState(false);
+  const [authorUsersFetchId, setAuthorUsersFetchId] = useState(0);
   const [courseCats, setCourseCats] = useState<CourseCat[]>([]);
+
   useEffect(() => {
     let cancelled = false;
+    setAuthorUsersLoading(true);
+    setAuthorUsersError(false);
     (async () => {
+      // Phase 1 — fetch all app/regular users and show them immediately.
+      let acc: User[] = [];
       try {
-        const acc: User[] = [];
         const limit = 500;
         let page = 1;
         for (;;) {
@@ -238,6 +245,7 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
             limit,
             sortBy: "name",
             sortOrder: "ASC",
+            lean: true,
           });
           if (cancelled) return;
           const chunk = res.data ?? [];
@@ -246,15 +254,42 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
           if (page >= pages || chunk.length === 0) break;
           page += 1;
         }
-        if (!cancelled) setAuthorUsers(acc);
+        if (cancelled) return;
+        setAuthorUsers(acc);
+        setAuthorUsersLoading(false);
       } catch {
-        if (!cancelled) setAuthorUsers([]);
+        if (!cancelled) {
+          setAuthorUsersLoading(false);
+          setAuthorUsersError(true);
+        }
+        return;
       }
+
+      // Phase 2 — fetch admin panel users (super_admin, admin, editor, etc.) in
+      // the background and merge them in. This runs after the list is already
+      // visible so a slow/unavailable endpoint never blocks the main list.
+      // Silently ignores 403 / permission errors.
+      const adminUsers = await fetchAdminPanelUsers();
+      if (cancelled || adminUsers.length === 0) return;
+
+      setAuthorUsers((current) => {
+        const seen = new Set(current.map((u) => String(u.id)));
+        const merged = [...current];
+        for (const au of adminUsers) {
+          if (!seen.has(String(au.id))) merged.push(au);
+        }
+        merged.sort((a, b) => {
+          const nameA = (a.name || a.display_name || a.email || "").toLowerCase();
+          const nameB = (b.name || b.display_name || b.email || "").toLowerCase();
+          return nameA.localeCompare(nameB);
+        });
+        return merged;
+      });
     })();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [authorUsersFetchId]);
   useEffect(() => {
     fetchCourseCats().then(setCourseCats).catch(() => {});
   }, []);
@@ -732,6 +767,9 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
                   onChange={handleAuthorSelect}
                   disabled={loading}
                   placeholder="Select an author"
+                  usersLoading={authorUsersLoading}
+                  usersError={authorUsersError}
+                  onRetry={() => setAuthorUsersFetchId((n) => n + 1)}
                 />
               </div>
               <div>
