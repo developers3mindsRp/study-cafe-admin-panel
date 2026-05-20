@@ -5,76 +5,22 @@ import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import { RequirePermission } from "../../components/auth/RequirePermission";
 import { DataTable, type DataTableRef } from "../../components/tables/data-table/DataTable";
 import { FilterBar, useFilterState } from "../../components/filters";
-import type { FilterFieldDef } from "../../components/filters";
 import {
   fetchCouponUsagesPaginated,
-  type CouponUsageFilters,
   type CouponUsageRow,
   type CouponUsageTotals,
 } from "../../api/couponUsage";
 import { fetchCoupon } from "../../api/promoCodes";
 import type { Coupon } from "../../types/promoCode";
 import type { DataTableFetchParams, DataTableFetchResult } from "../../components/tables/data-table";
+import {
+  filtersFromValues,
+  formatDate,
+  formatMoney,
+  usageFilterFields,
+} from "./couponUsageShared";
 
-const filterFields: FilterFieldDef[] = [
-  {
-    type: "select",
-    id: "status",
-    label: "Order status",
-    placeholder: "All statuses",
-    options: [
-      { value: "completed", label: "Completed" },
-      { value: "paid", label: "Paid" },
-      { value: "pending", label: "Pending" },
-      { value: "failed", label: "Failed" },
-      { value: "refunded", label: "Refunded" },
-    ],
-  },
-  {
-    type: "select",
-    id: "type",
-    label: "Order type",
-    placeholder: "All types",
-    options: [
-      { value: "course", label: "Course" },
-      { value: "membership", label: "Membership" },
-    ],
-  },
-  {
-    type: "date-range",
-    id: "used",
-    label: "Used on",
-    fromId: "dateFrom",
-    toId: "dateTo",
-  },
-];
-
-function formatMoney(val: string | number | null | undefined, currency = "INR") {
-  if (val == null || val === "") return "—";
-  const n = Number(val);
-  if (!Number.isFinite(n)) return String(val);
-  return new Intl.NumberFormat("en-IN", { style: "currency", currency, maximumFractionDigits: 2 }).format(n);
-}
-
-function formatDate(dateStr?: string | null) {
-  if (!dateStr) return "—";
-  return new Date(dateStr).toLocaleString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-function filtersFromValues(values: Record<string, string | undefined>): CouponUsageFilters {
-  return {
-    status: values.status ?? "",
-    type: values.type ?? "",
-    dateFrom: values.dateFrom ?? "",
-    dateTo: values.dateTo ?? "",
-  };
-}
+const filterFields = usageFilterFields;
 
 function discountLabel(coupon: Coupon | null) {
   if (!coupon) return "";

@@ -74,6 +74,7 @@ export const mainNavItemsConfig: NavItemConfig[] = [
     subItems: [
       { name: "List", path: "/coupons", requiredPermission: ["coupons:list", "coupons:view"] },
       { name: "Create", path: "/coupons/create", requiredPermission: ["coupons:create"] },
+      { name: "Usage Report", path: "/coupons/usage", requiredPermission: ["coupons:list", "coupons:view"] },
     ],
     requiredPermission: ["coupons:list", "coupons:view", "coupons:create", "coupons:edit", "coupons:delete"],
   },
