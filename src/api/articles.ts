@@ -216,3 +216,12 @@ export async function fetchCourts(): Promise<TaxonomyOption[]> {
   const { data } = await api.get<TaxonomyOption[] | { data: TaxonomyOption[] }>(`${TAX_BASE}/courts`);
   return Array.isArray(data) ? data : (data as { data: TaxonomyOption[] })?.data ?? [];
 }
+
+export async function generateArticlePreviewLink(
+  articleId: number
+): Promise<{ previewUrl: string; expiresInSeconds: number }> {
+  const { data } = await api.post<{ previewUrl: string; expiresInSeconds: number }>(
+    `${BASE_URL}/${articleId}/preview-token`
+  );
+  return data;
+}
