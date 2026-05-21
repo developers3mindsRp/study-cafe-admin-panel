@@ -10,7 +10,7 @@ import { ArrayEditor } from "./components/ArrayEditor";
 import IncludesInfoEditor, { type IncludesInfoItem } from "./components/IncludesInfoEditor";
 import CourseIncludesEditor, { type CourseIncludeItem } from "./components/CourseIncludesEditor";
 import { COURSE_PREVIEW_STATE_KEY, COURSE_RESTORE_STATE_KEY } from "./CoursePreview";
-import { fetchCourseCats, type Course, type CourseCat } from "../../api/courses";
+import { fetchCourseCats, generateCoursePreviewLink, type Course, type CourseCat } from "../../api/courses";
 import { usersApi, fetchAdminPanelUsers, type User } from "../../api/users";
 import { CourseCatMultiSelect } from "./components/CourseCatMultiSelect";
 import { AuthorUserSelect } from "./components/AuthorUserSelect";
@@ -326,6 +326,21 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
     });
   };
 
+  const [livePreviewLoading, setLivePreviewLoading] = useState(false);
+
+  const handleLivePreview = async () => {
+    if (!initial?.id) return;
+    setLivePreviewLoading(true);
+    try {
+      const { previewUrl } = await generateCoursePreviewLink(initial.id);
+      window.open(previewUrl, '_blank', 'noopener,noreferrer');
+    } catch {
+      alert('Could not generate preview link. Please try again.');
+    } finally {
+      setLivePreviewLoading(false);
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const slug =
@@ -349,6 +364,17 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
           <Button type="button" variant="outline" size="sm" onClick={handlePreview}>
             Preview
           </Button>
+          {initial?.id && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleLivePreview}
+              disabled={livePreviewLoading}
+            >
+              {livePreviewLoading ? "Generating…" : "Live Preview ↗"}
+            </Button>
+          )}
           <Button type="submit" size="sm" disabled={loading}>
             {loading ? "Saving…" : "Save Course"}
           </Button>

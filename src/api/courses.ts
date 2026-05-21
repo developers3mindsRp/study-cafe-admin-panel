@@ -126,6 +126,11 @@ export async function updateCourse(id: string, payload: Partial<Course>): Promis
   return res.data;
 }
 
+export async function generateCoursePreviewLink(courseId: number): Promise<{ previewUrl: string; expiresInSeconds: number }> {
+  const res = await api.post(`/admin/courses/${courseId}/preview-token`);
+  return res.data;
+}
+
 // ─── Course content: batches → sessions → recordings ────────────────────────
 
 export interface RecordingRecord {
