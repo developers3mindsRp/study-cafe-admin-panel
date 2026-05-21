@@ -16,6 +16,7 @@ import type {
   AuthorBio,
 } from "../../components/blocks/types";
 import { slugifyForSeo, shouldResyncSlugFromSource } from "../../lib/slug";
+import { generateArticlePreviewLink } from "../../api/articles";
 
 export interface CaseCitationData {
   case_citation?: string;
@@ -284,6 +285,21 @@ export default function ArticleForm({
         taxonomyOptions: taxonomyOptions ?? undefined,
       },
     });
+  };
+
+  const [livePreviewLoading, setLivePreviewLoading] = useState(false);
+
+  const handleLivePreview = async () => {
+    if (!articleId) return;
+    setLivePreviewLoading(true);
+    try {
+      const { previewUrl } = await generateArticlePreviewLink(Number(articleId));
+      window.open(previewUrl, "_blank", "noopener,noreferrer");
+    } catch {
+      alert("Could not generate preview link. Please try again.");
+    } finally {
+      setLivePreviewLoading(false);
+    }
   };
 
   const runSubmit = (action: ArticleSubmitAction) => {
@@ -916,6 +932,16 @@ export default function ArticleForm({
               >
                 Preview
               </button>
+              {mode === "edit" && articleId && (
+                <button
+                  type="button"
+                  disabled={livePreviewLoading}
+                  onClick={handleLivePreview}
+                  className="inline-flex w-full items-center justify-center rounded-lg px-4 py-2.5 text-sm font-medium ring-1 ring-inset ring-brand-300 bg-brand-50 text-brand-700 hover:bg-brand-100 disabled:opacity-50 dark:bg-brand-500/10 dark:text-brand-300 dark:ring-brand-500/30"
+                >
+                  {livePreviewLoading ? "Generating…" : "Live Preview ↗"}
+                </button>
+              )}
             </div>
 
             <div className="mt-6 border-t border-gray-200 pt-5 dark:border-gray-800">
