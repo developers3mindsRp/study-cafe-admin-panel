@@ -57,6 +57,10 @@ import TestimonialList from "./pages/testimonials/TestimonialList";
 import TestimonialCreate from "./pages/testimonials/TestimonialCreate";
 import TestimonialEdit from "./pages/testimonials/TestimonialEdit";
 import TestimonialView from "./pages/testimonials/TestimonialView";
+import MarketingPageList from "./pages/marketing/MarketingPageList";
+import MarketingPageCreate from "./pages/marketing/MarketingPageCreate";
+import MarketingPageEdit from "./pages/marketing/MarketingPageEdit";
+import MarketingPageView from "./pages/marketing/MarketingPageView";
 import FAQList from "./pages/faq/FAQList";
 import FAQCreate from "./pages/faq/FAQCreate";
 import FAQEdit from "./pages/faq/FAQEdit";
@@ -94,6 +98,7 @@ import PromoCodeList from "./pages/promo-codes/PromoCodeList";
 import PromoCodeCreate from "./pages/promo-codes/PromoCodeCreate";
 import PromoCodeEdit from "./pages/promo-codes/PromoCodeEdit";
 import CouponUsageDetail from "./pages/promo-codes/CouponUsageDetail";
+import CouponUsageReport from "./pages/promo-codes/CouponUsageReport";
 import PaymentLinkList from "./pages/payment-links/PaymentLinkList";
 import PaymentLinkCreate from "./pages/payment-links/PaymentLinkCreate";
 import PaymentLinkEdit from "./pages/payment-links/PaymentLinkEdit";
@@ -262,6 +267,9 @@ const router = createBrowserRouter(
           <Route path="/coupons/create" element={<RequirePermissionRoute permissions={["coupons:create"]} />}>
             <Route index element={<PromoCodeCreate />} />
           </Route>
+          <Route path="/coupons/usage" element={<RequirePermissionRoute permissions={["coupons:list"]} />}>
+            <Route index element={<CouponUsageReport />} />
+          </Route>
           <Route path="/coupons/:id/usage" element={<RequirePermissionRoute permissions={["coupons:list"]} />}>
             <Route index element={<CouponUsageDetail />} />
           </Route>
@@ -309,6 +317,20 @@ const router = createBrowserRouter(
           </Route>
           <Route path="/testimonials/:id/edit" element={<RequirePermissionRoute permissions={["testimonials:edit"]} />}>
             <Route index element={<TestimonialEdit />} />
+          </Route>
+
+          {/* Marketing pages */}
+          <Route path="/marketing-pages" element={<RequirePermissionRoute permissions={["marketing_pages:list"]} />}>
+            <Route index element={<MarketingPageList />} />
+          </Route>
+          <Route path="/marketing-pages/create" element={<RequirePermissionRoute permissions={["marketing_pages:create"]} />}>
+            <Route index element={<MarketingPageCreate />} />
+          </Route>
+          <Route path="/marketing-pages/:id" element={<RequirePermissionRoute permissions={["marketing_pages:view"]} />}>
+            <Route index element={<MarketingPageView />} />
+          </Route>
+          <Route path="/marketing-pages/:id/edit" element={<RequirePermissionRoute permissions={["marketing_pages:edit"]} />}>
+            <Route index element={<MarketingPageEdit />} />
           </Route>
 
           {/* FAQ */}

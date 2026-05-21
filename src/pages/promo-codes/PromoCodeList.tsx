@@ -265,13 +265,14 @@ export default function PromoCodeList() {
       sortable: true,
       render: (row: CouponRow) => {
         const count = row.usage_count ?? 0;
-        if (count === 0) {
-          return <span className="text-sm text-gray-400">0</span>;
-        }
         return (
           <Link
             to={`/coupons/${row.id}/usage`}
-            className="inline-flex min-w-[2rem] items-center justify-center rounded-full bg-brand-50 px-2.5 py-1 text-sm font-semibold text-brand-600 transition hover:bg-brand-100 dark:bg-brand-500/15 dark:text-brand-400 dark:hover:bg-brand-500/25"
+            className={`inline-flex min-w-[2rem] items-center justify-center rounded-full px-2.5 py-1 text-sm font-semibold transition ${
+              count === 0
+                ? "text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-white/5"
+                : "bg-brand-50 text-brand-600 hover:bg-brand-100 dark:bg-brand-500/15 dark:text-brand-400 dark:hover:bg-brand-500/25"
+            }`}
             title="View who used this coupon"
           >
             {count}
@@ -321,14 +322,22 @@ export default function PromoCodeList() {
       <PageBreadcrumb
         pageTitle="Coupons"
         actions={
-          <RequirePermission permissions={["admin:access"]} fallback={null}>
+          <div className="flex flex-wrap items-center gap-2">
             <Link
-              to="/coupons/create"
-              className="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-medium text-white transition bg-brand-500 shadow-theme-xs hover:bg-brand-600"
+              to="/coupons/usage"
+              className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-200 px-4 py-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-white/5"
             >
-              Create New
+              Usage Report
             </Link>
-          </RequirePermission>
+            <RequirePermission permissions={["admin:access"]} fallback={null}>
+              <Link
+                to="/coupons/create"
+                className="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-medium text-white transition bg-brand-500 shadow-theme-xs hover:bg-brand-600"
+              >
+                Create New
+              </Link>
+            </RequirePermission>
+          </div>
         }
       />
       <div className="space-y-6">
