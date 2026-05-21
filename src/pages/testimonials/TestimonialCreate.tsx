@@ -13,8 +13,11 @@ export default function TestimonialCreate() {
     try {
       setLoading(true);
       await createTestimonial({
-        ...formData,
-        rating: formData.rating ? Number(formData.rating) : undefined,
+        title: formData.title || undefined,
+        media_type: formData.media_type,
+        media_url: formData.media_url,
+        video_url:
+          formData.media_type === "video" ? formData.video_url || undefined : undefined,
         sort_order: formData.sort_order ? Number(formData.sort_order) : 0,
       });
       navigate("/testimonials");
@@ -30,12 +33,9 @@ export default function TestimonialCreate() {
     <>
       <PageMeta
         title="Create Testimonial | StudyCafe Admin"
-        description="Add new testimonial for studycafe.in"
+        description="Add video or image testimonial"
       />
-      <PageBreadcrumb
-        pageTitle="Create Testimonial"
-        compact
-      />
+      <PageBreadcrumb pageTitle="Create Testimonial" compact />
       <TestimonialForm mode="create" onSubmit={handleSubmit} loading={loading} />
     </>
   );

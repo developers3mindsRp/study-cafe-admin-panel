@@ -30,7 +30,14 @@ export const PERM_MEMBERSHIPS_CREATE = "memberships:create";
 export const PERM_MEMBERSHIPS_EDIT = "memberships:edit";
 export const PERM_MEMBERSHIPS_DELETE = "memberships:delete";
 
-// Testimonials
+// Google Reviews
+export const PERM_GOOGLE_REVIEWS_LIST = "google_reviews:list";
+export const PERM_GOOGLE_REVIEWS_VIEW = "google_reviews:view";
+export const PERM_GOOGLE_REVIEWS_CREATE = "google_reviews:create";
+export const PERM_GOOGLE_REVIEWS_EDIT = "google_reviews:edit";
+export const PERM_GOOGLE_REVIEWS_DELETE = "google_reviews:delete";
+
+// Testimonials (video/image cards)
 export const PERM_TESTIMONIALS_LIST = "testimonials:list";
 export const PERM_TESTIMONIALS_VIEW = "testimonials:view";
 export const PERM_TESTIMONIALS_CREATE = "testimonials:create";

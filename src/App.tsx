@@ -53,10 +53,13 @@ import MembershipCreate from "./pages/memberships/MembershipCreate";
 import MembershipEdit from "./pages/memberships/MembershipEdit";
 import MembershipView from "./pages/memberships/MembershipView";
 import ComparisonFeatures from "./pages/memberships/ComparisonFeatures";
+import GoogleReviewList from "./pages/google-reviews/TestimonialList";
+import GoogleReviewCreate from "./pages/google-reviews/TestimonialCreate";
+import GoogleReviewEdit from "./pages/google-reviews/TestimonialEdit";
+import GoogleReviewView from "./pages/google-reviews/TestimonialView";
 import TestimonialList from "./pages/testimonials/TestimonialList";
 import TestimonialCreate from "./pages/testimonials/TestimonialCreate";
 import TestimonialEdit from "./pages/testimonials/TestimonialEdit";
-import TestimonialView from "./pages/testimonials/TestimonialView";
 import MarketingPageList from "./pages/marketing/MarketingPageList";
 import MarketingPageCreate from "./pages/marketing/MarketingPageCreate";
 import MarketingPageEdit from "./pages/marketing/MarketingPageEdit";
@@ -305,15 +308,28 @@ const router = createBrowserRouter(
             <Route index element={<ComparisonFeatures />} />
           </Route>
 
-          {/* Testimonials */}
+          {/* Google Reviews */}
+          <Route path="/google-reviews" element={<RequirePermissionRoute permissions={["google_reviews:list"]} />}>
+            <Route index element={<GoogleReviewList />} />
+          </Route>
+          <Route path="/google-reviews/create" element={<RequirePermissionRoute permissions={["google_reviews:create"]} />}>
+            <Route index element={<GoogleReviewCreate />} />
+          </Route>
+          <Route path="/google-reviews/:id" element={<RequirePermissionRoute permissions={["google_reviews:view"]} />}>
+            <Route index element={<GoogleReviewView />} />
+          </Route>
+          <Route path="/google-reviews/:id/edit" element={<RequirePermissionRoute permissions={["google_reviews:edit"]} />}>
+            <Route index element={<GoogleReviewEdit />} />
+          </Route>
+          <Route path="/media-testimonials" element={<Navigate to="/testimonials" replace />} />
+          <Route path="/media-testimonials/*" element={<Navigate to="/testimonials" replace />} />
+
+          {/* Testimonials (video/image) */}
           <Route path="/testimonials" element={<RequirePermissionRoute permissions={["testimonials:list"]} />}>
             <Route index element={<TestimonialList />} />
           </Route>
           <Route path="/testimonials/create" element={<RequirePermissionRoute permissions={["testimonials:create"]} />}>
             <Route index element={<TestimonialCreate />} />
-          </Route>
-          <Route path="/testimonials/:id" element={<RequirePermissionRoute permissions={["testimonials:view"]} />}>
-            <Route index element={<TestimonialView />} />
           </Route>
           <Route path="/testimonials/:id/edit" element={<RequirePermissionRoute permissions={["testimonials:edit"]} />}>
             <Route index element={<TestimonialEdit />} />

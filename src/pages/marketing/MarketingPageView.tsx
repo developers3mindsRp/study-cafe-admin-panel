@@ -60,7 +60,7 @@ export default function MarketingPageView() {
           </div>
         </dl>
         <p className="text-sm text-gray-500">
-          Alumni logos, featured-in logos, global FAQs, and testimonials are managed under Courses → Page Settings, FAQ, and Testimonials.
+          Alumni logos, featured-in logos, and gallery are under Courses → Page Settings. Global FAQs, Google Reviews, and Testimonials (video/image) are under FAQ, Google Reviews, and Testimonials in the sidebar.
         </p>
       </div>
     </>

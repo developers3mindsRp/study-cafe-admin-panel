@@ -27,6 +27,7 @@ export default function CoursePageSettings() {
     const [alumniLogos, setAlumniLogos] = useState<any[]>([]);
     const [featuredInLogos, setFeaturedInLogos] = useState<any[]>([]);
     const [trendingCourseIds, setTrendingCourseIds] = useState<number[]>([]);
+    const [galleryImages, setGalleryImages] = useState<string[]>([]);
     const [courses, setCourses] = useState<any[]>([]);
     const [newTrendingId, setNewTrendingId] = useState("");
 
@@ -39,6 +40,13 @@ export default function CoursePageSettings() {
                 setAlumniLogos(safeJsonParse(settings.alumni_logos, []));
                 setFeaturedInLogos(safeJsonParse(settings.featured_in_logos, []));
                 setTrendingCourseIds(safeJsonParse(settings.trending_course_ids, []));
+                const rawGallery = safeJsonParse(settings.gallery_images, []);
+                setGalleryImages(
+                    rawGallery.map((item: string | { image_url?: string; url?: string; image?: string }) => {
+                        if (typeof item === "string") return item;
+                        return item?.image_url || item?.url || item?.image || "";
+                    }).filter(Boolean)
+                );
             } catch (err) {
                 console.error("Failed to load course page settings", err);
                 setSettingsError(apiErrorMessage(err, "Failed to load course page settings."));
@@ -62,6 +70,7 @@ export default function CoursePageSettings() {
                 updateCoursePageSetting("alumni_logos", JSON.stringify(alumniLogos)),
                 updateCoursePageSetting("featured_in_logos", JSON.stringify(featuredInLogos)),
                 updateCoursePageSetting("trending_course_ids", JSON.stringify(trendingCourseIds)),
+                updateCoursePageSetting("gallery_images", JSON.stringify(galleryImages)),
             ]);
             alert("Settings saved successfully!");
         } catch (err) {
@@ -163,6 +172,31 @@ export default function CoursePageSettings() {
                                     placeholder="Upload or enter logo URL"
                                 />
                             </div>
+                        )}
+                    />
+                </div>
+
+                {/* Photo Gallery */}
+                <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] sm:p-6">
+                    <h3 className="mb-1 text-lg font-semibold text-gray-800 dark:text-white/90">Photo Gallery</h3>
+                    <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
+                        Images for the gallery section on all course detail and marketing pages.
+                    </p>
+                    <ArrayEditor
+                        value={galleryImages}
+                        onChange={setGalleryImages}
+                        defaultItem=""
+                        addButtonLabel="Add image"
+                        renderItem={(url, index) => (
+                            <ImageUpload
+                                value={url}
+                                onChange={(imageUrl) => {
+                                    const next = [...galleryImages];
+                                    next[index] = imageUrl;
+                                    setGalleryImages(next);
+                                }}
+                                placeholder="Upload gallery image"
+                            />
                         )}
                     />
                 </div>

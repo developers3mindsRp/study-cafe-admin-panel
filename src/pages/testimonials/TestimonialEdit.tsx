@@ -3,7 +3,11 @@ import { useNavigate, useParams } from "react-router";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import TestimonialForm, { type TestimonialFormData } from "./TestimonialForm";
-import { fetchTestimonial, updateTestimonial, Testimonial } from "../../api/testimonials";
+import {
+  fetchTestimonial,
+  updateTestimonial,
+  type Testimonial,
+} from "../../api/testimonials";
 
 export default function TestimonialEdit() {
   const { id } = useParams();
@@ -13,16 +17,13 @@ export default function TestimonialEdit() {
   const [data, setData] = useState<Testimonial | null>(null);
 
   useEffect(() => {
-    if (id) {
-      loadTestimonial(Number(id));
-    }
+    if (id) loadItem(Number(id));
   }, [id]);
 
-  const loadTestimonial = async (testimonialId: number) => {
+  const loadItem = async (itemId: number) => {
     try {
       setLoading(true);
-      const testimonial = await fetchTestimonial(testimonialId);
-      setData(testimonial);
+      setData(await fetchTestimonial(itemId));
     } catch (err) {
       console.error("Failed to load testimonial", err);
       alert("Failed to load testimonial or it does not exist.");
@@ -37,8 +38,11 @@ export default function TestimonialEdit() {
     try {
       setSaving(true);
       await updateTestimonial(Number(id), {
-        ...formData,
-        rating: formData.rating ? Number(formData.rating) : undefined,
+        title: formData.title || undefined,
+        media_type: formData.media_type,
+        media_url: formData.media_url,
+        video_url:
+          formData.media_type === "video" ? formData.video_url || undefined : undefined,
         sort_order: formData.sort_order ? Number(formData.sort_order) : 0,
       });
       navigate("/testimonials");
@@ -59,23 +63,17 @@ export default function TestimonialEdit() {
   }
 
   const defaultValues: TestimonialFormData = {
-    content: data.content,
-    author_name: data.author_name,
-    author_role: data.author_role || "",
-    rating: data.rating ? String(data.rating) : "",
+    title: data.title || "",
+    media_type: data.media_type,
+    media_url: data.media_url,
+    video_url: data.video_url || "",
     sort_order: String(data.sort_order),
   };
 
   return (
     <>
-      <PageMeta
-        title="Edit Testimonial | StudyCafe Admin"
-        description="Edit testimonial for studycafe.in"
-      />
-      <PageBreadcrumb
-        pageTitle="Edit Testimonial"
-        compact
-      />
+      <PageMeta title="Edit Testimonial | StudyCafe Admin" description="Edit media testimonial" />
+      <PageBreadcrumb pageTitle="Edit Testimonial" compact />
       <TestimonialForm
         mode="edit"
         defaultValues={defaultValues}
