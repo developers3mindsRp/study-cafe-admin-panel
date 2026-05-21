@@ -67,7 +67,6 @@ export default function MarketingPageForm({
     course_id: "",
     slug: "",
     is_published: false,
-    meta: emptyMeta(),
     ...defaultValues,
     meta: { ...emptyMeta(), ...defaultValues?.meta },
   });
