@@ -58,6 +58,13 @@ export const PERM_COURSES_CREATE = "courses:create";
 export const PERM_COURSES_EDIT = "courses:edit";
 export const PERM_COURSES_DELETE = "courses:delete";
 
+// Marketing pages
+export const PERM_MARKETING_PAGES_LIST = "marketing_pages:list";
+export const PERM_MARKETING_PAGES_VIEW = "marketing_pages:view";
+export const PERM_MARKETING_PAGES_CREATE = "marketing_pages:create";
+export const PERM_MARKETING_PAGES_EDIT = "marketing_pages:edit";
+export const PERM_MARKETING_PAGES_DELETE = "marketing_pages:delete";
+
 // Orders
 export const PERM_ORDERS_LIST = "orders:list";
 export const PERM_ORDERS_VIEW = "orders:view";
