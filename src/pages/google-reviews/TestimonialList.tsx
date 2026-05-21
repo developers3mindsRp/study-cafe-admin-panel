@@ -79,7 +79,7 @@ export default function GoogleReviewList() {
       key: "created_at",
       header: "Created At",
       sortable: true,
-      render: (row: Testimonial) =>
+      render: (row: GoogleReview) =>
         row.created_at ? new Date(row.created_at).toLocaleDateString() : "—",
     },
     {
