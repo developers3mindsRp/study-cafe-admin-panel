@@ -399,7 +399,7 @@ export default function ArticleEditor({
     },
     editorProps: {
       attributes: {
-        class: "px-4 py-3 min-h-[200px] focus:outline-none prose max-w-none dark:prose-invert",
+        class: "px-4 py-3 min-h-[200px] focus:outline-none",
       },
     },
   });
