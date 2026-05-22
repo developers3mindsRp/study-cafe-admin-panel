@@ -114,6 +114,7 @@ import CategoriesPage from "./pages/downloads/CategoriesPage";
 import BannerList from "./pages/banners/BannerList";
 import BannerCreate from "./pages/banners/BannerCreate";
 import BannerEdit from "./pages/banners/BannerEdit";
+import MediaLibrary from "./pages/media/MediaLibrary";
 
 function RootLayout() {
   return (
@@ -153,6 +154,11 @@ const router = createBrowserRouter(
             }
           >
             <Route index element={<DisplayAdsContent />} />
+          </Route>
+
+          {/* Media library */}
+          <Route path="/media" element={<RequirePermissionRoute permissions={["content:list", "content:view", "content:edit"]} />}>
+            <Route index element={<MediaLibrary />} />
           </Route>
 
           {/* Page Content / CMS — view or edit */}

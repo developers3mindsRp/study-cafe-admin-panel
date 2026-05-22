@@ -116,6 +116,12 @@ export const mainNavItemsConfig: NavItemConfig[] = [
     requiredPermission: ["memberships:list", "memberships:view", "memberships:create", "memberships:edit", "memberships:delete"],
   },
   {
+    iconKey: "docs",
+    name: "Media",
+    path: "/media",
+    requiredPermission: ["content:list", "content:view", "content:edit"],
+  },
+  {
     iconKey: "page",
     name: "Page Content",
     subItems: [
