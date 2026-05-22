@@ -82,6 +82,12 @@ function ArticleListContent() {
   const { isOpen: isExportModalOpen, openModal: openExportModal, closeModal: closeExportModal } = useModal();
   const { values, set, reset, hasActive } = useFilterState();
   const [exporting, setExporting] = useState(false);
+  const [dateFilterKey, setDateFilterKey] = useState(0);
+
+  const handleResetFilters = useCallback(() => {
+    reset();
+    setDateFilterKey((k) => k + 1);
+  }, [reset]);
 
   const handleDeleteClick = (article: ArticleRecord) => {
     setDeleteTarget(article);
@@ -166,8 +172,9 @@ function ArticleListContent() {
           fields={articleFilterFields}
           values={values}
           onChange={set}
-          onReset={reset}
+          onReset={handleResetFilters}
           hasActive={hasActive}
+          resetKey={dateFilterKey}
           actions={
             <Button
               type="button"
