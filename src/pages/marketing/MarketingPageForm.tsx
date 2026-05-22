@@ -24,7 +24,6 @@ const emptyMeta = (): MarketingPageMeta => ({
   feature_cards: [],
   bonus_items: [],
   who_can_attend: [],
-  gallery_images: [],
   text_testimonials: [],
   video_testimonials: [],
   trainer: { highlights: [], bio_points: [] },
@@ -486,25 +485,13 @@ export default function MarketingPageForm({
         />
       </div>
 
-      <div className={cardClass}>
-        <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Photo gallery</h3>
-        <ArrayEditor
-          value={form.meta.gallery_images ?? []}
-          onChange={(gallery_images) => setMeta({ gallery_images })}
-          defaultItem=""
-          addButtonLabel="Add image"
-          renderItem={(item, index) => (
-            <ImageUpload
-              value={item}
-              onChange={(url) => {
-                const arr = [...(form.meta.gallery_images ?? [])];
-                arr[index] = url;
-                setMeta({ gallery_images: arr });
-              }}
-            />
-          )}
-        />
-      </div>
+      <p className="text-sm text-gray-500 rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-800 dark:bg-white/[0.02]">
+        Photo gallery images are managed in{" "}
+        <Link to="/courses/settings" className="text-brand-500 hover:underline">
+          Courses → Page Settings
+        </Link>
+        . They appear on all course detail and marketing pages.
+      </p>
 
       <div className="flex gap-3">
         <Button type="submit" disabled={loading}>
