@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router";
 import Label from "../../components/form/Label";
 import Input from "../../components/form/input/InputField";
@@ -227,80 +227,67 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
     }
   }, [restoredData]);
 
-  const [authorUsers, setAuthorUsers] = useState<User[]>([]);
-  const [authorUsersLoading, setAuthorUsersLoading] = useState(false);
-  const [authorUsersError, setAuthorUsersError] = useState(false);
-  const [authorUsersFetchId, setAuthorUsersFetchId] = useState(0);
+  const [adminUsers, setAdminUsers] = useState<User[]>([]);
   const [courseCats, setCourseCats] = useState<CourseCat[]>([]);
 
+  // Fetch admin panel users once — they are few and always relevant as authors.
   useEffect(() => {
-    let cancelled = false;
-    setAuthorUsersLoading(true);
-    setAuthorUsersError(false);
-    (async () => {
-      // Phase 1 — fetch all app/regular users and show them immediately.
-      let acc: User[] = [];
-      try {
-        const limit = 500;
-        let page = 1;
-        for (;;) {
-          const res = await usersApi.list({
-            page,
-            limit,
-            sortBy: "name",
-            sortOrder: "ASC",
-            lean: true,
-          });
-          if (cancelled) return;
-          const chunk = res.data ?? [];
-          acc.push(...chunk);
-          const pages = res.pages ?? 1;
-          if (page >= pages || chunk.length === 0) break;
-          page += 1;
-        }
-        if (cancelled) return;
-        setAuthorUsers(acc);
-        setAuthorUsersLoading(false);
-      } catch {
-        if (!cancelled) {
-          setAuthorUsersLoading(false);
-          setAuthorUsersError(true);
-        }
-        return;
-      }
+    fetchAdminPanelUsers().then(setAdminUsers).catch(() => {});
+  }, []);
 
-      // Phase 2 — fetch admin panel users (super_admin, admin, editor, etc.) in
-      // the background and merge them in. This runs after the list is already
-      // visible so a slow/unavailable endpoint never blocks the main list.
-      // Silently ignores 403 / permission errors.
-      const adminUsers = await fetchAdminPanelUsers();
-      if (cancelled || adminUsers.length === 0) return;
-
-      setAuthorUsers((current) => {
-        const seen = new Set(current.map((u) => String(u.id)));
-        const merged = [...current];
-        for (const au of adminUsers) {
-          if (!seen.has(String(au.id))) merged.push(au);
-        }
-        merged.sort((a, b) => {
-          const nameA = (a.name || a.display_name || a.email || "").toLowerCase();
-          const nameB = (b.name || b.display_name || b.email || "").toLowerCase();
-          return nameA.localeCompare(nameB);
-        });
-        return merged;
+  /**
+   * On-demand search for the AuthorUserSelect dropdown.
+   * Fetches up to 10 matching users from the API and merges in any admin users
+   * that also match the query, so instructors/editors always appear.
+   */
+  const fetchAuthorUsers = useCallback(async (search: string): Promise<User[]> => {
+    try {
+      const res = await usersApi.list({
+        page: 1,
+        limit: 10,
+        sortBy: "name",
+        sortOrder: "ASC",
+        lean: true,
+        ...(search.trim() ? { search: search.trim() } : {}),
       });
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [authorUsersFetchId]);
+      const regular = res.data ?? [];
+
+      if (adminUsers.length === 0) return regular;
+
+      const q = search.trim().toLowerCase();
+      const matchingAdmins = adminUsers.filter((u) => {
+        if (!q) return true;
+        return (
+          (u.name || "").toLowerCase().includes(q) ||
+          (u.display_name || "").toLowerCase().includes(q) ||
+          (u.email || "").toLowerCase().includes(q) ||
+          (u.role || "").toLowerCase().includes(q) ||
+          (u.designation || "").toLowerCase().includes(q)
+        );
+      });
+
+      const seen = new Set(regular.map((u) => String(u.id)));
+      const merged = [...regular];
+      for (const au of matchingAdmins) {
+        if (!seen.has(String(au.id))) merged.push(au);
+      }
+      merged.sort((a, b) => {
+        const nameA = (a.name || a.display_name || a.email || "").toLowerCase();
+        const nameB = (b.name || b.display_name || b.email || "").toLowerCase();
+        return nameA.localeCompare(nameB);
+      });
+      return merged;
+    } catch {
+      return [];
+    }
+  }, [adminUsers]);
+
   useEffect(() => {
     fetchCourseCats().then(setCourseCats).catch(() => {});
   }, []);
 
-  const handleAuthorSelect = (userId: string) => {
+  const handleAuthorSelect = (userId: string, user?: User) => {
     updateField('author_user_id', userId);
-    const user = authorUsers.find((u) => String(u.id) === userId);
     if (user) {
       updateField(
         'author_name',
@@ -315,6 +302,19 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
       );
     }
   };
+
+  // A minimal User object built from the existing course data so the dropdown
+  // can show the selected author label even before any search has been run.
+  const initialAuthorUser = useMemo<User | undefined>(() => {
+    const id = initial?.author_user_id;
+    if (!id) return undefined;
+    return {
+      id: String(id),
+      name: initial?.author_name ?? "",
+      email: "",
+      role: initial?.author_role ?? "",
+    } as User;
+  }, [initial?.author_user_id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handlePreview = () => {
     const returnPath = location.pathname;
@@ -803,14 +803,12 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
               <div>
                 <Label>Author</Label>
                 <AuthorUserSelect
-                  users={authorUsers}
                   value={form.author_user_id}
                   onChange={handleAuthorSelect}
                   disabled={loading}
                   placeholder="Select an author"
-                  usersLoading={authorUsersLoading}
-                  usersError={authorUsersError}
-                  onRetry={() => setAuthorUsersFetchId((n) => n + 1)}
+                  fetchUsers={fetchAuthorUsers}
+                  initialUser={initialAuthorUser}
                 />
               </div>
               <div>
