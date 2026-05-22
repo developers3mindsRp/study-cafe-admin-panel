@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { FilterFieldDef, FilterValues, SelectOption } from "./filter.types";
+import DatePicker from "../form/date-picker";
 
 export interface FilterBarProps {
   fields: FilterFieldDef[];
@@ -10,6 +11,12 @@ export interface FilterBarProps {
   className?: string;
   /** Extra controls (e.g. Export) shown at the end of the filter row. */
   actions?: React.ReactNode;
+  /**
+   * Increment this value to force date-range pickers to reset their UI
+   * (e.g. after calling onReset). Pass the same counter you use to clear
+   * filter state so the calendar clears in sync.
+   */
+  resetKey?: number;
 }
 
 const selectClass =
@@ -100,38 +107,36 @@ function AsyncSelectField({
 
 function DateRangeField({
   field,
-  values,
   onChange,
+  resetKey = 0,
 }: {
   field: Extract<FilterFieldDef, { type: "date-range" }>;
   values: FilterValues;
   onChange: (id: string, v: string) => void;
+  resetKey?: number;
 }) {
   const fromId = field.fromId ?? `${field.id}_from`;
   const toId = field.toId ?? `${field.id}_to`;
 
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="flex min-w-[13rem] flex-col gap-1.5">
       <span className={labelClass}>{field.label}</span>
-      <div className="flex items-center gap-2">
-        <input
-          id={`filter-${fromId}`}
-          type="date"
-          className={inputClass}
-          value={values[fromId] ?? ""}
-          onChange={(e) => onChange(fromId, e.target.value)}
-          aria-label={`${field.label} from`}
-        />
-        <span className="text-sm text-gray-400 dark:text-gray-500">–</span>
-        <input
-          id={`filter-${toId}`}
-          type="date"
-          className={inputClass}
-          value={values[toId] ?? ""}
-          onChange={(e) => onChange(toId, e.target.value)}
-          aria-label={`${field.label} to`}
-        />
-      </div>
+      <DatePicker
+        key={`filter-daterange-${field.id}-${resetKey}`}
+        id={`filter-daterange-${field.id}`}
+        mode="range"
+        placeholder="Select date range"
+        onChange={(dates) => {
+          if (dates.length === 2) {
+            const [start, end] = dates;
+            onChange(fromId, start ? start.toISOString().split("T")[0] : "");
+            onChange(toId, end ? end.toISOString().split("T")[0] : "");
+          } else if (dates.length === 0) {
+            onChange(fromId, "");
+            onChange(toId, "");
+          }
+        }}
+      />
     </div>
   );
 }
@@ -214,6 +219,7 @@ export function FilterBar({
   hasActive,
   className = "",
   actions,
+  resetKey = 0,
 }: FilterBarProps) {
   if (fields.length === 0) return null;
 
@@ -248,6 +254,7 @@ export function FilterBar({
                 field={field}
                 values={values}
                 onChange={onChange}
+                resetKey={resetKey}
               />
             );
           case "text":
