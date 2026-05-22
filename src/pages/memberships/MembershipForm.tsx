@@ -51,6 +51,7 @@ export interface MembershipFormData {
   is_active: boolean;
   is_popular: boolean;
   sort_order: number;
+  tier_rank: number;
   course_ids: number[];
   course_cat_ids: number[];
   /** Percent of paid order for affiliate (0–100). */
@@ -77,6 +78,7 @@ const emptyFormData: MembershipFormData = {
   is_active: true,
   is_popular: false,
   sort_order: 0,
+  tier_rank: 0,
   course_ids: [],
   course_cat_ids: [],
   affiliate_commission: 0,
@@ -377,6 +379,17 @@ export default function MembershipForm({
                   setFormData((prev) => ({ ...prev, sort_order: Number(e.target.value) }))
                 }
                 placeholder="0"
+              />
+            </div>
+            <div>
+              <Label>Tier Rank</Label>
+              <Input
+                type="number"
+                value={formData.tier_rank}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, tier_rank: Number(e.target.value) }))
+                }
+                placeholder="1=Basic, 2=Premium, 3=Ultimate"
               />
             </div>
           </div>

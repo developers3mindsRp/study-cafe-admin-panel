@@ -18,6 +18,7 @@ export interface Plan {
     is_lifetime?: boolean;
     features: MembershipFeatures | string[];
     sort_order: number;
+    tier_rank: number;
     is_active: boolean;
     is_popular?: boolean;
     course_ids?: number[];
