@@ -9,6 +9,7 @@ import {
 } from "react";
 import axios from "axios";
 import { authApi } from "../api/auth";
+import { ensureValidAccessToken } from "../api/axios";
 import { accessTokenExpiryMs } from "../lib/accessTokenExpiry";
 import { getStoredAuth, setStoredAuth, clearStoredAuth } from "../lib/authStorage";
 import type { AdminUser, LoginCredentials, PersistedAuth } from "../types/auth";
@@ -100,33 +101,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   useEffect(() => {
+    let cancelled = false;
     const stored = getStoredAuth();
     if (!stored) {
       setIsInitialized(true);
       setIsLoading(false);
       return;
     }
-    // Restore token immediately so axios interceptor can attach it
     setToken(stored.token);
-    // Re-fetch fresh user + permissions from server on every app load
-    authApi
-      .getMe()
-      .then((freshUser) => {
+
+    void (async () => {
+      try {
+        const accessToken = (await ensureValidAccessToken()) ?? stored.token;
+        if (cancelled) return;
+        setToken(accessToken);
+
+        const freshUser = await authApi.getMe();
+        if (cancelled) return;
+
         const user = {
           ...freshUser,
           id: String(freshUser.id),
           permissions: freshUser.permissions ?? [],
         };
-        const jwtExpMs = accessTokenExpiryMs(stored.token);
+        const latest = getStoredAuth();
+        const activeToken = latest?.token ?? accessToken;
+        const jwtExpMs = accessTokenExpiryMs(activeToken);
         setStoredAuth({
-          token: stored.token,
+          token: activeToken,
           user,
-          expiresAt: jwtExpMs ?? stored.expiresAt,
+          refreshToken: latest?.refreshToken ?? stored.refreshToken,
+          expiresAt: jwtExpMs ?? latest?.expiresAt ?? stored.expiresAt,
         });
         setUser(user);
-      })
-      .catch((err: unknown) => {
-        // Only treat real auth failures as logout; network errors keep cached session.
+      } catch (err: unknown) {
+        if (cancelled) return;
         if (axios.isAxiosError(err) && err.response?.status === 401) {
           clearStoredAuth();
           setToken(null);
@@ -134,12 +143,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return;
         }
         setUser(stored.user);
-      })
-      .finally(() => {
-        setIsInitialized(true);
-        setIsLoading(false);
-      });
+      } finally {
+        if (!cancelled) {
+          setIsInitialized(true);
+          setIsLoading(false);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
+
+  /** Keep access JWT fresh while the tab is open (idle admin sessions). */
+  useEffect(() => {
+    if (!token) return;
+
+    const refreshIfNeeded = () => {
+      void ensureValidAccessToken().then((next) => {
+        if (next) setToken(next);
+      });
+    };
+
+    const interval = window.setInterval(refreshIfNeeded, 60_000);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") refreshIfNeeded();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [token]);
 
   const value = useMemo<AuthContextValue>(
     () => ({
