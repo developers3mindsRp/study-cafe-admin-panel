@@ -1,10 +1,15 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from "axios";
+import { accessTokenExpiryMs } from "../lib/accessTokenExpiry";
 import {
   clearStoredAuth,
+  getStoredAuth,
   getStoredRefreshToken,
   getStoredToken,
   updateStoredAccessToken,
 } from "../lib/authStorage";
+
+/** Refresh access JWT this many ms before it expires so idle tabs stay signed in. */
+const ACCESS_TOKEN_REFRESH_BUFFER_MS = 5 * 60 * 1000;
 
 const baseURL =
   typeof import.meta !== "undefined" && import.meta.env?.VITE_API_BASE_URL
@@ -53,6 +58,24 @@ function postAuthRefresh(): Promise<string | null> {
     }
   })();
   return refreshInFlight;
+}
+
+/**
+ * Renew access JWT when missing, expired, or close to expiry. Returns null if no session.
+ */
+export async function ensureValidAccessToken(): Promise<string | null> {
+  const stored = getStoredAuth();
+  if (!stored?.token) return null;
+
+  const expiresAt =
+    stored.expiresAt ?? accessTokenExpiryMs(stored.token);
+  const stillValid =
+    expiresAt != null && Date.now() < expiresAt - ACCESS_TOKEN_REFRESH_BUFFER_MS;
+  if (stillValid) return stored.token;
+
+  if (!stored.refreshToken) return stored.token;
+
+  return postAuthRefresh();
 }
 
 /**
