@@ -44,6 +44,8 @@ export interface ArticleRecord {
   created_at?: string;
   updated_at?: string;
   category_ids?: number[];
+  /** Categories with id + name (use for display; category_ids for form submit) */
+  categories?: { id: number; name: string }[];
   tag_ids?: number[];
   /** Tags with id + name (use for display; tag_ids for form submit) */
   tags?: { id: number; name: string }[];

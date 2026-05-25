@@ -188,6 +188,40 @@ export const ArticlesTable = forwardRef<DataTableRef, ArticlesTableProps>(
         render: (row: ArticleRecord) => row.author_name ?? "—",
       },
       {
+        key: "categories",
+        header: "Category",
+        sortable: false,
+        render: (row: ArticleRecord) =>
+          row.categories && row.categories.length > 0 ? (
+            <div className="flex flex-wrap gap-1">
+              {row.categories.map((cat) => (
+                <Badge key={cat.id} size="sm" color="primary">
+                  {cat.name}
+                </Badge>
+              ))}
+            </div>
+          ) : (
+            <span className="text-gray-400 text-theme-xs">—</span>
+          ),
+      },
+      {
+        key: "tags",
+        header: "Tags",
+        sortable: false,
+        render: (row: ArticleRecord) =>
+          row.tags && row.tags.length > 0 ? (
+            <div className="flex flex-wrap gap-1">
+              {row.tags.map((tag) => (
+                <Badge key={tag.id} size="sm" color="light">
+                  {tag.name}
+                </Badge>
+              ))}
+            </div>
+          ) : (
+            <span className="text-gray-400 text-theme-xs">—</span>
+          ),
+      },
+      {
         key: "status",
         header: "Status",
         sortable: true,
