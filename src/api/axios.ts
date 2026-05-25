@@ -11,10 +11,9 @@ import {
 /** Refresh access JWT this many ms before it expires so idle tabs stay signed in. */
 const ACCESS_TOKEN_REFRESH_BUFFER_MS = 5 * 60 * 1000;
 
-const baseURL =
-  typeof import.meta !== "undefined" && import.meta.env?.VITE_API_BASE_URL
-    ? String(import.meta.env.VITE_API_BASE_URL).replace(/\/$/, "")
-    : "/api";
+import { getApiBaseUrl } from "../config/env";
+
+const baseURL = getApiBaseUrl();
 
 export const api = axios.create({
   baseURL,
