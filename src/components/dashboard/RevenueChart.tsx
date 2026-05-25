@@ -38,7 +38,7 @@ function ChartSkeleton() {
 
 export default function RevenueChart({ data, loading = false, period }: RevenueChartProps) {
   const { categories, revenueSeries, enrollmentSeries } = useMemo(() => {
-    if (!data) return { categories: [], revenueSeries: [], enrollmentSeries: [] };
+    if (!data) return { categories: [] as string[], revenueSeries: [] as number[], enrollmentSeries: [] as number[] };
     return {
       categories: data.map((d) => d.label),
       revenueSeries: data.map((d) => Math.round(d.revenue / 1000)),
@@ -46,7 +46,7 @@ export default function RevenueChart({ data, loading = false, period }: RevenueC
     };
   }, [data]);
 
-  const options: ApexOptions = {
+  const options = useMemo<ApexOptions>(() => ({
     chart: {
       fontFamily: "Outfit, sans-serif",
       type: "area",
@@ -56,7 +56,6 @@ export default function RevenueChart({ data, loading = false, period }: RevenueC
       animations: {
         enabled: true,
         speed: 400,
-        animateGradually: { enabled: true, delay: 80 },
         dynamicAnimation: { enabled: true, speed: 300 },
       },
     },
@@ -68,9 +67,8 @@ export default function RevenueChart({ data, loading = false, period }: RevenueC
     fill: {
       type: "gradient",
       gradient: {
-        opacityFrom: 0.45,
-        opacityTo: 0.02,
-        shadeIntensity: 0.5,
+        opacityFrom: 0.4,
+        opacityTo: 0.0,
       },
     },
     dataLabels: { enabled: false },
@@ -80,7 +78,6 @@ export default function RevenueChart({ data, loading = false, period }: RevenueC
       horizontalAlign: "right",
       fontFamily: "Outfit",
       fontSize: "13px",
-      markers: { size: 6 },
     },
     markers: {
       size: 0,
@@ -97,23 +94,12 @@ export default function RevenueChart({ data, loading = false, period }: RevenueC
       },
       tooltip: { enabled: false },
     },
-    yaxis: [
-      {
-        title: { text: undefined },
-        labels: {
-          style: { fontSize: "12px", colors: ["#98a2b3"] },
-          formatter: (val) => `₹${val}K`,
-        },
+    yaxis: {
+      labels: {
+        style: { fontSize: "12px", colors: ["#98a2b3"] },
+        formatter: (val: number) => `₹${val}K`,
       },
-      {
-        opposite: true,
-        title: { text: undefined },
-        labels: {
-          style: { fontSize: "12px", colors: ["#98a2b3"] },
-          formatter: (val) => `${val}`,
-        },
-      },
-    ],
+    },
     grid: {
       borderColor: "rgba(0,0,0,0.06)",
       strokeDashArray: 4,
@@ -126,16 +112,16 @@ export default function RevenueChart({ data, loading = false, period }: RevenueC
       intersect: false,
       theme: "light",
       y: [
-        { formatter: (val) => `₹${(val * 1000).toLocaleString("en-IN")}` },
-        { formatter: (val) => `${val} enrollments` },
+        { formatter: (val: number) => `₹${(val * 1000).toLocaleString("en-IN")}` },
+        { formatter: (val: number) => `${val} enrollments` },
       ],
     },
-  };
+  }), [categories]);
 
-  const series = [
+  const series = useMemo(() => [
     { name: "Revenue", data: revenueSeries },
     { name: "Enrollments", data: enrollmentSeries },
-  ];
+  ], [revenueSeries, enrollmentSeries]);
 
   return (
     <div className="rounded-2xl border border-gray-200 bg-white px-5 pb-3 pt-5 shadow-theme-xs dark:border-gray-800 dark:bg-white/[0.03] sm:px-6 sm:pt-6">

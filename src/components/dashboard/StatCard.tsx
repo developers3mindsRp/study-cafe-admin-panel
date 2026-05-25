@@ -14,39 +14,38 @@ interface StatCardProps extends StatCardData {
   loading?: boolean;
 }
 
-const iconConfig: Record<
-  StatIconKey,
-  { icon: React.ReactNode; bg: string; color: string }
-> = {
+type IconMeta = { bg: string; color: string; IconComponent: React.FC<{ className?: string }> };
+
+const ICON_META: Record<StatIconKey, IconMeta> = {
   users: {
-    icon: <GroupIcon className="size-5" />,
+    IconComponent: GroupIcon,
     bg: "bg-brand-50 dark:bg-brand-500/15",
     color: "text-brand-500 dark:text-brand-400",
   },
   courses: {
-    icon: <BoxIconLine className="size-5" />,
-    bg: "bg-violet-50 dark:bg-violet-500/15",
-    color: "text-violet-500 dark:text-violet-400",
-  },
-  articles: {
-    icon: <PageIcon className="size-5" />,
+    IconComponent: BoxIconLine,
     bg: "bg-orange-50 dark:bg-orange-500/15",
     color: "text-orange-500 dark:text-orange-400",
   },
+  articles: {
+    IconComponent: PageIcon,
+    bg: "bg-blue-light-50 dark:bg-blue-light-500/15",
+    color: "text-blue-light-600 dark:text-blue-light-400",
+  },
   revenue: {
-    icon: <IndianRupee className="size-5" />,
+    IconComponent: IndianRupee,
     bg: "bg-success-50 dark:bg-success-500/15",
     color: "text-success-600 dark:text-success-500",
   },
   memberships: {
-    icon: <ShootingStarIcon className="size-5" />,
-    bg: "bg-yellow-50 dark:bg-yellow-500/15",
-    color: "text-yellow-600 dark:text-yellow-400",
+    IconComponent: ShootingStarIcon,
+    bg: "bg-brand-50 dark:bg-brand-500/15",
+    color: "text-brand-600 dark:text-brand-400",
   },
   orders: {
-    icon: <DollarLineIcon className="size-5" />,
-    bg: "bg-blue-light-50 dark:bg-blue-light-500/15",
-    color: "text-blue-light-600 dark:text-blue-light-400",
+    IconComponent: DollarLineIcon,
+    bg: "bg-gray-100 dark:bg-gray-800",
+    color: "text-gray-600 dark:text-gray-400",
   },
 };
 
@@ -73,7 +72,7 @@ export default function StatCard({
 }: StatCardProps) {
   if (loading) return <StatCardSkeleton />;
 
-  const { icon, bg, color } = iconConfig[iconKey] ?? iconConfig.orders;
+  const { IconComponent, bg, color } = ICON_META[iconKey] ?? ICON_META.orders;
   const isUp = delta >= 0;
 
   return (
@@ -82,7 +81,7 @@ export default function StatCard({
       <div
         className={`flex h-10 w-10 items-center justify-center rounded-xl ${bg} ${color}`}
       >
-        {icon}
+        <IconComponent className="size-5" />
       </div>
 
       {/* Content */}
