@@ -924,6 +924,7 @@ export default function ArticleForm({
               >
                 {loading ? "Saving…" : "Publish now"}
               </button>
+              {/* Preview button hidden — use Live Preview instead
               <button
                 type="button"
                 disabled={loading}
@@ -932,6 +933,7 @@ export default function ArticleForm({
               >
                 Preview
               </button>
+              */}
               {mode === "edit" && articleId && (
                 <button
                   type="button"

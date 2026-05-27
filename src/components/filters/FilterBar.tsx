@@ -167,6 +167,51 @@ function TextField({
   );
 }
 
+function MonthSelectField({
+  field,
+  value,
+  onChange,
+  resetKey = 0,
+}: {
+  field: Extract<FilterFieldDef, { type: "month-select" }>;
+  value: string;
+  onChange: (id: string, v: string) => void;
+  resetKey?: number;
+}) {
+  const fromId = field.fromId ?? `${field.id}_from`;
+  const toId = field.toId ?? `${field.id}_to`;
+
+  const handleChange = (monthValue: string) => {
+    if (!monthValue) {
+      onChange(fromId, "");
+      onChange(toId, "");
+      return;
+    }
+    const [year, month] = monthValue.split("-").map(Number);
+    const from = new Date(year, month - 1, 1);
+    const to = new Date(year, month, 0);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    onChange(fromId, `${from.getFullYear()}-${pad(from.getMonth() + 1)}-${pad(from.getDate())}`);
+    onChange(toId, `${to.getFullYear()}-${pad(to.getMonth() + 1)}-${pad(to.getDate())}`);
+  };
+
+  return (
+    <div key={resetKey} className="flex min-w-[160px] flex-col gap-1.5">
+      <label htmlFor={`filter-${field.id}`} className={labelClass}>
+        {field.label}
+      </label>
+      <input
+        key={`month-${field.id}-${resetKey}`}
+        id={`filter-${field.id}`}
+        type="month"
+        className={inputClass}
+        defaultValue={value}
+        onChange={(e) => handleChange(e.target.value)}
+      />
+    </div>
+  );
+}
+
 function NumberRangeField({
   field,
   values,
@@ -273,6 +318,16 @@ export function FilterBar({
                 field={field}
                 values={values}
                 onChange={onChange}
+              />
+            );
+          case "month-select":
+            return (
+              <MonthSelectField
+                key={field.id}
+                field={field}
+                value={values[field.id] ?? ""}
+                onChange={onChange}
+                resetKey={resetKey}
               />
             );
           default:

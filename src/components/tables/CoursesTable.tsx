@@ -56,6 +56,16 @@ function matchesPublication(c: Course, publication: PublicationFilter): boolean 
   return !c.is_published;
 }
 
+function matchesStartDateRange(c: Course, from: string, to: string): boolean {
+  if (!from && !to) return true;
+  if (!c.start_date) return false;
+  const t = Date.parse(c.start_date);
+  if (!Number.isFinite(t)) return false;
+  if (from && t < Date.parse(from)) return false;
+  if (to && t > Date.parse(to) + 86399999) return false;
+  return true;
+}
+
 function parseTimeMs(value: string | undefined): number {
   if (!value) return 0;
   const t = Date.parse(value);
@@ -99,6 +109,8 @@ export interface CoursesTableProps {
   filterPriceRange?: PriceRangeFilter;
   filterPublication?: PublicationFilter;
   filterSortBy?: CourseSortFilter;
+  filterStartDateFrom?: string;
+  filterStartDateTo?: string;
 }
 
 const columns = [
@@ -200,6 +212,8 @@ export function CoursesTable({
   filterPriceRange = "",
   filterPublication = "",
   filterSortBy = "",
+  filterStartDateFrom = "",
+  filterStartDateTo = "",
 }: CoursesTableProps) {
   const fetchCoursesForTable = useCallback(
     async (params: DataTableFetchParams): Promise<DataTableFetchResult<Course>> => {
@@ -220,7 +234,8 @@ export function CoursesTable({
         (c) =>
           matchesCategory(c, filterCategoryId) &&
           matchesPriceRange(c, filterPriceRange) &&
-          matchesPublication(c, filterPublication)
+          matchesPublication(c, filterPublication) &&
+          matchesStartDateRange(c, filterStartDateFrom, filterStartDateTo)
       );
 
       filtered = sortCoursesList(filtered, filterSortBy);
@@ -233,10 +248,10 @@ export function CoursesTable({
         meta: toMeta(filtered.length, page, limit),
       };
     },
-    [filterCategoryId, filterPriceRange, filterPublication, filterSortBy]
+    [filterCategoryId, filterPriceRange, filterPublication, filterSortBy, filterStartDateFrom, filterStartDateTo]
   );
 
-  const filterKey = `${filterCategoryId}|${filterPriceRange}|${filterPublication}|${filterSortBy}`;
+  const filterKey = `${filterCategoryId}|${filterPriceRange}|${filterPublication}|${filterSortBy}|${filterStartDateFrom}|${filterStartDateTo}`;
 
   return (
     <DataTable<Course>

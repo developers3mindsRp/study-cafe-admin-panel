@@ -2,7 +2,7 @@
  * Articles table using the reusable DataTable with server-side pagination, sort, and search.
  */
 
-import { forwardRef, useCallback } from "react";
+import { forwardRef, useCallback, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { DataTable, type DataTableRef } from "./data-table";
 import Badge from "../ui/badge/Badge";
@@ -20,6 +20,7 @@ import {
   fetchArticlesPaginated,
   fetchCourts,
   fetchTags,
+  generateArticlePreviewLink,
   type ArticleRecord,
 } from "../../api/articles";
 import type { DataTableFetchParams, DataTableFetchResult } from "./data-table/DataTable.types";
@@ -66,6 +67,19 @@ export const ArticlesTable = forwardRef<DataTableRef, ArticlesTableProps>(
     ref
   ) {
     const navigate = useNavigate();
+    const [livePreviewLoadingId, setLivePreviewLoadingId] = useState<number | string | null>(null);
+
+    const handleLivePreview = useCallback(async (id: number | string) => {
+      setLivePreviewLoadingId(id);
+      try {
+        const { previewUrl } = await generateArticlePreviewLink(Number(id));
+        window.open(previewUrl, "_blank", "noopener,noreferrer");
+      } catch {
+        alert("Could not generate preview link. Please try again.");
+      } finally {
+        setLivePreviewLoadingId(null);
+      }
+    }, []);
 
     const fetchData = useCallback(
       (params: DataTableFetchParams): Promise<DataTableFetchResult<ArticleRecord>> =>
@@ -142,6 +156,7 @@ export const ArticlesTable = forwardRef<DataTableRef, ArticlesTableProps>(
         },
       });
     }, [navigate]);
+    void handlePreview; // kept for internal preview navigation — not exposed in table UI
 
     const columns = [
       {
@@ -272,12 +287,13 @@ export const ArticlesTable = forwardRef<DataTableRef, ArticlesTableProps>(
             {row.slug ? (
               <button
                 type="button"
-                onClick={() => { void handlePreview(row.id); }}
-                className="inline-flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-2 text-sm text-gray-600 transition hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
-                title="Preview"
+                disabled={livePreviewLoadingId === row.id}
+                onClick={() => { void handleLivePreview(row.id); }}
+                className="inline-flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-2 text-sm text-gray-600 transition hover:bg-gray-100 hover:text-gray-900 disabled:opacity-50 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
+                title="Live Preview"
               >
                 <EyeIcon className="size-4 shrink-0 fill-current" />
-                Preview
+                {livePreviewLoadingId === row.id ? "Loading…" : "Live Preview ↗"}
               </button>
             ) : null}
             <Link
