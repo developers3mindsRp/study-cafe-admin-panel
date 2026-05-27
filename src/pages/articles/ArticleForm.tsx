@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, type FormEvent } from "react";
-import { Link, useNavigate, useLocation, useBlocker, useBeforeUnload } from "react-router";
-import { PREVIEW_STATE_KEY, RESTORE_STATE_KEY } from "./ArticlePreview";
+import { Link, useLocation, useBlocker, useBeforeUnload } from "react-router";
+import { RESTORE_STATE_KEY } from "./ArticlePreview";
 import Label from "../../components/form/Label";
 import Input from "../../components/form/input/InputField";
 import TextArea from "../../components/form/input/TextArea";
@@ -217,7 +217,6 @@ export default function ArticleForm({
   loading = false,
   taxonomyOptions,
 }: ArticleFormProps) {
-  const navigate = useNavigate();
   const location = useLocation();
 
   // Check if we're returning from preview with restored data (must preserve when Back to Editor)
@@ -274,18 +273,7 @@ export default function ArticleForm({
     }
   }, [blocker, blocker.state]);
 
-  const handlePreview = () => {
-    const returnPath = mode === "edit" && articleId
-      ? `/articles/${articleId}/edit`
-      : "/articles/create";
-    navigate("/articles/preview", {
-      state: {
-        [PREVIEW_STATE_KEY]: formData,
-        returnPath,
-        taxonomyOptions: taxonomyOptions ?? undefined,
-      },
-    });
-  };
+
 
   const [livePreviewLoading, setLivePreviewLoading] = useState(false);
 
