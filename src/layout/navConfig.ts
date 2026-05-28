@@ -49,9 +49,9 @@ export const mainNavItemsConfig: NavItemConfig[] = [
     subItems: [
       { name: "List", path: "/courses", requiredPermission: ["courses:list", "courses:view"] },
       { name: "Create", path: "/courses/create", requiredPermission: ["courses:create"] },
-      { name: "Categories", path: "/courses/categories", requiredPermission: ["courses:list", "courses:view"] },
+      { name: "Categories", path: "/courses/categories", requiredPermission: ["course_categories:list", "courses:list"] },
       { name: "Page Settings", path: "/courses/settings", requiredPermission: ["courses:edit"] },
-      { name: "Reviews", path: "/courses/reviews", requiredPermission: ["courses:list", "courses:view"] },
+      { name: "Reviews", path: "/courses/reviews", requiredPermission: ["course_reviews:list", "courses:list"] },
     ],
     requiredPermission: ["courses:list", "courses:view", "courses:create", "courses:edit", "courses:delete"],
   },

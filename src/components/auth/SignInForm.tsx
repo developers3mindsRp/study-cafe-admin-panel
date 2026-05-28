@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, useSearchParams } from "react-router";
+import { useNavigate } from "react-router";
 import { EyeCloseIcon, EyeIcon } from "../../icons";
 import Label from "../form/Label";
 import Input from "../form/input/InputField";
@@ -13,8 +13,6 @@ export default function SignInForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const redirectTo = searchParams.get("redirect") ?? "/";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,7 +24,7 @@ export default function SignInForm() {
     setIsSubmitting(true);
     try {
       await login({ email: email.trim(), password });
-      navigate(redirectTo, { replace: true });
+      navigate("/", { replace: true });
     } catch (err: unknown) {
       const message =
         err && typeof err === "object" && "response" in err

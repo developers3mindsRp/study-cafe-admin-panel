@@ -50,9 +50,9 @@ export const mainNavItemsConfig: NavItemConfig[] = [
     subItems: [
       { name: "List", path: "/courses", requiredPermission: ["courses:list", "courses:view"] },
       { name: "Create", path: "/courses/create", requiredPermission: ["courses:create"] },
-      { name: "Categories", path: "/courses/categories", requiredPermission: ["courses:list", "courses:view"] },
-      { name: "Page Settings", path: "/courses/settings", requiredPermission: ["courses:edit"] },
-      { name: "Reviews", path: "/courses/reviews", requiredPermission: ["courses:list", "courses:view"] },
+      { name: "Categories", path: "/courses/categories", requiredPermission: ["course_categories:list", "course_categories:view"] },
+      { name: "Common Sections", path: "/courses/settings", requiredPermission: ["courses:edit"] },
+      { name: "Reviews", path: "/courses/reviews", requiredPermission: ["course_reviews:list", "course_reviews:view"] },
       { name: "Marketing Pages", path: "/marketing-pages", requiredPermission: ["marketing_pages:list", "marketing_pages:view"] },
     ],
     requiredPermission: [
@@ -66,6 +66,10 @@ export const mainNavItemsConfig: NavItemConfig[] = [
       "marketing_pages:create",
       "marketing_pages:edit",
       "marketing_pages:delete",
+      "course_categories:list",
+      "course_categories:view",
+      "course_reviews:list",
+      "course_reviews:view",
     ],
   },
   {
@@ -119,7 +123,7 @@ export const mainNavItemsConfig: NavItemConfig[] = [
     iconKey: "docs",
     name: "Media",
     path: "/media",
-    requiredPermission: ["content:list", "content:view", "content:edit"],
+    requiredPermission: ["media:list", "media:view", "media:edit"],
   },
   {
     iconKey: "page",

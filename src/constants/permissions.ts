@@ -65,6 +65,25 @@ export const PERM_COURSES_CREATE = "courses:create";
 export const PERM_COURSES_EDIT = "courses:edit";
 export const PERM_COURSES_DELETE = "courses:delete";
 
+// Course Categories
+export const PERM_COURSE_CATEGORIES_LIST = "course_categories:list";
+export const PERM_COURSE_CATEGORIES_VIEW = "course_categories:view";
+export const PERM_COURSE_CATEGORIES_CREATE = "course_categories:create";
+export const PERM_COURSE_CATEGORIES_EDIT = "course_categories:edit";
+export const PERM_COURSE_CATEGORIES_DELETE = "course_categories:delete";
+
+// Course Reviews
+export const PERM_COURSE_REVIEWS_LIST = "course_reviews:list";
+export const PERM_COURSE_REVIEWS_VIEW = "course_reviews:view";
+export const PERM_COURSE_REVIEWS_EDIT = "course_reviews:edit";
+export const PERM_COURSE_REVIEWS_DELETE = "course_reviews:delete";
+
+// Media
+export const PERM_MEDIA_LIST = "media:list";
+export const PERM_MEDIA_VIEW = "media:view";
+export const PERM_MEDIA_EDIT = "media:edit";
+export const PERM_MEDIA_DELETE = "media:delete";
+
 // Marketing pages
 export const PERM_MARKETING_PAGES_LIST = "marketing_pages:list";
 export const PERM_MARKETING_PAGES_VIEW = "marketing_pages:view";

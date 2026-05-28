@@ -82,12 +82,14 @@ export default function AdminUserForm({
     return [...new Set(perms)];
   };
 
+  /** Ensure admin:access is always present in a permissions array. */
+  const withAdminAccess = (perms: string[]): string[] =>
+    perms.includes("admin:access") ? perms : ["admin:access", ...perms];
+
   const getInitialPermissions = (): string[] => {
-    // If editing, always use what came from the server
-    if (mode === "edit") return defaultValues?.permission_overrides ?? [];
-    // Creating: admin role → pre-check all; others → keep provided or empty
+    if (mode === "edit") return withAdminAccess(defaultValues?.permission_overrides ?? []);
     if (ALL_PERMS_DEFAULT_ROLES.includes(initialRoleName)) return allPermsInitial();
-    return defaultValues?.permission_overrides ?? [];
+    return withAdminAccess(defaultValues?.permission_overrides ?? []);
   };
 
   const [formData, setFormData] = useState<AdminUserFormData>({
@@ -161,7 +163,7 @@ export default function AdminUserForm({
       });
       setFormData((prev) => ({ ...prev, permission_overrides: [...new Set(allPerms)] }));
     } else {
-      setFormData((prev) => ({ ...prev, permission_overrides: [] }));
+      setFormData((prev) => ({ ...prev, permission_overrides: ["admin:access"] }));
     }
   };
 
@@ -170,7 +172,7 @@ export default function AdminUserForm({
     const modulesAllMax = MODULE_LEVELS.every(
       (m) => moduleLevelRank(levelByModule[m.key] ?? "none") >= moduleLevelRank(maxLevelForModule(m.key))
     );
-    return modulesAllMax && perms.includes("admin:access") && perms.includes("newsletter:send");
+    return modulesAllMax && perms.includes("newsletter:send");
   }, [levelByModule, formData.permission_overrides]);
 
   const isRowAllChecked = (moduleKey: string) => {
@@ -210,10 +212,9 @@ export default function AdminUserForm({
       // admin: pre-check everything
       newPerms = computeAllPerms();
     } else {
-      // other roles: keep existing or seed with admin:access
-      newPerms = formData.permission_overrides.length > 0
-        ? formData.permission_overrides
-        : ["admin:access"];
+      newPerms = withAdminAccess(
+        formData.permission_overrides.length > 0 ? formData.permission_overrides : []
+      );
     }
     setFormData((prev) => ({ ...prev, role_id: newRoleId, permission_overrides: newPerms }));
   };
@@ -233,11 +234,7 @@ export default function AdminUserForm({
 
   const isSubmitDisabled =
     isSubmitting ||
-    (mode === "create" && (!formData.email || !formData.password)) ||
-    (mode === "create" &&
-      !isFullAccessRole &&
-      (!formData.permission_overrides?.length ||
-        !formData.permission_overrides?.includes("admin:access")));
+    (mode === "create" && (!formData.email || !formData.password));
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -404,44 +401,6 @@ export default function AdminUserForm({
                       );
                     })}
 
-                    {/* admin:access row — single toggle in the View column */}
-                    <tr className="bg-gray-50/40 transition-colors hover:bg-gray-50/80 dark:bg-gray-800/20 dark:hover:bg-gray-800/50">
-                      <td className="py-2.5 pl-4 pr-2">
-                        <span className="text-theme-sm font-medium text-gray-700 dark:text-gray-300">
-                          Admin Panel Access
-                        </span>
-                        <p className="text-theme-xs text-gray-400 dark:text-gray-500">admin:access</p>
-                      </td>
-                      {/* View column — the actual toggle */}
-                      <td className="px-3 py-2.5 text-center">
-                        <input
-                          type="checkbox"
-                          id="admin_access"
-                          checked={formData.permission_overrides?.includes("admin:access") ?? false}
-                          onChange={(e) => toggleSinglePerm("admin:access", e.target.checked)}
-                          className="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
-                          aria-label="Admin Panel Access"
-                        />
-                      </td>
-                      {/* Edit, Add, Delete — not applicable */}
-                      <td className="px-3 py-2.5 text-center">
-                        <span className="text-gray-300 dark:text-gray-600">—</span>
-                      </td>
-                      <td className="px-3 py-2.5 text-center">
-                        <span className="text-gray-300 dark:text-gray-600">—</span>
-                      </td>
-                      {/* All = same as View for this row */}
-                      <td className="px-3 py-2.5 text-center">
-                        <input
-                          type="checkbox"
-                          checked={formData.permission_overrides?.includes("admin:access") ?? false}
-                          onChange={(e) => toggleSinglePerm("admin:access", e.target.checked)}
-                          className="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
-                          aria-label="Admin Panel Access all"
-                        />
-                      </td>
-                    </tr>
-
                     {/* newsletter:send row */}
                     <tr className="bg-gray-50/40 transition-colors hover:bg-gray-50/80 dark:bg-gray-800/20 dark:hover:bg-gray-800/50">
                       <td className="py-2.5 pl-4 pr-2">
@@ -480,11 +439,6 @@ export default function AdminUserForm({
                 </table>
               </div>
 
-              {!formData.permission_overrides?.includes("admin:access") && (
-                <p className="mt-2 text-theme-xs text-amber-600 dark:text-amber-400">
-                  "Admin Panel Access" must be checked so this user can sign in to the panel.
-                </p>
-              )}
             </div>
           )}
 

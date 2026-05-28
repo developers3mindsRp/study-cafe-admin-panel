@@ -236,13 +236,13 @@ const router = createBrowserRouter(
           <Route path="/courses/settings" element={<RequirePermissionRoute permissions={["courses:edit"]} />}>
             <Route index element={<CoursePageSettings />} />
           </Route>
-          <Route path="/courses/categories" element={<RequirePermissionRoute permissions={["courses:list"]} />}>
+          <Route path="/courses/categories" element={<RequirePermissionRoute permissions={["course_categories:list", "courses:list"]} />}>
             <Route index element={<CourseCatList />} />
           </Route>
-          <Route path="/courses/categories/create" element={<RequirePermissionRoute permissions={["courses:create"]} />}>
+          <Route path="/courses/categories/create" element={<RequirePermissionRoute permissions={["course_categories:create", "courses:create"]} />}>
             <Route index element={<CourseCatCreate />} />
           </Route>
-          <Route path="/courses/categories/:id/edit" element={<RequirePermissionRoute permissions={["courses:edit"]} />}>
+          <Route path="/courses/categories/:id/edit" element={<RequirePermissionRoute permissions={["course_categories:edit", "courses:edit"]} />}>
             <Route index element={<CourseCatEdit />} />
           </Route>
           <Route path="/courses/preview" element={<RequirePermissionRoute permissions={["courses:view"]} />}>
@@ -251,7 +251,7 @@ const router = createBrowserRouter(
           <Route path="/live-sessions" element={<RequirePermissionRoute permissions={["live_sessions:list"]} />}>
             <Route index element={<LiveSessions />} />
           </Route>
-          <Route path="/courses/reviews" element={<RequirePermissionRoute permissions={["courses:list", "courses:view"]} />}>
+          <Route path="/courses/reviews" element={<RequirePermissionRoute permissions={["course_reviews:list", "course_reviews:view", "courses:list"]} />}>
             <Route index element={<CourseReviewList />} />
           </Route>
 

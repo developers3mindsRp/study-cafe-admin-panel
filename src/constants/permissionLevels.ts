@@ -117,6 +117,16 @@ export const MODULE_LEVELS: ModuleConfig[] = [
     ],
   },
   {
+    key: "media",
+    name: "Media",
+    levels: [
+      { value: "none", label: "None", permissions: [] },
+      { value: "view", label: "View only", permissions: ["media:list", "media:view"] },
+      { value: "edit", label: "Edit (includes view)", permissions: ["media:list", "media:view", "media:edit"] },
+      { value: "delete", label: "Delete / Full", permissions: ["media:list", "media:view", "media:edit", "media:delete"] },
+    ],
+  },
+  {
     key: "courses",
     name: "Courses",
     levels: [
@@ -125,6 +135,38 @@ export const MODULE_LEVELS: ModuleConfig[] = [
       { value: "edit", label: "Edit (includes view)", permissions: ["courses:list", "courses:view", "courses:edit"] },
       { value: "create", label: "Create (includes view, edit)", permissions: ["courses:list", "courses:view", "courses:edit", "courses:create"] },
       { value: "delete", label: "Delete / Full", permissions: ["courses:list", "courses:view", "courses:edit", "courses:create", "courses:delete"] },
+    ],
+  },
+  {
+    key: "marketing_pages",
+    name: "Courses → Marketing Pages",
+    levels: [
+      { value: "none", label: "None", permissions: [] },
+      { value: "view", label: "View only", permissions: ["marketing_pages:list", "marketing_pages:view"] },
+      { value: "edit", label: "Edit (includes view)", permissions: ["marketing_pages:list", "marketing_pages:view", "marketing_pages:edit"] },
+      { value: "create", label: "Create (includes view, edit)", permissions: ["marketing_pages:list", "marketing_pages:view", "marketing_pages:edit", "marketing_pages:create"] },
+      { value: "delete", label: "Delete / Full", permissions: ["marketing_pages:list", "marketing_pages:view", "marketing_pages:edit", "marketing_pages:create", "marketing_pages:delete"] },
+    ],
+  },
+  {
+    key: "course_categories",
+    name: "Courses → Categories",
+    levels: [
+      { value: "none", label: "None", permissions: [] },
+      { value: "view", label: "View only", permissions: ["course_categories:list", "course_categories:view"] },
+      { value: "edit", label: "Edit (includes view)", permissions: ["course_categories:list", "course_categories:view", "course_categories:edit"] },
+      { value: "create", label: "Create (includes view, edit)", permissions: ["course_categories:list", "course_categories:view", "course_categories:edit", "course_categories:create"] },
+      { value: "delete", label: "Delete / Full", permissions: ["course_categories:list", "course_categories:view", "course_categories:edit", "course_categories:create", "course_categories:delete"] },
+    ],
+  },
+  {
+    key: "course_reviews",
+    name: "Courses → Reviews",
+    levels: [
+      { value: "none", label: "None", permissions: [] },
+      { value: "view", label: "View only", permissions: ["course_reviews:list", "course_reviews:view"] },
+      { value: "edit", label: "Edit (includes view)", permissions: ["course_reviews:list", "course_reviews:view", "course_reviews:edit"] },
+      { value: "delete", label: "Delete / Full", permissions: ["course_reviews:list", "course_reviews:view", "course_reviews:edit", "course_reviews:delete"] },
     ],
   },
   {
