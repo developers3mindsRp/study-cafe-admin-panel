@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from "react";
+import { toast } from "react-toastify";
 import { useEditor, EditorContent } from "@tiptap/react";
+import { uploadMedia } from "../../api/uploads";
+import MediaPickerModal from "../media/MediaPickerModal";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import Underline from "@tiptap/extension-underline";
@@ -24,6 +27,8 @@ interface ArticleEditorProps {
 function Toolbar({ editor }: { editor: Editor | null }) {
   const [linkUrl, setLinkUrl] = useState("");
   const [showLinkInput, setShowLinkInput] = useState(false);
+  const [mediaOpen, setMediaOpen] = useState(false);
+  const [imageUploading, setImageUploading] = useState(false);
   const linkInputRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -67,24 +72,43 @@ function Toolbar({ editor }: { editor: Editor | null }) {
     fileInputRef.current?.click();
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const insertImage = (url: string) => {
+    // @ts-ignore - tiptap-extension-resize-image doesn't extend ChainedCommands properly
+    editor.chain().focus().setImage({ src: url }).run();
+  };
+
+  const insertDocumentLink = (url: string, label?: string) => {
+    const text = label || url.split("/").pop() || "Download";
+    editor
+      .chain()
+      .focus()
+      .insertContent(`<a href="${url}" target="_blank" rel="noopener noreferrer">${text}</a>`)
+      .run();
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result;
-      if (typeof result === "string") {
-        // @ts-ignore - tiptap-extension-resize-image doesn't extend ChainedCommands properly
-        editor.chain().focus().setImage({ src: result }).run();
-      }
-    };
-    reader.readAsDataURL(file);
-    // Reset the input so the same file can be uploaded again if needed
     e.target.value = "";
+    setImageUploading(true);
+    try {
+      const { url } = await uploadMedia(file);
+      insertImage(url);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setImageUploading(false);
+    }
   };
 
   return (
+    <>
+    <MediaPickerModal
+      open={mediaOpen}
+      onClose={() => setMediaOpen(false)}
+      onSelectImage={insertImage}
+      onSelectLink={insertDocumentLink}
+    />
     <div className="flex flex-wrap items-center gap-1 border-b border-gray-200 bg-gray-50 p-2 dark:border-gray-800 dark:bg-white/[0.03]">
       {/* Undo / Redo */}
       <button
@@ -268,23 +292,32 @@ function Toolbar({ editor }: { editor: Editor | null }) {
         )}
       </div>
 
-      {/* Image */}
+      {/* Image upload + Media library */}
       <input
         type="file"
         ref={fileInputRef}
         onChange={handleImageUpload}
-        accept="image/png, image/gif, image/jpeg, image/webp"
+        accept="image/png, image/gif, image/jpeg, image/webp, image/svg+xml"
         className="hidden"
       />
       <button
         type="button"
         onClick={addImage}
-        className="rounded p-1.5 text-gray-600 transition hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-white/10"
-        title="Upload Image"
+        disabled={imageUploading}
+        className="rounded p-1.5 text-gray-600 transition hover:bg-gray-200 disabled:opacity-40 dark:text-gray-400 dark:hover:bg-white/10"
+        title="Upload image to CDN"
       >
         <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
         </svg>
+      </button>
+      <button
+        type="button"
+        onClick={() => setMediaOpen(true)}
+        className="rounded px-2 py-1 text-xs font-medium text-gray-600 transition hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-white/10"
+        title="Media library — images, PDFs, copy link"
+      >
+        Media
       </button>
 
       <button
@@ -362,6 +395,7 @@ function Toolbar({ editor }: { editor: Editor | null }) {
         </svg>
       </button>
     </div>
+    </>
   );
 }
 
@@ -399,7 +433,7 @@ export default function ArticleEditor({
     },
     editorProps: {
       attributes: {
-        class: "px-4 py-3 min-h-[200px] focus:outline-none prose max-w-none dark:prose-invert",
+        class: "px-4 py-3 min-h-[200px] focus:outline-none",
       },
     },
   });

@@ -8,6 +8,7 @@ import {
     fetchBatchEnrollments,
     createBatch,
     deleteBatch,
+    updateBatch,
     deleteSession,
     addRecording,
     deleteRecording,
@@ -484,6 +485,10 @@ function BatchCard({ batch, courseName, onChanged }: { batch: BatchRecord; cours
     const [showEnrollments, setShowEnrollments] = useState(false);
     const [deleting, setDeleting] = useState(false);
     const [syncing, setSyncing] = useState(false);
+    const [editingDates, setEditingDates] = useState(false);
+    const [editStart, setEditStart] = useState(batch.start_date ? batch.start_date.slice(0, 10) : "");
+    const [editEnd, setEditEnd] = useState(batch.end_date ? batch.end_date.slice(0, 10) : "");
+    const [savingDates, setSavingDates] = useState(false);
 
     // Group sessions by day_number
     const dayGroups: { dayNumber: number; dayTitle: string; sessions: SessionRecord[] }[] = [];
@@ -523,6 +528,22 @@ function BatchCard({ batch, courseName, onChanged }: { batch: BatchRecord; cours
         }
     }
 
+    async function handleSaveDates() {
+        setSavingDates(true);
+        try {
+            await updateBatch(batch.id, {
+                start_date: editStart || null,
+                end_date: editEnd || null,
+            });
+            setEditingDates(false);
+            onChanged();
+        } catch (err: any) {
+            alert(err?.response?.data?.error || "Failed to update dates");
+        } finally {
+            setSavingDates(false);
+        }
+    }
+
     return (
         <div className="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
             <div className="flex items-center justify-between border-b border-gray-100 px-5 py-3 dark:border-gray-700">
@@ -530,7 +551,45 @@ function BatchCard({ batch, courseName, onChanged }: { batch: BatchRecord; cours
                     <h3 className="font-semibold text-gray-800 dark:text-white">{batch.name}</h3>
                     <Badge color="primary">{courseName}</Badge>
                     <span className="text-xs text-gray-500">{dayGroups.length} day{dayGroups.length !== 1 ? "s" : ""} · {totalSections} section{totalSections !== 1 ? "s" : ""}</span>
-                    {batch.start_date && <span className="text-xs text-gray-400">{fmtDate(batch.start_date)} → {fmtDate(batch.end_date)}</span>}
+                    {editingDates ? (
+                        <div className="flex items-center gap-2 flex-wrap">
+                            <div className="w-36">
+                                <CalendarPicker value={editStart} onChange={setEditStart} placeholder="Start date" />
+                            </div>
+                            <span className="text-xs text-gray-400">→</span>
+                            <div className="w-36">
+                                <CalendarPicker value={editEnd} onChange={setEditEnd} placeholder="End date" />
+                            </div>
+                            <button
+                                onClick={handleSaveDates}
+                                disabled={savingDates}
+                                className="rounded bg-brand-500 px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-600 disabled:opacity-50"
+                            >
+                                {savingDates ? "Saving..." : "Save"}
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setEditingDates(false);
+                                    setEditStart(batch.start_date ? batch.start_date.slice(0, 10) : "");
+                                    setEditEnd(batch.end_date ? batch.end_date.slice(0, 10) : "");
+                                }}
+                                className="rounded bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    ) : (
+                        <button
+                            onClick={() => setEditingDates(true)}
+                            className="flex items-center gap-1 rounded border border-gray-200 px-2 py-0.5 text-xs text-gray-500 hover:border-brand-400 hover:text-brand-600 dark:border-gray-600 dark:text-gray-400 dark:hover:text-brand-400"
+                            title="Edit dates"
+                        >
+                            {batch.start_date ? `${fmtDate(batch.start_date)} → ${fmtDate(batch.end_date)}` : "Set dates"}
+                            <svg className="size-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-1.414.586H8v-2.414a2 2 0 01.586-1.414z" />
+                            </svg>
+                        </button>
+                    )}
                     {batch.created_at && <span className="text-xs text-gray-400 italic">Created: {fmtDate(batch.created_at)}</span>}
                 </div>
                 <div className="flex gap-2">

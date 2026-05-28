@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, type FormEvent } from "react";
-import { Link, useNavigate, useLocation, useBlocker, useBeforeUnload } from "react-router";
-import { PREVIEW_STATE_KEY, RESTORE_STATE_KEY } from "./ArticlePreview";
+import { Link, useLocation, useBlocker, useBeforeUnload } from "react-router";
+import { RESTORE_STATE_KEY } from "./ArticlePreview";
 import Label from "../../components/form/Label";
 import Input from "../../components/form/input/InputField";
 import TextArea from "../../components/form/input/TextArea";
@@ -16,6 +16,7 @@ import type {
   AuthorBio,
 } from "../../components/blocks/types";
 import { slugifyForSeo, shouldResyncSlugFromSource } from "../../lib/slug";
+import { generateArticlePreviewLink } from "../../api/articles";
 
 export interface CaseCitationData {
   case_citation?: string;
@@ -216,7 +217,6 @@ export default function ArticleForm({
   loading = false,
   taxonomyOptions,
 }: ArticleFormProps) {
-  const navigate = useNavigate();
   const location = useLocation();
 
   // Check if we're returning from preview with restored data (must preserve when Back to Editor)
@@ -273,17 +273,21 @@ export default function ArticleForm({
     }
   }, [blocker, blocker.state]);
 
-  const handlePreview = () => {
-    const returnPath = mode === "edit" && articleId
-      ? `/articles/${articleId}/edit`
-      : "/articles/create";
-    navigate("/articles/preview", {
-      state: {
-        [PREVIEW_STATE_KEY]: formData,
-        returnPath,
-        taxonomyOptions: taxonomyOptions ?? undefined,
-      },
-    });
+
+
+  const [livePreviewLoading, setLivePreviewLoading] = useState(false);
+
+  const handleLivePreview = async () => {
+    if (!articleId) return;
+    setLivePreviewLoading(true);
+    try {
+      const { previewUrl } = await generateArticlePreviewLink(Number(articleId));
+      window.open(previewUrl, "_blank", "noopener,noreferrer");
+    } catch {
+      alert("Could not generate preview link. Please try again.");
+    } finally {
+      setLivePreviewLoading(false);
+    }
   };
 
   const runSubmit = (action: ArticleSubmitAction) => {
@@ -908,6 +912,7 @@ export default function ArticleForm({
               >
                 {loading ? "Saving…" : "Publish now"}
               </button>
+              {/* Preview button hidden — use Live Preview instead
               <button
                 type="button"
                 disabled={loading}
@@ -916,6 +921,17 @@ export default function ArticleForm({
               >
                 Preview
               </button>
+              */}
+              {mode === "edit" && articleId && (
+                <button
+                  type="button"
+                  disabled={livePreviewLoading}
+                  onClick={handleLivePreview}
+                  className="inline-flex w-full items-center justify-center rounded-lg px-4 py-2.5 text-sm font-medium ring-1 ring-inset ring-brand-300 bg-brand-50 text-brand-700 hover:bg-brand-100 disabled:opacity-50 dark:bg-brand-500/10 dark:text-brand-300 dark:ring-brand-500/30"
+                >
+                  {livePreviewLoading ? "Generating…" : "Live Preview ↗"}
+                </button>
+              )}
             </div>
 
             <div className="mt-6 border-t border-gray-200 pt-5 dark:border-gray-800">

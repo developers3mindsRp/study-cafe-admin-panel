@@ -42,6 +42,16 @@ export type FilterFieldDef =
       /** id for the max value; defaults to `${id}_max` */
       maxId?: string;
       placeholder?: string;
+    }
+  | {
+      type: "month-select";
+      id: string;
+      label: string;
+      /** id for the first-day-of-month value; defaults to `${id}_from` */
+      fromId?: string;
+      /** id for the last-day-of-month value; defaults to `${id}_to` */
+      toId?: string;
+      placeholder?: string;
     };
 
 export type FilterValues = Record<string, string>;

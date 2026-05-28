@@ -564,7 +564,7 @@ function renderLegacyContentWithRelated(
       parts.push(
         <div
           key={`html-${key++}`}
-          className="prose prose-sm dark:prose-invert max-w-none text-gray-800 dark:text-white/90"
+          className="article-content-preview max-w-none text-gray-800 dark:text-white/90"
           dangerouslySetInnerHTML={{ __html: injectIds(before) }}
         />
       );
@@ -596,8 +596,8 @@ function renderLegacyContentWithRelated(
     parts.push(
       <div
         key={`html-${key++}`}
-        className="prose prose-sm dark:prose-invert max-w-none text-gray-800 dark:text-white/90"
-        dangerouslySetInnerHTML={{ __html: injectIds(tail) }}
+        className="article-content-preview max-w-none text-gray-800 dark:text-white/90"
+          dangerouslySetInnerHTML={{ __html: injectIds(tail) }}
       />
     );
   }
@@ -649,7 +649,7 @@ export default function ArticleContentRenderer({
             renderLegacyContentWithRelated(content, relatedArticles, articleUrlBase, showTableOfContents)
           ) : (
             <div
-              className="prose prose-sm dark:prose-invert max-w-none"
+              className="article-content-preview max-w-none"
               dangerouslySetInnerHTML={{
                 __html: showTableOfContents
                   ? content.replace(

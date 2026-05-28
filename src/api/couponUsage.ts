@@ -48,16 +48,18 @@ export type CouponUsageFilters = {
   type: string;
   dateFrom: string;
   dateTo: string;
+  couponId?: string;
 };
 
 function buildParams(
-  params: DataTableFetchParams & { filters: CouponUsageFilters; couponId: string },
+  params: DataTableFetchParams & { filters: CouponUsageFilters; couponId?: string },
 ): Record<string, string | number> {
   const q: Record<string, string | number> = {
     limit: params.limit,
     offset: (params.page - 1) * params.limit,
-    couponId: params.couponId,
   };
+  const couponId = params.couponId ?? params.filters.couponId;
+  if (couponId) q.couponId = couponId;
   if (params.search?.trim()) q.search = params.search.trim();
   if (params.sortBy) q.sortBy = params.sortBy;
   if (params.sortOrder) q.sortOrder = params.sortOrder;
@@ -74,7 +76,7 @@ export async function fetchCouponUsageSummary(): Promise<CouponUsageSummaryItem[
 }
 
 export async function fetchCouponUsagesPaginated(
-  params: DataTableFetchParams & { filters: CouponUsageFilters; couponId: string },
+  params: DataTableFetchParams & { filters: CouponUsageFilters; couponId?: string },
 ): Promise<DataTableFetchResult<CouponUsageRow> & { summary?: CouponUsageTotals }> {
   const res = await api.get<{
     data: CouponUsageRow[];

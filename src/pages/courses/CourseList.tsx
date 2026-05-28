@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Link } from "react-router";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
@@ -10,19 +10,15 @@ import type { CourseSortFilter, PriceRangeFilter, PublicationFilter } from "./fi
 
 export default function CourseList() {
   const { values, set, reset, hasActive } = useFilterState({ sortBy: "newest" });
+  const [dateFilterKey, setDateFilterKey] = useState(0);
+
+  const handleResetFilters = useCallback(() => {
+    reset();
+    setDateFilterKey((k) => k + 1);
+  }, [reset]);
 
   const courseFilterFields: FilterFieldDef[] = useMemo(
     () => [
-      {
-        type: "async-select",
-        id: "categoryId",
-        label: "Category",
-        placeholder: "All categories",
-        loader: async () => {
-          const cats = await fetchCourseCats();
-          return cats.map((c) => ({ value: String(c.id), label: c.name }));
-        },
-      },
       {
         type: "select",
         id: "priceRange",
@@ -34,6 +30,23 @@ export default function CourseList() {
           { value: "2000-5000", label: "₹2,000 – ₹5,000" },
           { value: "5000+", label: "₹5,000 and above" },
         ],
+      },
+      {
+        type: "month-select",
+        id: "startDate",
+        label: "Start Date",
+        fromId: "startDateFrom",
+        toId: "startDateTo",
+      },
+      {
+        type: "async-select",
+        id: "categoryId",
+        label: "Category",
+        placeholder: "All categories",
+        loader: async () => {
+          const cats = await fetchCourseCats();
+          return cats.map((c) => ({ value: String(c.id), label: c.name }));
+        },
       },
       {
         type: "select",
@@ -78,14 +91,17 @@ export default function CourseList() {
           fields={courseFilterFields}
           values={values}
           onChange={set}
-          onReset={reset}
+          onReset={handleResetFilters}
           hasActive={hasActive}
+          resetKey={dateFilterKey}
         />
         <CoursesTable
           filterCategoryId={values.categoryId ?? ""}
           filterPriceRange={(values.priceRange ?? "") as PriceRangeFilter}
           filterPublication={(values.publication ?? "") as PublicationFilter}
           filterSortBy={(values.sortBy ?? "") as CourseSortFilter}
+          filterStartDateFrom={values.startDateFrom ?? ""}
+          filterStartDateTo={values.startDateTo ?? ""}
         />
       </div>
     </>

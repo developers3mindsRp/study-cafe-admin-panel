@@ -5,13 +5,13 @@ import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import { ConfirmDeleteModal } from "../../components/ui/modal/ConfirmDeleteModal";
 import { useModal } from "../../hooks/useModal";
 import { RequirePermission } from "../../components/auth/RequirePermission";
-import { PERM_TESTIMONIALS_EDIT, PERM_TESTIMONIALS_DELETE } from "../../constants/permissions";
-import { fetchTestimonial, deleteTestimonial, Testimonial } from "../../api/testimonials";
+import { PERM_GOOGLE_REVIEWS_EDIT, PERM_GOOGLE_REVIEWS_DELETE } from "../../constants/permissions";
+import { fetchGoogleReview, deleteGoogleReview, GoogleReview } from "../../api/googleReviews";
 
-export default function TestimonialView() {
+export default function GoogleReviewView() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [testimonial, setTestimonial] = useState<Testimonial | null>(null);
+  const [review, setReview] = useState<GoogleReview | null>(null);
   const [loading, setLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -30,12 +30,12 @@ export default function TestimonialView() {
   const loadTestimonial = async (testimonialId: number) => {
     try {
       setLoading(true);
-      const data = await fetchTestimonial(testimonialId);
-      setTestimonial(data);
+      const data = await fetchGoogleReview(testimonialId);
+      setReview(data);
     } catch (err) {
       console.error("Failed to load testimonial", err);
       alert("Failed to load testimonial or it does not exist.");
-      navigate("/testimonials");
+      navigate("/google-reviews");
     } finally {
       setLoading(false);
     }
@@ -45,9 +45,9 @@ export default function TestimonialView() {
     if (!id) return;
     try {
       setIsDeleting(true);
-      await deleteTestimonial(Number(id));
+      await deleteGoogleReview(Number(id));
       closeDeleteModal();
-      navigate("/testimonials");
+      navigate("/google-reviews");
     } catch (err: any) {
       console.error("Failed to delete testimonial", err);
       alert(err.response?.data?.message || "Failed to delete testimonial");
@@ -56,7 +56,7 @@ export default function TestimonialView() {
     }
   };
 
-  if (loading || !testimonial) {
+  if (loading || !review) {
     return (
       <div className="flex items-center justify-center p-20">
         <p className="text-gray-500">Loading testimonial...</p>
@@ -67,23 +67,23 @@ export default function TestimonialView() {
   return (
     <>
       <PageMeta
-        title={`${testimonial.author_name} | StudyCafe Admin`}
-        description="View testimonial for studycafe.in"
+        title={`${review.author_name} | StudyCafe Admin`}
+        description="View Google review for studycafe.in"
       />
       <PageBreadcrumb
-        pageTitle={testimonial.author_name}
+        pageTitle={review.author_name}
         compact
         actions={
           <div className="flex items-center gap-2">
-            <RequirePermission permissions={[PERM_TESTIMONIALS_EDIT]} fallback={null}>
+            <RequirePermission permissions={[PERM_GOOGLE_REVIEWS_EDIT]} fallback={null}>
               <Link
-                to={`/testimonials/${id}/edit`}
+                to={`/google-reviews/${id}/edit`}
                 className="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-medium text-white transition bg-brand-500 shadow-theme-xs hover:bg-brand-600"
               >
                 Edit
               </Link>
             </RequirePermission>
-            <RequirePermission permissions={[PERM_TESTIMONIALS_DELETE]} fallback={null}>
+            <RequirePermission permissions={[PERM_GOOGLE_REVIEWS_DELETE]} fallback={null}>
               <button
                 type="button"
                 onClick={openDeleteModal}
@@ -105,7 +105,7 @@ export default function TestimonialView() {
                 Quote / Content
               </p>
               <p className="mt-1 text-gray-800 dark:text-white/90 italic">
-                "{testimonial.content}"
+                "{review.content}"
               </p>
             </div>
             <div>
@@ -113,7 +113,7 @@ export default function TestimonialView() {
                 Author
               </p>
               <p className="text-gray-800 dark:text-white/90">
-                {testimonial.author_name}
+                {review.author_name}
               </p>
             </div>
             <div>
@@ -121,7 +121,7 @@ export default function TestimonialView() {
                 Role / Designation
               </p>
               <p className="text-gray-800 dark:text-white/90">
-                {testimonial.author_role}
+                {review.author_role}
               </p>
             </div>
             <div className="flex gap-10">
@@ -130,7 +130,15 @@ export default function TestimonialView() {
                   Rating
                 </p>
                 <p className="text-gray-800 dark:text-white/90">
-                  {testimonial.rating || "-"}
+                  {review.rating || "-"}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                  Time Ago
+                </p>
+                <p className="text-gray-800 dark:text-white/90">
+                  {review.reviewed_at || "—"}
                 </p>
               </div>
               <div>
@@ -138,7 +146,7 @@ export default function TestimonialView() {
                   Sort Order
                 </p>
                 <p className="text-gray-800 dark:text-white/90">
-                  {testimonial.sort_order}
+                  {review.sort_order}
                 </p>
               </div>
             </div>
@@ -150,8 +158,8 @@ export default function TestimonialView() {
         isOpen={isDeleteModalOpen}
         onClose={closeDeleteModal}
         onConfirm={handleDeleteConfirm}
-        title="Delete Testimonial"
-        itemName={testimonial.author_name}
+        title="Delete Google Review"
+        itemName={review.author_name}
       />
     </>
   );

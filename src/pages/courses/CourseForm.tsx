@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router";
 import Label from "../../components/form/Label";
 import Input from "../../components/form/input/InputField";
@@ -10,8 +10,8 @@ import { ArrayEditor } from "./components/ArrayEditor";
 import IncludesInfoEditor, { type IncludesInfoItem } from "./components/IncludesInfoEditor";
 import CourseIncludesEditor, { type CourseIncludeItem } from "./components/CourseIncludesEditor";
 import { COURSE_PREVIEW_STATE_KEY, COURSE_RESTORE_STATE_KEY } from "./CoursePreview";
-import { fetchCourseCats, type Course, type CourseCat } from "../../api/courses";
-import { usersApi, type User } from "../../api/users";
+import { fetchCourseCats, generateCoursePreviewLink, type Course, type CourseCat } from "../../api/courses";
+import { usersApi, fetchAdminPanelUsers, type User } from "../../api/users";
 import { CourseCatMultiSelect } from "./components/CourseCatMultiSelect";
 import { AuthorUserSelect } from "./components/AuthorUserSelect";
 import MetaFieldsForm, { type SEOMetaFields } from "../../components/form/MetaFieldsForm";
@@ -68,6 +68,8 @@ export interface CourseFormData {
   og_image_url: string;
   /** Percent of order amount paid to referrer (0–100). */
   affiliate_commission: string;
+  /** '1year' (default) or 'lifetime' — determines enrolled access duration. */
+  validity: 'lifetime' | '1year';
 }
 
 const safeJsonParse = (str: string | null | undefined, fallback: any = []) => {
@@ -121,6 +123,7 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
         og_title: restoredData.og_title ?? "",
         og_description: restoredData.og_description ?? "",
         og_image_url: restoredData.og_image_url ?? "",
+        validity: restoredData.validity ?? '1year',
       };
     }
     return {
@@ -214,6 +217,7 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
         initial?.affiliate_commission != null && initial.affiliate_commission !== ""
           ? String(initial.affiliate_commission)
           : "0",
+      validity: (initial?.validity === 'lifetime' ? 'lifetime' : '1year') as 'lifetime' | '1year',
     };
   });
 
@@ -223,45 +227,67 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
     }
   }, [restoredData]);
 
-  const [authorUsers, setAuthorUsers] = useState<User[]>([]);
+  const [adminUsers, setAdminUsers] = useState<User[]>([]);
   const [courseCats, setCourseCats] = useState<CourseCat[]>([]);
+
+  // Fetch admin panel users once — they are few and always relevant as authors.
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const acc: User[] = [];
-        const limit = 500;
-        let page = 1;
-        for (;;) {
-          const res = await usersApi.list({
-            page,
-            limit,
-            sortBy: "name",
-            sortOrder: "ASC",
-          });
-          if (cancelled) return;
-          const chunk = res.data ?? [];
-          acc.push(...chunk);
-          const pages = res.pages ?? 1;
-          if (page >= pages || chunk.length === 0) break;
-          page += 1;
-        }
-        if (!cancelled) setAuthorUsers(acc);
-      } catch {
-        if (!cancelled) setAuthorUsers([]);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
+    fetchAdminPanelUsers().then(setAdminUsers).catch(() => {});
   }, []);
+
+  /**
+   * On-demand search for the AuthorUserSelect dropdown.
+   * Fetches up to 10 matching users from the API and merges in any admin users
+   * that also match the query, so instructors/editors always appear.
+   */
+  const fetchAuthorUsers = useCallback(async (search: string): Promise<User[]> => {
+    try {
+      const res = await usersApi.list({
+        page: 1,
+        limit: 10,
+        sortBy: "name",
+        sortOrder: "ASC",
+        lean: true,
+        ...(search.trim() ? { search: search.trim() } : {}),
+      });
+      const regular = res.data ?? [];
+
+      if (adminUsers.length === 0) return regular;
+
+      const q = search.trim().toLowerCase();
+      const matchingAdmins = adminUsers.filter((u) => {
+        if (!q) return true;
+        return (
+          (u.name || "").toLowerCase().includes(q) ||
+          (u.display_name || "").toLowerCase().includes(q) ||
+          (u.email || "").toLowerCase().includes(q) ||
+          (u.role || "").toLowerCase().includes(q) ||
+          (u.designation || "").toLowerCase().includes(q)
+        );
+      });
+
+      const seen = new Set(regular.map((u) => String(u.id)));
+      const merged = [...regular];
+      for (const au of matchingAdmins) {
+        if (!seen.has(String(au.id))) merged.push(au);
+      }
+      merged.sort((a, b) => {
+        const nameA = (a.name || a.display_name || a.email || "").toLowerCase();
+        const nameB = (b.name || b.display_name || b.email || "").toLowerCase();
+        return nameA.localeCompare(nameB);
+      });
+      return merged;
+    } catch {
+      return [];
+    }
+  }, [adminUsers]);
+
   useEffect(() => {
     fetchCourseCats().then(setCourseCats).catch(() => {});
   }, []);
 
-  const handleAuthorSelect = (userId: string) => {
+  const handleAuthorSelect = (userId: string, user?: User) => {
     updateField('author_user_id', userId);
-    const user = authorUsers.find((u) => String(u.id) === userId);
     if (user) {
       updateField(
         'author_name',
@@ -277,6 +303,19 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
     }
   };
 
+  // A minimal User object built from the existing course data so the dropdown
+  // can show the selected author label even before any search has been run.
+  const initialAuthorUser = useMemo<User | undefined>(() => {
+    const id = initial?.author_user_id;
+    if (!id) return undefined;
+    return {
+      id: String(id),
+      name: initial?.author_name ?? "",
+      email: "",
+      role: initial?.author_role ?? "",
+    } as User;
+  }, [initial?.author_user_id]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const handlePreview = () => {
     const returnPath = location.pathname;
     navigate('/courses/preview', {
@@ -285,6 +324,21 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
         returnPath,
       },
     });
+  };
+
+  const [livePreviewLoading, setLivePreviewLoading] = useState(false);
+
+  const handleLivePreview = async () => {
+    if (!initial?.id) return;
+    setLivePreviewLoading(true);
+    try {
+      const { previewUrl } = await generateCoursePreviewLink(initial.id);
+      window.open(previewUrl, '_blank', 'noopener,noreferrer');
+    } catch {
+      alert('Could not generate preview link. Please try again.');
+    } finally {
+      setLivePreviewLoading(false);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -310,6 +364,17 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
           <Button type="button" variant="outline" size="sm" onClick={handlePreview}>
             Preview
           </Button>
+          {initial?.id && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleLivePreview}
+              disabled={livePreviewLoading}
+            >
+              {livePreviewLoading ? "Generating…" : "Live Preview ↗"}
+            </Button>
+          )}
           <Button type="submit" size="sm" disabled={loading}>
             {loading ? "Saving…" : "Save Course"}
           </Button>
@@ -471,6 +536,17 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
                   className="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
                 />
                 <Label htmlFor="taxable" className="!mb-0 cursor-pointer">Taxable</Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="validity_lifetime"
+                  checked={form.validity === 'lifetime'}
+                  onChange={(e) => updateField('validity', e.target.checked ? 'lifetime' : '1year')}
+                  className="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
+                />
+                <Label htmlFor="validity_lifetime" className="!mb-0 cursor-pointer">Lifetime Access</Label>
+                <span className="text-xs text-gray-400">(By default, access is 1 year from purchase)</span>
               </div>
             </div>
           </div>
@@ -727,11 +803,12 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
               <div>
                 <Label>Author</Label>
                 <AuthorUserSelect
-                  users={authorUsers}
                   value={form.author_user_id}
                   onChange={handleAuthorSelect}
                   disabled={loading}
                   placeholder="Select an author"
+                  fetchUsers={fetchAuthorUsers}
+                  initialUser={initialAuthorUser}
                 />
               </div>
               <div>

@@ -84,6 +84,8 @@ export type UsersListFilters = {
   membership: string;
   role: string;
   state: string;
+  /** Numeric course id (sent as string). Only used by export — no toolbar field. */
+  courseId: string;
   joinedFrom: string;
   joinedTo: string;
 };
@@ -115,6 +117,8 @@ export function buildUsersListParams(input: BuildUsersListParamsInput): ListQuer
   if (filters.role) params.role = filters.role;
   const state = filters.state.trim();
   if (state) params.state = state;
+  const courseId = filters.courseId?.trim();
+  if (courseId) params.course_id = courseId;
   if (filters.joinedFrom) params.joined_from = filters.joinedFrom;
   if (filters.joinedTo) params.joined_to = filters.joinedTo;
 
@@ -128,6 +132,7 @@ export function usersListFiltersAreActive(filters: UsersListFilters): boolean {
       filters.membership ||
       filters.role ||
       filters.state.trim() ||
+      filters.courseId?.trim() ||
       filters.joinedFrom ||
       filters.joinedTo,
   );
@@ -140,8 +145,23 @@ export function usersListFiltersFromValues(values: Record<string, string | undef
     membership: values.membership ?? "",
     role: values.role ?? "",
     state: values.state ?? "",
+    courseId: values.courseId ?? "",
     joinedFrom: values.joinedFrom ?? "",
     joinedTo: values.joinedTo ?? "",
+  };
+}
+
+/** Empty filter object — useful for export flows that ignore the toolbar state. */
+export function emptyUsersListFilters(): UsersListFilters {
+  return {
+    email: "",
+    status: "",
+    membership: "",
+    role: "",
+    state: "",
+    courseId: "",
+    joinedFrom: "",
+    joinedTo: "",
   };
 }
 
@@ -239,6 +259,19 @@ export async function importUsersFromCsv(payload: {
     };
   }
   return { results: [], imported: 0, failed: 0, skipped: 0 };
+}
+
+/**
+ * Fetches admin panel users from /auth/admin/users.
+ * Returns [] on 403 or any error so callers can merge gracefully.
+ */
+export async function fetchAdminPanelUsers(): Promise<User[]> {
+  try {
+    const { data } = await api.get<User[]>("/auth/admin/users");
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
 }
 
 /** Loads every user page matching list filters + search/sort. */

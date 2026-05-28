@@ -791,30 +791,61 @@ span.flatpickr-weekday,
   @apply opacity-100;
 }
 
-/* Tiptap Rich Text Editor */
+/* Tiptap Rich Text Editor — typography matches public .article-rich-text for WYSIWYG accuracy */
 .rich-text-editor-content .tiptap {
   @apply outline-none;
+  font-size: 1rem;
+  line-height: 1.65;
+  color: #454545;
 }
 .rich-text-editor-content .tiptap p {
-  @apply my-2 first:mt-0 last:mb-0;
+  margin-top: 0;
+  margin-bottom: 1.25em;
+}
+.rich-text-editor-content .tiptap > *:first-child {
+  margin-top: 0;
 }
 .rich-text-editor-content .tiptap h1 {
-  @apply text-xl font-bold my-3 first:mt-0;
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin-top: 1.25em;
+  margin-bottom: 0.5em;
+  line-height: 1.3;
 }
 .rich-text-editor-content .tiptap h2 {
-  @apply text-lg font-bold my-2 first:mt-0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-top: 1.25em;
+  margin-bottom: 0.5em;
+  line-height: 1.3;
 }
 .rich-text-editor-content .tiptap h3 {
-  @apply text-base font-bold my-2 first:mt-0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-top: 1.25em;
+  margin-bottom: 0.5em;
+  line-height: 1.3;
 }
 .rich-text-editor-content .tiptap ul {
-  @apply list-disc pl-6 my-2;
+  list-style-type: disc;
+  padding-left: 1.5em;
+  margin: 0 0 1.25em 0;
 }
 .rich-text-editor-content .tiptap ol {
-  @apply list-decimal pl-6 my-2;
+  list-style-type: decimal;
+  padding-left: 1.5em;
+  margin: 0 0 1.25em 0;
+}
+.rich-text-editor-content .tiptap li {
+  margin-bottom: 0.25em;
+  line-height: 1.65;
 }
 .rich-text-editor-content .tiptap blockquote {
-  @apply border-l-4 border-gray-300 pl-4 my-2 italic text-gray-600 dark:border-gray-600 dark:text-gray-400;
+  border-left: 4px solid #d4d4d8;
+  margin: 1em 0;
+  padding-left: 1em;
+  color: #52525b;
+  font-style: italic;
 }
 .rich-text-editor-content .tiptap p.is-editor-empty:first-child::before {
   @apply text-gray-400 pointer-events-none float-left h-0;
@@ -824,27 +855,90 @@ span.flatpickr-weekday,
   @apply text-gray-800 dark:text-white/90;
 }
 .rich-text-editor-content .tiptap a {
-  @apply text-brand-500 underline hover:text-brand-600 dark:text-brand-400 dark:hover:text-brand-300;
+  color: #09339b;
+  text-decoration: underline;
+}
+.rich-text-editor-content .tiptap a:hover {
+  opacity: 0.8;
 }
 .rich-text-editor-content .tiptap code {
   @apply rounded bg-gray-100 px-1 py-0.5 text-sm dark:bg-gray-800;
 }
 .rich-text-editor-content .tiptap mark {
-  @apply rounded bg-yellow-200 dark:bg-yellow-500/30;
+  background-color: #fef08a;
+  padding: 0 0.125em;
+  border-radius: 2px;
 }
 .rich-text-editor-content .tiptap sub,
 .rich-text-editor-content .tiptap sup {
   @apply text-xs;
 }
+.rich-text-editor-content .tiptap img {
+  max-width: 100%;
+  height: auto;
+}
 .rich-text-editor-content .tiptap [style*="text-align: left"] {
-  @apply text-left;
+  text-align: left;
 }
 .rich-text-editor-content .tiptap [style*="text-align: center"] {
-  @apply text-center;
+  text-align: center;
 }
 .rich-text-editor-content .tiptap [style*="text-align: right"] {
-  @apply text-right;
+  text-align: right;
 }
 .rich-text-editor-content .tiptap [style*="text-align: justify"] {
-  @apply text-justify;
+  text-align: justify;
 }
+
+/* Article content preview — mirrors public site .article-rich-text for accurate admin-side preview */
+.article-content-preview {
+  font-size: 1rem;
+  line-height: 1.65;
+  color: #454545;
+  max-width: 100%;
+}
+.article-content-preview > *:first-child {
+  margin-top: 0;
+}
+.article-content-preview p {
+  margin-top: 0;
+  margin-bottom: 1.25em;
+}
+.article-content-preview h1,
+.article-content-preview h2,
+.article-content-preview h3 {
+  font-weight: 700;
+  color: #252525;
+  margin-top: 1.25em;
+  margin-bottom: 0.5em;
+  line-height: 1.3;
+}
+.article-content-preview h1 { font-size: 1.75rem; }
+.article-content-preview h2 { font-size: 1.5rem; }
+.article-content-preview h3 { font-size: 1.25rem; }
+.article-content-preview strong,
+.article-content-preview b { font-weight: 700; color: #252525; }
+.article-content-preview em,
+.article-content-preview i { font-style: italic; }
+.article-content-preview u { text-decoration: underline; }
+.article-content-preview mark { background-color: #fef08a; padding: 0 0.125em; }
+.article-content-preview a { color: #09339b; text-decoration: underline; }
+.article-content-preview ul {
+  list-style-type: disc;
+  margin: 0 0 1.25em 0;
+  padding-left: 1.5em;
+}
+.article-content-preview ol {
+  list-style-type: decimal;
+  margin: 0 0 1.25em 0;
+  padding-left: 1.5em;
+}
+.article-content-preview li { margin-bottom: 0.25em; }
+.article-content-preview blockquote {
+  border-left: 4px solid #d4d4d8;
+  margin: 1em 0;
+  padding-left: 1em;
+  color: #52525b;
+  font-style: italic;
+}
+.article-content-preview img { max-width: 100%; height: auto; }

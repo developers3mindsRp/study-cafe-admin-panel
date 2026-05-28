@@ -66,6 +66,8 @@ export interface Course {
   categories?: Array<{ id: number; name: string; slug: string | null }>;
   /** Affiliate commission as a percent of paid order amount (0–100). */
   affiliate_commission?: number | string;
+  /** '1year' (default) or 'lifetime' — determines how long enrolled access lasts. */
+  validity?: 'lifetime' | '1year';
 }
 
 export interface CourseCat {
@@ -121,6 +123,11 @@ export async function createCourse(payload: Partial<Course>): Promise<Course> {
 
 export async function updateCourse(id: string, payload: Partial<Course>): Promise<Course> {
   const res = await api.put<Course>(`/admin/courses/${id}`, payload);
+  return res.data;
+}
+
+export async function generateCoursePreviewLink(courseId: number): Promise<{ previewUrl: string; expiresInSeconds: number }> {
+  const res = await api.post(`/admin/courses/${courseId}/preview-token`);
   return res.data;
 }
 

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import type { User } from "../../../api/users";
 
 function userLabel(u: User): string {
@@ -13,38 +13,78 @@ function userLabel(u: User): string {
 }
 
 export function AuthorUserSelect({
-  users,
   value,
   onChange,
   disabled = false,
   placeholder = "Select an author",
+  fetchUsers,
+  initialUser,
 }: {
-  users: User[];
   value: string;
-  onChange: (userId: string) => void;
+  onChange: (userId: string, user?: User) => void;
   disabled?: boolean;
   placeholder?: string;
+  /** Called to search users; receives the current query string (empty = default list). */
+  fetchUsers: (search: string) => Promise<User[]>;
+  /** Pre-built user object to show as the selected label before any search runs. */
+  initialUser?: User;
 }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
+  const [results, setResults] = useState<User[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | undefined>(initialUser);
   const containerRef = useRef<HTMLDivElement>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Keep a ref so loadResults never stale-closes over fetchUsers
+  const fetchRef = useRef(fetchUsers);
+  useEffect(() => { fetchRef.current = fetchUsers; }, [fetchUsers]);
 
-  const selected = users.find((u) => String(u.id) === value);
-  const displayLabel = selected ? userLabel(selected) : "";
+  const loadResults = useCallback(async (q: string) => {
+    setSearching(true);
+    try {
+      const users = await fetchRef.current(q);
+      setResults(users);
+    } catch {
+      setResults([]);
+    } finally {
+      setSearching(false);
+    }
+  }, []);
 
-  const q = query.trim().toLowerCase();
-  const filtered = users.filter((u) => {
-    if (!q) return true;
-    return (
-      (u.name || "").toLowerCase().includes(q) ||
-      (u.display_name || "").toLowerCase().includes(q) ||
-      (u.email || "").toLowerCase().includes(q) ||
-      (u.role || "").toLowerCase().includes(q) ||
-      (u.designation || "").toLowerCase().includes(q) ||
-      (u.profession || "").toLowerCase().includes(q) ||
-      String(u.id).includes(q)
-    );
-  });
+  // Sync initialUser → selectedUser when the prop arrives (e.g. after parent data loads)
+  useEffect(() => {
+    if (initialUser && String(initialUser.id) === value) {
+      setSelectedUser(initialUser);
+    }
+  }, [initialUser, value]);
+
+  const handleOpen = () => {
+    if (disabled) return;
+    setOpen(true);
+    setQuery("");
+    loadResults("");
+  };
+
+  const handleQueryChange = (q: string) => {
+    setQuery(q);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => loadResults(q), 350);
+  };
+
+  const pick = (user: User) => {
+    setSelectedUser(user);
+    onChange(String(user.id), user);
+    setOpen(false);
+    setQuery("");
+  };
+
+  const clear = () => {
+    setSelectedUser(undefined);
+    onChange("", undefined);
+    setOpen(false);
+    setQuery("");
+  };
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -57,18 +97,15 @@ export function AuthorUserSelect({
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
-  const pick = (userId: string) => {
-    onChange(userId);
-    setOpen(false);
-    setQuery("");
-  };
+  const displayLabel =
+    selectedUser && String(selectedUser.id) === value ? userLabel(selectedUser) : "";
 
   return (
     <div ref={containerRef} className="relative w-full">
       <button
         type="button"
         disabled={disabled}
-        onClick={() => !disabled && setOpen((o) => !o)}
+        onClick={handleOpen}
         className="flex h-11 w-full items-center justify-between rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-left text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
       >
         <span className={displayLabel ? "truncate text-gray-800 dark:text-white" : "truncate text-gray-400"}>
@@ -92,42 +129,55 @@ export function AuthorUserSelect({
               autoFocus
               type="search"
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(e) => handleQueryChange(e.target.value)}
               placeholder="Search by name, email, role…"
               className="w-full rounded-md border border-gray-200 px-2 py-1.5 text-xs text-gray-800 outline-none focus:border-brand-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
             />
           </div>
           <ul className="max-h-52 overflow-y-auto py-1">
-            <li>
-              <button
-                type="button"
-                onClick={() => pick("")}
-                className="w-full px-3 py-2 text-left text-sm text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700"
-              >
-                {placeholder}
-              </button>
-            </li>
-            {filtered.length === 0 && (
-              <li className="px-3 py-2 text-xs italic text-gray-400">No users match your search</li>
-            )}
-            {filtered.map((u) => {
-              const active = String(u.id) === value;
-              return (
-                <li key={u.id}>
+            {searching ? (
+              <li className="px-3 py-3 text-xs text-gray-400 text-center">Searching…</li>
+            ) : (
+              <>
+                <li>
                   <button
                     type="button"
-                    onClick={() => pick(String(u.id))}
-                    className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-700 ${
-                      active
-                        ? "bg-brand-50 font-medium text-brand-700 dark:bg-brand-500/15 dark:text-brand-300"
-                        : "text-gray-700 dark:text-gray-300"
-                    }`}
+                    onClick={clear}
+                    className="w-full px-3 py-2 text-left text-sm text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700"
                   >
-                    {userLabel(u)}
+                    {placeholder}
                   </button>
                 </li>
-              );
-            })}
+                {results.length === 0 && query.trim() && (
+                  <li className="px-3 py-2 text-xs italic text-gray-400">
+                    No users match your search
+                  </li>
+                )}
+                {results.length === 0 && !query.trim() && (
+                  <li className="px-3 py-2 text-xs italic text-gray-400">
+                    Type a name to search users
+                  </li>
+                )}
+                {results.map((u) => {
+                  const active = String(u.id) === value;
+                  return (
+                    <li key={u.id}>
+                      <button
+                        type="button"
+                        onClick={() => pick(u)}
+                        className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-700 ${
+                          active
+                            ? "bg-brand-50 font-medium text-brand-700 dark:bg-brand-500/15 dark:text-brand-300"
+                            : "text-gray-700 dark:text-gray-300"
+                        }`}
+                      >
+                        {userLabel(u)}
+                      </button>
+                    </li>
+                  );
+                })}
+              </>
+            )}
           </ul>
         </div>
       )}

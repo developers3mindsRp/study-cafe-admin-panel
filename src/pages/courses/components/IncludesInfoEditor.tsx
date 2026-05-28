@@ -68,7 +68,7 @@ export function IconPicker({ value, onChange }: IconPickerProps) {
       try {
         // 1. Upload the file to get a CDN URL
         const { url } = await uploadImage(file);
-        // 2. Save the URL into the DB media_assets table
+        // 2. Save the URL into the media table (category: icon)
         const label = file.name.replace(/\.[^.]+$/, "").replace(/[-_]/g, " ");
         const asset = await createMediaAsset({ url, label, category: "icon" });
         // 3. Refresh the library list and auto-select the new icon

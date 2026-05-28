@@ -120,12 +120,33 @@ export const mainNavItemsConfig: NavItemConfig[] = [
   },
   {
     iconKey: "chat",
+    name: "Google Reviews",
+    subItems: [
+      { name: "List", path: "/google-reviews", requiredPermission: ["google_reviews:list", "google_reviews:view"] },
+      { name: "Create", path: "/google-reviews/create", requiredPermission: ["google_reviews:create"] },
+    ],
+    requiredPermission: [
+      "google_reviews:list",
+      "google_reviews:view",
+      "google_reviews:create",
+      "google_reviews:edit",
+      "google_reviews:delete",
+    ],
+  },
+  {
+    iconKey: "video",
     name: "Testimonials",
     subItems: [
       { name: "List", path: "/testimonials", requiredPermission: ["testimonials:list", "testimonials:view"] },
       { name: "Create", path: "/testimonials/create", requiredPermission: ["testimonials:create"] },
     ],
-    requiredPermission: ["testimonials:list", "testimonials:view", "testimonials:create", "testimonials:edit", "testimonials:delete"],
+    requiredPermission: [
+      "testimonials:list",
+      "testimonials:view",
+      "testimonials:create",
+      "testimonials:edit",
+      "testimonials:delete",
+    ],
   },
   {
     iconKey: "info",

@@ -62,6 +62,17 @@ export const MODULE_LEVELS: ModuleConfig[] = [
     ],
   },
   {
+    key: "google_reviews",
+    name: "Google Reviews",
+    levels: [
+      { value: "none", label: "None", permissions: [] },
+      { value: "view", label: "View only", permissions: ["google_reviews:list", "google_reviews:view"] },
+      { value: "edit", label: "Edit (includes view)", permissions: ["google_reviews:list", "google_reviews:view", "google_reviews:edit"] },
+      { value: "create", label: "Create (includes view, edit)", permissions: ["google_reviews:list", "google_reviews:view", "google_reviews:edit", "google_reviews:create"] },
+      { value: "delete", label: "Delete / Full", permissions: ["google_reviews:list", "google_reviews:view", "google_reviews:edit", "google_reviews:create", "google_reviews:delete"] },
+    ],
+  },
+  {
     key: "testimonials",
     name: "Testimonials",
     levels: [

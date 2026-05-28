@@ -137,7 +137,7 @@ export default function ArticleEdit() {
     },
     body: typeof articleContent === "string" ? articleContent : "",
     author: { name: "", role: "", imageUrl: "", bio: "" },
-    tagsCommaRaw: article.tags?.map((t) => t.name.trim()).filter(Boolean).join(", ") ?? "",
+    tagsCommaRaw: "",
     shareEnabled: true,
     status: statusToForm(article.status),
     scheduled_publish_at: article.scheduled_publish_at ?? null,

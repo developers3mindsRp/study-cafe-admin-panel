@@ -8,7 +8,7 @@ import { Link } from "react-router";
 export default function OrderList() {
   return (
     <>
-      <PageMeta title="Orders | StudyCafe Admin" description="View orders" />
+  <PageMeta title="Orders | StudyCafe Admin" description="View orders" />
       <PageBreadcrumb
         pageTitle="Orders"
         actions={
