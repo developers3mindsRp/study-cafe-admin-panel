@@ -6,8 +6,9 @@ import Label from "../../components/form/Label";
 import Input from "../../components/form/input/InputField";
 import TextArea from "../../components/form/input/TextArea";
 import Button from "../../components/ui/button/Button";
-import { usersApi, type User } from "../../api/users";
+import { usersApi, fetchUserMemberships, type User } from "../../api/users";
 import { plansApi, type Plan } from "../../api/plans";
+import { api } from "../../api/axios";
 import { fetchCourses, addBatchEnrollment, fetchUserEnrollments } from "../../api/courses";
 import { useAssignCoursesState } from "./hooks/useAssignCoursesState";
 import { CourseBatchAssignSection } from "./components/CourseBatchAssignSection";
@@ -22,6 +23,7 @@ export default function UserEdit() {
     const [error, setError] = useState<string | null>(null);
     const [submitting, setSubmitting] = useState(false);
     const [plans, setPlans] = useState<Plan[]>([]);
+    const [originalMembership, setOriginalMembership] = useState<string>("");
 
     const {
         courses,
@@ -76,19 +78,28 @@ export default function UserEdit() {
 
                 if (id) {
                     const numericId = Number(id);
-                    const [user, coursesData, enrollments] = await Promise.all([
+                    const [user, coursesData, enrollments, memberships] = await Promise.all([
                         usersApi.get(id),
                         fetchCourses(),
                         fetchUserEnrollments(numericId),
+                        fetchUserMemberships(id),
                     ]);
                     setCourses(coursesData);
                     await hydrateFromEnrollments(enrollments);
+
+                    // Resolve active membership from user_memberships (canonical source)
+                    const now = new Date();
+                    const activeMembership = memberships
+                        .filter(m => m.expires_at && new Date(m.expires_at) > now)
+                        .sort((a, b) => new Date(b.starts_at).getTime() - new Date(a.starts_at).getTime())[0];
+                    const activeMembershipType = activeMembership?.membership_type || "";
+                    setOriginalMembership(activeMembershipType);
 
                     setFormData({
                         name: user.name || "",
                         email: user.email || "",
                         phone: user.phone || "",
-                        membership: user.membership || "",
+                        membership: activeMembershipType,
                         status: user.status || "active",
 
                         first_name: user.first_name || "",
@@ -135,6 +146,28 @@ export default function UserEdit() {
         try {
             await usersApi.update(id, formData);
             const userId = Number(id);
+
+            // Grant membership if it changed
+            const newMembership = formData.membership || "";
+            if (newMembership && newMembership !== originalMembership) {
+                const startsAt = new Date().toISOString();
+                const matchedPlan = plans.find(p => p.slug === newMembership);
+                let expiresAt: string;
+                if (matchedPlan) {
+                    const expiry = matchedPlan.is_lifetime || !matchedPlan.duration_days
+                        ? new Date(new Date().getFullYear() + 10, new Date().getMonth(), new Date().getDate())
+                        : new Date(Date.now() + Number(matchedPlan.duration_days) * 24 * 60 * 60 * 1000);
+                    expiresAt = expiry.toISOString();
+                } else {
+                    expiresAt = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();
+                }
+                await api.post(`/admin/users/${id}/membership`, {
+                    membershipType: newMembership,
+                    startsAt,
+                    expiresAt,
+                });
+            }
+
             const enrollPromises = Object.entries(selectedBatches)
                 .filter(([, batchId]) => Number(batchId) > 0)
                 .map(([, batchId]) =>
@@ -378,7 +411,7 @@ export default function UserEdit() {
                             <div>
                                 <Label>LinkedIn</Label>
                                 <Input
-                                    type="url"
+                                    type="text"
                                     name="linkedin"
                                     value={formData.linkedin || ""}
                                     onChange={handleChange}
@@ -388,7 +421,7 @@ export default function UserEdit() {
                             <div>
                                 <Label>Twitter (X)</Label>
                                 <Input
-                                    type="url"
+                                    type="text"
                                     name="twitter"
                                     value={formData.twitter || ""}
                                     onChange={handleChange}
@@ -398,7 +431,7 @@ export default function UserEdit() {
                             <div>
                                 <Label>Facebook</Label>
                                 <Input
-                                    type="url"
+                                    type="text"
                                     name="facebook"
                                     value={formData.facebook || ""}
                                     onChange={handleChange}
@@ -408,7 +441,7 @@ export default function UserEdit() {
                             <div>
                                 <Label>Instagram</Label>
                                 <Input
-                                    type="url"
+                                    type="text"
                                     name="instagram"
                                     value={formData.instagram || ""}
                                     onChange={handleChange}
@@ -418,7 +451,7 @@ export default function UserEdit() {
                             <div>
                                 <Label>YouTube</Label>
                                 <Input
-                                    type="url"
+                                    type="text"
                                     name="youtube"
                                     value={formData.youtube || ""}
                                     onChange={handleChange}
