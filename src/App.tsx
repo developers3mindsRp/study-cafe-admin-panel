@@ -87,6 +87,7 @@ import CourseCreate from "./pages/courses/CourseCreate";
 import CourseEdit from "./pages/courses/CourseEdit";
 import CoursePageSettings from "./pages/courses/CoursePageSettings";
 import GlobalSettings from "./pages/settings/GlobalSettings";
+import PaymentGatewaySettings from "./pages/settings/PaymentGatewaySettings";
 import CoursePreview from "./pages/courses/CoursePreview";
 import CourseCatList from "./pages/courses/CourseCatList";
 import CourseCatCreate from "./pages/courses/CourseCatCreate";
@@ -138,6 +139,10 @@ const router = createBrowserRouter(
           <Route path="/settings/global" element={<RequirePermissionRoute permissions={["global_settings:list", "global_settings:view", "global_settings:edit"]} />}>
             <Route index element={<GlobalSettings />} />
           </Route>
+          <Route
+            path="/settings/global/payment-gateway"
+            element={<PaymentGatewaySettings />}
+          />
           <Route
             path="/settings/global/display-ads"
             element={

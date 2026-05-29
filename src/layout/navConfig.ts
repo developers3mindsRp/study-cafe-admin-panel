@@ -229,6 +229,11 @@ export const mainNavItemsConfig: NavItemConfig[] = [
         requiredPermission: ["global_settings:list", "global_settings:view", "global_settings:edit"],
       },
       {
+        name: "Payment Gateway",
+        path: "/settings/global/payment-gateway",
+        requiredPermission: ["global_settings:list", "global_settings:view", "global_settings:edit"],
+      },
+      {
         name: "Display Ads",
         path: "/settings/global/display-ads",
         requiredPermission: [
