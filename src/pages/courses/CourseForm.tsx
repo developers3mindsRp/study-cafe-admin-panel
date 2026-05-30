@@ -6,6 +6,7 @@ import TextArea from "../../components/form/input/TextArea";
 import ImageUpload from "../../components/form/ImageUpload";
 import Button from "../../components/ui/button/Button";
 import ArticleEditor from "../../components/article-editor/ArticleEditor";
+import RichTextEditor from "../../components/form/RichTextEditor";
 import { ArrayEditor } from "./components/ArrayEditor";
 import IncludesInfoEditor, { type IncludesInfoItem } from "./components/IncludesInfoEditor";
 import CourseIncludesEditor, { type CourseIncludeItem } from "./components/CourseIncludesEditor";
@@ -70,6 +71,27 @@ export interface CourseFormData {
   affiliate_commission: string;
   /** '1year' (default) or 'lifetime' — determines enrolled access duration. */
   validity: 'lifetime' | '1year';
+  /** JSON-schema driven dynamic description sections for the course detail page.
+   *  Each item: { type: 'text'|'cards', title: string, content?: string, items?: {icon?:string, title:string, content:string}[] }
+   */
+  detail_sections: DetailSection[];
+}
+
+export type DetailSectionType = 'text' | 'cards';
+
+export interface DetailSectionCard {
+  icon: string;
+  title: string;
+  content: string;
+}
+
+export interface DetailSection {
+  type: DetailSectionType;
+  title: string;
+  /** Used when type === 'text' */
+  content: string;
+  /** Used when type === 'cards' */
+  items: DetailSectionCard[];
 }
 
 const safeJsonParse = (str: string | null | undefined, fallback: any = []) => {
@@ -124,6 +146,7 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
         og_description: restoredData.og_description ?? "",
         og_image_url: restoredData.og_image_url ?? "",
         validity: restoredData.validity ?? '1year',
+        detail_sections: Array.isArray(restoredData.detail_sections) ? restoredData.detail_sections : [],
       };
     }
     return {
@@ -218,6 +241,7 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
           ? String(initial.affiliate_commission)
           : "0",
       validity: (initial?.validity === 'lifetime' ? 'lifetime' : '1year') as 'lifetime' | '1year',
+      detail_sections: (safeJsonParse((initial as any)?.detail_sections, []) as DetailSection[]),
     };
   });
 
@@ -601,6 +625,170 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
               value={form.course_includes}
               onChange={(v) => updateField('course_includes', v)}
             />
+          </div>
+
+          <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] sm:p-6">
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">Course Detail Sections</h3>
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  Dynamic sections shown on the course detail page (How to get, Eligibility, Views Limitation, etc.). Each section is either a rich-text block or a card grid.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => updateField('detail_sections', [...form.detail_sections, { type: 'text', title: '', content: '', items: [] }])}
+                className="inline-flex items-center gap-1 rounded-lg bg-brand-50 px-3 py-1.5 text-xs font-medium text-brand-600 transition hover:bg-brand-100 dark:bg-brand-500/10 dark:text-brand-400 dark:hover:bg-brand-500/20"
+              >
+                + Add Section
+              </button>
+            </div>
+            <div className="space-y-4">
+              {form.detail_sections.map((sec, idx) => (
+                <div key={idx} className="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900/50 space-y-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div className="sm:col-span-2">
+                        <Label>Section Title</Label>
+                        <Input
+                          value={sec.title}
+                          onChange={(e) => {
+                            const next = [...form.detail_sections];
+                            next[idx] = { ...next[idx], title: e.target.value };
+                            updateField('detail_sections', next);
+                          }}
+                          placeholder="e.g. How I will get the course"
+                        />
+                      </div>
+                      <div>
+                        <Label>Type</Label>
+                        <select
+                          value={sec.type}
+                          onChange={(e) => {
+                            const next = [...form.detail_sections];
+                            next[idx] = { ...next[idx], type: e.target.value as DetailSectionType };
+                            updateField('detail_sections', next);
+                          }}
+                          className="h-11 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-700 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200"
+                        >
+                          <option value="text">Text block</option>
+                          <option value="cards">Cards grid</option>
+                        </select>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => updateField('detail_sections', form.detail_sections.filter((_, i) => i !== idx))}
+                      className="mt-6 rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-500/10"
+                      title="Remove section"
+                    >
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                  </div>
+
+                  {sec.type === 'text' && (
+                    <div>
+                      <Label>Content</Label>
+                      <RichTextEditor
+                        value={sec.content}
+                        onChange={(html) => {
+                          const next = [...form.detail_sections];
+                          next[idx] = { ...next[idx], content: html };
+                          updateField('detail_sections', next);
+                        }}
+                        placeholder="Section content…"
+                        minHeight="150px"
+                      />
+                    </div>
+                  )}
+
+                  {sec.type === 'cards' && (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Cards ({sec.items.length})</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const next = [...form.detail_sections];
+                            next[idx] = { ...next[idx], items: [...next[idx].items, { icon: '', title: '', content: '' }] };
+                            updateField('detail_sections', next);
+                          }}
+                          className="inline-flex items-center gap-1 rounded-md bg-brand-50 px-2 py-1 text-xs font-medium text-brand-600 transition hover:bg-brand-100 dark:bg-brand-500/10 dark:text-brand-400 dark:hover:bg-brand-500/20"
+                        >
+                          + Add Card
+                        </button>
+                      </div>
+                      {sec.items.map((card, cIdx) => (
+                        <div key={cIdx} className="rounded-lg border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-900 grid grid-cols-1 sm:grid-cols-3 gap-3 items-start">
+                          <div>
+                            <Label>Icon (URL or emoji)</Label>
+                            <Input
+                              value={card.icon}
+                              onChange={(e) => {
+                                const next = [...form.detail_sections];
+                                const items = [...next[idx].items];
+                                items[cIdx] = { ...items[cIdx], icon: e.target.value };
+                                next[idx] = { ...next[idx], items };
+                                updateField('detail_sections', next);
+                              }}
+                              placeholder="⏳ or https://…"
+                            />
+                          </div>
+                          <div>
+                            <Label>Card Title</Label>
+                            <Input
+                              value={card.title}
+                              onChange={(e) => {
+                                const next = [...form.detail_sections];
+                                const items = [...next[idx].items];
+                                items[cIdx] = { ...items[cIdx], title: e.target.value };
+                                next[idx] = { ...next[idx], items };
+                                updateField('detail_sections', next);
+                              }}
+                              placeholder="Course Duration"
+                            />
+                          </div>
+                          <div className="flex items-start gap-2">
+                            <div className="flex-1">
+                              <Label>Card Content</Label>
+                              <Input
+                                value={card.content}
+                                onChange={(e) => {
+                                  const next = [...form.detail_sections];
+                                  const items = [...next[idx].items];
+                                  items[cIdx] = { ...items[cIdx], content: e.target.value };
+                                  next[idx] = { ...next[idx], items };
+                                  updateField('detail_sections', next);
+                                }}
+                                placeholder="2 Days and 4+ hours"
+                              />
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const next = [...form.detail_sections];
+                                next[idx] = { ...next[idx], items: next[idx].items.filter((_, ci) => ci !== cIdx) };
+                                updateField('detail_sections', next);
+                              }}
+                              className="mt-6 rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-500/10"
+                              title="Remove card"
+                            >
+                              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                      {sec.items.length === 0 && (
+                        <p className="text-xs text-gray-400 italic">No cards yet. Click &quot;+ Add Card&quot; to begin.</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+              {form.detail_sections.length === 0 && (
+                <p className="text-sm text-gray-400 italic text-center py-4">No sections yet. Click &quot;+ Add Section&quot; to begin.</p>
+              )}
+            </div>
           </div>
         </div>
       )}
