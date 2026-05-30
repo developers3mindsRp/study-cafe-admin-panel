@@ -99,6 +99,31 @@ const safeJsonParse = (str: string | null | undefined, fallback: any = []) => {
   try { return JSON.parse(str); } catch { return fallback; }
 };
 
+const DEFAULT_DETAIL_SECTIONS: DetailSection[] = [
+  {
+    type: "text",
+    title: "How I will get the course:",
+    content: "This is an online Certification course so there will not be any physical delivery of the lectures. After the purchase of this Certification course, you can see this course under my account option under purchased courses. All the videos, study materials, PDF files and PPTs, will be uploaded there for quick access by participants. This Certification Course's Recording is valid for 1 Year.",
+    items: [],
+  },
+  {
+    type: "text",
+    title: "Who is Eligible to Join this Certification Course:",
+    content: "<p>There is no bound on the eligibility from our side for this Certification Course. Any person who wants to learn and master in Taxation can join this course. However, it will be more beneficial for the below-mentioned persons:</p><ul><li><p>Commerce Graduates/CA/CS/CMA/Law students</p></li><li><p>Tax professionals whether in JOB or Practice</p></li><li><p>Qualified CA/CS/CMA/LLB</p></li><li><p>Semi-qualified CA/CS/CMA working in CA Firms or in Industry</p></li><li><p>Any other person not covered above can join the course if interested.</p></li></ul>",
+    items: [],
+  },
+  {
+    type: "cards",
+    title: "Cards",
+    content: "",
+    items: [
+      { icon: "", title: "Course Duration", content: "The course duration is 2 Days and around 4+ hours." },
+      { icon: "", title: "Views Limitation", content: "This is a fully online course with 1-year unlimited access, available anytime and anywhere." },
+      { icon: "", title: "Course Timing", content: "Timing: 6:00 pm to 8:00 pm" },
+    ],
+  },
+];
+
 type TabKey = "basic" | "content" | "curriculum" | "faqs" | "author" | "seo";
 
 const TABS: { key: TabKey; label: string }[] = [
@@ -241,7 +266,7 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
           ? String(initial.affiliate_commission)
           : "0",
       validity: (initial?.validity === 'lifetime' ? 'lifetime' : '1year') as 'lifetime' | '1year',
-      detail_sections: (safeJsonParse((initial as any)?.detail_sections, []) as DetailSection[]),
+      detail_sections: (safeJsonParse((initial as any)?.detail_sections, null) as DetailSection[] | null) ?? DEFAULT_DETAIL_SECTIONS,
     };
   });
 
