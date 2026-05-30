@@ -39,9 +39,12 @@ export function ChipMultiSelect({
 
   const selectedIds = new Set(value ?? []);
   const selectedOptions = options.filter((o) => selectedIds.has(o.id));
-  const filteredOptions = options.filter(
-    (o) => query === "" || o.name.toLowerCase().includes(query.toLowerCase())
-  );
+
+  // Build filtered list with selected items sorted to the top
+  const filteredOptions = [
+    ...options.filter((o) => selectedIds.has(o.id) && (query === "" || o.name.toLowerCase().includes(query.toLowerCase()))),
+    ...options.filter((o) => !selectedIds.has(o.id) && (query === "" || o.name.toLowerCase().includes(query.toLowerCase()))),
+  ];
   const allFilteredSelected = filteredOptions.length > 0 && filteredOptions.every((o) => selectedIds.has(o.id));
 
   useEffect(() => {
@@ -202,6 +205,32 @@ export function ChipMultiSelect({
       )}
       {open && query && filteredOptions.length === 0 && (
         <p className="absolute left-0 right-0 top-full z-20 mt-1 px-2 text-xs text-gray-500 dark:text-gray-400">No matches. Type to search.</p>
+      )}
+
+      {/* Selected item names shown as removable chips below the trigger */}
+      {selectedOptions.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {selectedOptions.map((opt) => (
+            <span
+              key={opt.id}
+              className="inline-flex items-center gap-1 rounded-full bg-brand-50 border border-brand-200 px-2.5 py-0.5 text-xs font-medium text-brand-700 dark:bg-brand-500/10 dark:border-brand-500/30 dark:text-brand-300"
+            >
+              {opt.name}
+              {!disabled && (
+                <button
+                  type="button"
+                  onClick={() => toggle(opt.id)}
+                  className="ml-0.5 rounded-full p-0.5 text-brand-500 transition hover:bg-brand-100 hover:text-brand-700 dark:hover:bg-brand-500/20"
+                  aria-label={`Remove ${opt.name}`}
+                >
+                  <svg className="size-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+            </span>
+          ))}
+        </div>
       )}
     </div>
   );
