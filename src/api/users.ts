@@ -49,6 +49,7 @@ export interface User {
   // Membership
   membership?: string | null;
   plan?: string;
+  membership_name?: string | null;
 }
 
 export interface UserMembership {
