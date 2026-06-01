@@ -15,6 +15,7 @@ import { fetchCourseCats, generateCoursePreviewLink, type Course, type CourseCat
 import { usersApi, fetchAdminPanelUsers, type User } from "../../api/users";
 import { CourseCatMultiSelect } from "./components/CourseCatMultiSelect";
 import { AuthorUserSelect } from "./components/AuthorUserSelect";
+import { FilePickerMultiSelect } from "./components/FilePickerMultiSelect";
 import MetaFieldsForm, { type SEOMetaFields } from "../../components/form/MetaFieldsForm";
 import { slugifyForSeo, shouldResyncSlugFromSource } from "../../lib/slug";
 
@@ -935,12 +936,11 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
                     </div>
 
                     <div>
-                      <Label>File IDs (comma-separated)</Label>
-                      <Input value={Array.isArray(day.files) ? day.files.join(', ') : (day.files || '')} onChange={e => {
-                        const val = e.target.value;
-                        const filesArr = val ? val.split(',').map((f: string) => f.trim()).filter(Boolean) : [];
-                        updateDay(dayIndex, { files: filesArr });
-                      }} placeholder="e.g. 96620, 96621" />
+                      <Label>Attached Files</Label>
+                      <FilePickerMultiSelect
+                        value={Array.isArray(day.files) ? day.files : (day.files ? String(day.files).split(',').map((f: string) => f.trim()).filter(Boolean) : [])}
+                        onChange={(ids) => updateDay(dayIndex, { files: ids })}
+                      />
                     </div>
                   </div>
                 );
