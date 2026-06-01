@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { useNavigate, useLocation } from "react-router";
+import { useLocation } from "react-router";
 import Label from "../../components/form/Label";
 import Input from "../../components/form/input/InputField";
 import TextArea from "../../components/form/input/TextArea";
@@ -10,7 +10,7 @@ import RichTextEditor from "../../components/form/RichTextEditor";
 import { ArrayEditor } from "./components/ArrayEditor";
 import IncludesInfoEditor, { type IncludesInfoItem } from "./components/IncludesInfoEditor";
 import CourseIncludesEditor, { type CourseIncludeItem } from "./components/CourseIncludesEditor";
-import { COURSE_PREVIEW_STATE_KEY, COURSE_RESTORE_STATE_KEY } from "./CoursePreview";
+import { COURSE_RESTORE_STATE_KEY } from "./CoursePreview";
 import { fetchCourseCats, generateCoursePreviewLink, type Course, type CourseCat } from "../../api/courses";
 import { usersApi, fetchAdminPanelUsers, type User } from "../../api/users";
 import { CourseCatMultiSelect } from "./components/CourseCatMultiSelect";
@@ -136,7 +136,7 @@ const TABS: { key: TabKey; label: string }[] = [
 ];
 
 export default function CourseForm({ initial, onSubmit, loading = false }: { initial?: Course | null, onSubmit: (data: CourseFormData) => Promise<void>, loading?: boolean }) {
-  const navigate = useNavigate();
+
   const location = useLocation();
   const restoredData = location.state?.[COURSE_RESTORE_STATE_KEY] as CourseFormData | undefined;
 
@@ -253,9 +253,9 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
       canonical_url: initial?.canonical_url ?? "",
       robots:
         initial?.robots &&
-        ["index, follow", "noindex, nofollow", "index, nofollow", "noindex, follow"].includes(
-          initial.robots,
-        )
+          ["index, follow", "noindex, nofollow", "index, nofollow", "noindex, follow"].includes(
+            initial.robots,
+          )
           ? initial.robots
           : "index, follow",
       og_title: initial?.og_title ?? "",
@@ -281,7 +281,7 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
 
   // Fetch admin panel users once — they are few and always relevant as authors.
   useEffect(() => {
-    fetchAdminPanelUsers().then(setAdminUsers).catch(() => {});
+    fetchAdminPanelUsers().then(setAdminUsers).catch(() => { });
   }, []);
 
   /**
@@ -332,7 +332,7 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
   }, [adminUsers]);
 
   useEffect(() => {
-    fetchCourseCats().then(setCourseCats).catch(() => {});
+    fetchCourseCats().then(setCourseCats).catch(() => { });
   }, []);
 
   const handleAuthorSelect = (userId: string, user?: User) => {
@@ -341,9 +341,9 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
       updateField(
         'author_name',
         user.name?.trim() ||
-          user.display_name?.trim() ||
-          user.email?.trim() ||
-          '',
+        user.display_name?.trim() ||
+        user.email?.trim() ||
+        '',
       );
       updateField(
         'author_role',
@@ -364,16 +364,6 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
       role: initial?.author_role ?? "",
     } as User;
   }, [initial?.author_user_id]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const handlePreview = () => {
-    const returnPath = location.pathname;
-    navigate('/courses/preview', {
-      state: {
-        [COURSE_PREVIEW_STATE_KEY]: form,
-        returnPath,
-      },
-    });
-  };
 
   const [livePreviewLoading, setLivePreviewLoading] = useState(false);
 
@@ -410,9 +400,6 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
           {initial ? `Editing: ${initial.title || "Course"}` : "New Course"}
         </span>
         <div className="flex items-center gap-2">
-          <Button type="button" variant="outline" size="sm" onClick={handlePreview}>
-            Preview
-          </Button>
           {initial?.id && (
             <Button
               type="button"
@@ -437,11 +424,10 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
             key={tab.key}
             type="button"
             onClick={() => setActiveTab(tab.key)}
-            className={`whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-              activeTab === tab.key
+            className={`whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition-colors ${activeTab === tab.key
                 ? "bg-white text-brand-600 shadow-sm dark:bg-gray-800 dark:text-brand-400"
                 : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-            }`}
+              }`}
           >
             {tab.label}
           </button>
@@ -919,7 +905,7 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
                                 className="p-1 text-gray-400 transition hover:text-error-500"
                                 title="Remove section"
                               >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
                               </button>
                             )}
                           </div>
