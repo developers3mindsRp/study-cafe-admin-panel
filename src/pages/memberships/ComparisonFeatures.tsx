@@ -3,6 +3,7 @@ import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import { PencilIcon, TrashBinIcon } from "../../icons";
 import { comparisonFeaturesApi, plansApi, type ComparisonFeature, type Plan } from "../../api/plans";
+import { api } from "../../api/axios";
 
 interface AvailabilityMap {
   /** featureId -> planId -> available */
@@ -48,14 +49,12 @@ export default function ComparisonFeatures() {
       setPlans(planList);
 
       // Build initial availability map from plans (if they carry comparison_features)
-      // We rely on fetching plans which now include comparison_features[] via getPlansInternal
-      // For admin list we use the public endpoint via plansApi.list which calls /admin/platform/plans
-      // Those plans won't include comparison_features, so we derive availability from /platform/memberships
-      // For simplicity, we call the public memberships endpoint to get plan comparison_features
-      const membershipsRes = await fetch('/api/platform/memberships').then((r) => r.json());
-      const memberships: Array<{ id: number | string; comparison_features?: Array<{ id: number; available: boolean }> }> = Array.isArray(membershipsRes)
-        ? membershipsRes
-        : (membershipsRes.data ?? []);
+      // We use the admin axios instance so the correct baseURL is used in both local and production.
+      type MembershipWithFeatures = { id: number | string; comparison_features?: Array<{ id: number; available: boolean }> };
+      const membershipsRes = await api.get<MembershipWithFeatures[] | { data?: MembershipWithFeatures[] }>('/platform/memberships');
+      const memberships: MembershipWithFeatures[] = Array.isArray(membershipsRes.data)
+        ? membershipsRes.data
+        : ((membershipsRes.data as { data?: MembershipWithFeatures[] }).data ?? []);
 
       const avMap: AvailabilityMap = {};
       for (const m of memberships) {

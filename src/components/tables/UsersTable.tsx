@@ -71,7 +71,7 @@ export const UsersTable = forwardRef<DataTableRef, UsersTableProps>(
         sortable: false,
         render: (row: User) => (
           <span className="rounded-md bg-gray-100 px-2 py-0.5 text-xs text-gray-700 dark:bg-gray-800 dark:text-gray-300">
-            {row.membership || "Free"}
+            {row.membership_name || "Free"}
           </span>
         ),
       },
