@@ -2,11 +2,11 @@
  * Articles table using the reusable DataTable with server-side pagination, sort, and search.
  */
 
-import { forwardRef, useCallback, useState } from "react";
+import { forwardRef, useCallback } from "react";
 import { Link, useNavigate } from "react-router";
 import { DataTable, type DataTableRef } from "./data-table";
 import Badge from "../ui/badge/Badge";
-import { EyeIcon, PencilIcon, TrashBinIcon } from "../../icons";
+import { PencilIcon, TrashBinIcon } from "../../icons";
 import { RequirePermission } from "../auth/RequirePermission";
 import {
   PERM_ARTICLES_EDIT,
@@ -20,12 +20,15 @@ import {
   fetchArticlesPaginated,
   fetchCourts,
   fetchTags,
-  generateArticlePreviewLink,
   type ArticleRecord,
 } from "../../api/articles";
 import type { DataTableFetchParams, DataTableFetchResult } from "./data-table/DataTable.types";
 import { PREVIEW_STATE_KEY } from "../../pages/articles/ArticlePreview";
 import type { ArticleFormData } from "../../pages/articles/ArticleForm";
+import { getWebsiteUrl } from "../../config/env";
+import { WebsiteViewLink, AdminViewLink } from "../common/WebsiteLink";
+
+const WEBSITE_URL = getWebsiteUrl();
 
 export interface ArticlesTableProps {
   onDeleteClick?: (article: ArticleRecord) => void;
@@ -67,19 +70,6 @@ export const ArticlesTable = forwardRef<DataTableRef, ArticlesTableProps>(
     ref
   ) {
     const navigate = useNavigate();
-    const [livePreviewLoadingId, setLivePreviewLoadingId] = useState<number | string | null>(null);
-
-    const handleLivePreview = useCallback(async (id: number | string) => {
-      setLivePreviewLoadingId(id);
-      try {
-        const { previewUrl } = await generateArticlePreviewLink(Number(id));
-        window.open(previewUrl, "_blank", "noopener,noreferrer");
-      } catch {
-        alert("Could not generate preview link. Please try again.");
-      } finally {
-        setLivePreviewLoadingId(null);
-      }
-    }, []);
 
     const fetchData = useCallback(
       (params: DataTableFetchParams): Promise<DataTableFetchResult<ArticleRecord>> =>
@@ -282,28 +272,16 @@ export const ArticlesTable = forwardRef<DataTableRef, ArticlesTableProps>(
         header: "Actions",
         align: "end" as const,
         sortable: false,
-        render: (row: ArticleRecord) => (
-          <div className="flex items-center justify-end gap-2">
-            {row.slug ? (
-              <button
-                type="button"
-                disabled={livePreviewLoadingId === row.id}
-                onClick={() => { void handleLivePreview(row.id); }}
-                className="inline-flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-2 text-sm text-gray-600 transition hover:bg-gray-100 hover:text-gray-900 disabled:opacity-50 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
-                title="Live Preview"
-              >
-                <EyeIcon className="size-4 shrink-0 fill-current" />
-                {livePreviewLoadingId === row.id ? "Loading…" : "Live Preview ↗"}
-              </button>
-            ) : null}
-            <Link
-              to={`/articles/${row.id}`}
-              className="inline-flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-2 text-sm text-gray-600 transition hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
-              title="View"
-            >
-              <EyeIcon className="size-4 shrink-0 fill-current" />
-              View
-            </Link>
+        render: (row: ArticleRecord) => {
+          const isPublished = row.status === "publish" || row.status === "published";
+          const websiteUrl = isPublished && row.slug
+            ? `${WEBSITE_URL}/${row.slug}-${row.id}.html`
+            : null;
+          return (
+          <div className="flex flex-nowrap items-center justify-end gap-2">
+            {websiteUrl
+              ? <WebsiteViewLink href={websiteUrl} />
+              : <AdminViewLink to={`/articles/${row.id}`} />}
             <RequirePermission permissions={[PERM_ARTICLES_EDIT]} fallback={null}>
               <Link
                 to={`/articles/${row.id}/edit`}
@@ -326,7 +304,8 @@ export const ArticlesTable = forwardRef<DataTableRef, ArticlesTableProps>(
               </button>
             </RequirePermission>
           </div>
-        ),
+          );
+        },
       },
     ];
 

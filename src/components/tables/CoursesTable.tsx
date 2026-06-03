@@ -7,12 +7,16 @@ import { useCallback } from "react";
 import { Link } from "react-router";
 import { DataTable } from "./data-table";
 import Badge from "../ui/badge/Badge";
-import { EyeIcon, PencilIcon, CopyIcon } from "../../icons";
+import { PencilIcon, CopyIcon } from "../../icons";
 import { RequirePermission } from "../auth/RequirePermission";
 import { PERM_COURSES_CREATE } from "../../constants/permissions";
 import { fetchCourses, type Course } from "../../api/courses";
 import type { DataTableFetchParams, DataTableFetchResult } from "./data-table/DataTable.types";
 import type { CourseSortFilter, PriceRangeFilter, PublicationFilter } from "../../pages/courses/filterTypes";
+import { getWebsiteUrl } from "../../config/env";
+import { WebsiteViewLink, AdminViewLink } from "../common/WebsiteLink";
+
+const WEBSITE_URL = getWebsiteUrl();
 
 function courseListPrice(c: Course): number {
   const n = Number(c.price);
@@ -174,36 +178,36 @@ const columns = [
     header: "Actions",
     align: "end" as const,
     sortable: false,
-    render: (row: Course) => (
-      <div className="flex items-center justify-end gap-2">
-        <Link
-          to={`/courses/${row.id}`}
-          className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
-          title="View"
-        >
-          <EyeIcon className="size-4 shrink-0 fill-current" />
-          View
-        </Link>
-        <Link
-          to={`/courses/${row.id}/edit`}
-          className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
-          title="Edit"
-        >
-          <PencilIcon className="size-4 shrink-0 fill-current" />
-          Edit
-        </Link>
-        <RequirePermission permissions={[PERM_COURSES_CREATE]} fallback={null}>
+    render: (row: Course) => {
+      const websiteUrl = row.is_published && row.slug
+        ? `${WEBSITE_URL}/course/${row.slug}`
+        : null;
+      return (
+        <div className="flex items-center justify-end gap-2">
+          {websiteUrl
+            ? <WebsiteViewLink href={websiteUrl} />
+            : <AdminViewLink to={`/courses/${row.id}`} />}
           <Link
-            to={`/courses/create?duplicateFrom=${encodeURIComponent(String(row.id))}`}
+            to={`/courses/${row.id}/edit`}
             className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
-            title="Duplicate — opens create form with a copy of this course"
+            title="Edit"
           >
-            <CopyIcon className="size-4 shrink-0 fill-current" />
-            Duplicate
+            <PencilIcon className="size-4 shrink-0 fill-current" />
+            Edit
           </Link>
-        </RequirePermission>
-      </div>
-    ),
+          <RequirePermission permissions={[PERM_COURSES_CREATE]} fallback={null}>
+            <Link
+              to={`/courses/create?duplicateFrom=${encodeURIComponent(String(row.id))}`}
+              className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
+              title="Duplicate — opens create form with a copy of this course"
+            >
+              <CopyIcon className="size-4 shrink-0 fill-current" />
+              Duplicate
+            </Link>
+          </RequirePermission>
+        </div>
+      );
+    },
   },
 ];
 

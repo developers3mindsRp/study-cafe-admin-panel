@@ -20,6 +20,10 @@ import {
   type SiteSeoRoute,
 } from "../../api/siteSeoRoutes";
 import { withClientPagination } from "../../utils/dataTableUtils";
+import { getWebsiteUrl } from "../../config/env";
+import { WebsiteViewLink } from "../../components/common/WebsiteLink";
+
+const WEBSITE_URL = getWebsiteUrl();
 
 const fetchRoutesPaginated = withClientPagination(
   fetchSiteSeoRoutes,
@@ -152,11 +156,16 @@ export default function SiteSeoRoutesPage() {
       sortable: false,
       render: (row: SiteSeoRoute) => (
         <div className="flex items-center justify-end gap-2">
+          <WebsiteViewLink
+            href={`${WEBSITE_URL}${row.path.startsWith("/") ? row.path : "/" + row.path}`}
+            title={`Open ${row.path} on Website`}
+          />
           <RequirePermission permissions={[PERM_SEO_EDIT]} fallback={null}>
             <button
               type="button"
               onClick={() => openEdit(row)}
               className="inline-flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-2 text-sm text-gray-600 transition hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
+              title="Edit"
             >
               <PencilIcon className="size-4 shrink-0 fill-current" />
               Edit
@@ -167,6 +176,7 @@ export default function SiteSeoRoutesPage() {
               type="button"
               onClick={() => handleDeleteClick(row)}
               className="inline-flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-2 text-sm text-gray-600 transition hover:bg-error-50 hover:text-error-500 dark:text-gray-400 dark:hover:bg-error-500/10 dark:hover:text-error-400"
+              title="Delete"
             >
               <TrashBinIcon className="size-4 shrink-0 fill-current" />
               Delete

@@ -12,6 +12,10 @@ import {
   type CreateCategoryPayload,
 } from "../../api/downloads";
 import CategoryForm from "../../components/downloads/CategoryForm";
+import { getWebsiteUrl } from "../../config/env";
+import { WebsiteViewLink } from "../../components/common/WebsiteLink";
+
+const WEBSITE_URL = getWebsiteUrl();
 
 export default function CategoriesPage() {
   const dataTableRef = useRef<DataTableRef>(null);
@@ -111,6 +115,9 @@ export default function CategoriesPage() {
       sortable: false,
       render: (row: DownloadCategory) => (
         <div className="flex items-center justify-end gap-2">
+          {row.slug && (
+            <WebsiteViewLink href={`${WEBSITE_URL}/downloads?category=${row.slug}`} />
+          )}
           <button
             type="button"
             onClick={() => handleEditClick(row)}

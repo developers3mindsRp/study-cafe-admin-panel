@@ -8,6 +8,10 @@ import { PencilIcon, TrashBinIcon } from "../../icons";
 import { useModal } from "../../hooks/useModal";
 import { RequirePermission } from "../../components/auth/RequirePermission";
 import { fetchCategoriesPaginated, categoriesApi, type CategoryRecord } from "../../api/categories";
+import { getWebsiteUrl } from "../../config/env";
+import { WebsiteViewLink } from "../../components/common/WebsiteLink";
+
+const WEBSITE_URL = getWebsiteUrl();
 
 export default function CategoryList() {
     const [deleteTarget, setDeleteTarget] = useState<CategoryRecord | null>(null);
@@ -69,6 +73,9 @@ export default function CategoryList() {
             sortable: false,
             render: (row: CategoryRecord) => (
                 <div className="flex items-center justify-end gap-2">
+                    {row.slug && (
+                        <WebsiteViewLink href={`${WEBSITE_URL}/blogs?category=${row.slug}`} />
+                    )}
                     <RequirePermission permissions={["articles:edit"]} fallback={null}>
                         <Link
                             to={`/article-categories/${row.id}/edit`}

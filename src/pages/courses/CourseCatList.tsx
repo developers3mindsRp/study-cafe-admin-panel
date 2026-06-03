@@ -8,7 +8,10 @@ import { PencilIcon, TrashBinIcon } from "../../icons";
 import { useModal } from "../../hooks/useModal";
 import { fetchCourseCats, deleteCourseCat, type CourseCat } from "../../api/courses";
 import { withClientPagination } from "../../utils/dataTableUtils";
+import { getWebsiteUrl } from "../../config/env";
+import { WebsiteViewLink } from "../../components/common/WebsiteLink";
 
+const WEBSITE_URL = getWebsiteUrl();
 const fetchCourseCatsPaginated = withClientPagination(fetchCourseCats, ["name", "slug"]);
 
 export default function CourseCatList() {
@@ -78,6 +81,9 @@ export default function CourseCatList() {
       sortable: false,
       render: (row: CourseCat) => (
         <div className="flex items-center justify-end gap-2">
+          {row.slug && (
+            <WebsiteViewLink href={`${WEBSITE_URL}/courses?category=${row.slug}`} />
+          )}
           <Link
             to={`/courses/categories/${row.id}/edit`}
             className="inline-flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-2 text-sm text-gray-600 transition hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
