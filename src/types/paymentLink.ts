@@ -13,6 +13,8 @@ export interface PaymentLink {
   seats_booked: number;
   paid_orders_count?: number;
   random_value: string | null;
+  /** Persisted incremental boost accumulator. Admin can set the initial start value. */
+  random_boost_accumulator?: number;
   status: PaymentLinkStatus | string;
   created_at?: string;
   updated_at?: string;
@@ -27,5 +29,7 @@ export interface PaymentLinkFormValues {
   expiry: string;
   total_seats: string;
   random_value: string;
+  /** Initial/current start value for the random boost accumulator. */
+  random_boost_accumulator: string;
   status: PaymentLinkStatus;
 }

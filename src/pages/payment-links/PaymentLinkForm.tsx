@@ -16,6 +16,7 @@ const empty: PaymentLinkFormValues = {
   expiry: "",
   total_seats: "",
   random_value: "",
+  random_boost_accumulator: "0",
   status: "draft",
 };
 
@@ -31,7 +32,7 @@ interface Props {
   mode: "create" | "edit";
   defaultValues?: Partial<PaymentLinkFormValues>;
   loading?: boolean;
-  /** Paid orders from `orders` table (same number shown to visitors as “booked”, before random boost). */
+  /** Paid orders from `orders` table (same number shown to visitors as "booked", before random boost). */
   paidOrdersCount?: number;
   onSubmit: (data: PaymentLinkFormValues) => void;
 }
@@ -67,6 +68,7 @@ export default function PaymentLinkForm({
         onSubmit({ ...form, slug: slug || "payment-link" });
       }}
     >
+      {/* Basic section */}
       <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] sm:p-6">
         <h3 className="mb-4 text-lg font-semibold text-gray-800 dark:text-white/90">Basic</h3>
         <div className="grid gap-4">
@@ -126,9 +128,12 @@ export default function PaymentLinkForm({
         </div>
       </div>
 
+      {/* Pricing & seats section — strict 2-column grid */}
       <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] sm:p-6">
-        <h3 className="mb-4 text-lg font-semibold text-gray-800 dark:text-white/90">Pricing & seats</h3>
+        <h3 className="mb-4 text-lg font-semibold text-gray-800 dark:text-white/90">Pricing &amp; seats</h3>
         <div className="grid gap-4 sm:grid-cols-2">
+
+          {/* Row 1: Amount (MRP) | Sale price */}
           <div>
             <Label>
               Amount (MRP) <span className="text-error-500">*</span>
@@ -155,7 +160,9 @@ export default function PaymentLinkForm({
               onChange={(e) => update("sale_price", e.target.value)}
             />
           </div>
-          <div className="sm:col-span-2">
+
+          {/* Row 2: Expiry | Total seats */}
+          <div>
             <Label>
               Expiry <span className="text-error-500">*</span>
             </Label>
@@ -180,16 +187,8 @@ export default function PaymentLinkForm({
             />
             <p className="mt-1 text-xs text-gray-500">Use 0 for unlimited capacity.</p>
           </div>
-          <div>
-            <Label>Paid orders (completed checkouts)</Label>
-            <div className="mt-1 flex h-11 items-center rounded-lg border border-gray-200 bg-gray-50 px-4 text-sm font-semibold text-gray-800 dark:border-gray-700 dark:bg-white/[0.04] dark:text-white/90">
-              {mode === "edit" && typeof paidOrdersCount === "number" ? paidOrdersCount : 0}
-            </div>
-            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              This count comes from successful payments only. Visitors see this number plus the random boost (capped by
-              total seats). It cannot be edited.
-            </p>
-          </div>
+
+          {/* Row 3: Random value | Boost accumulator start value */}
           <div>
             <Label>Random value</Label>
             <Input
@@ -198,9 +197,36 @@ export default function PaymentLinkForm({
               placeholder="e.g. 1-3 or 0-3"
             />
             <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              On each checkout page load, the visible “sold” count increases by a random whole number between the min and
-              max you set (e.g. 1–3 adds 1, 2, or 3 per reload). Stops increasing once it reaches total seats. Changing
-              this field or total seats resets the extra boost to zero.
+              On each checkout page load, the visible &ldquo;sold&rdquo; count increases by a random whole number
+              between the min and max you set (e.g. 1–3 adds 1, 2, or 3 per reload). Stops once it reaches total
+              seats. Changing this or total seats resets the boost to zero.
+            </p>
+          </div>
+          <div>
+            <Label>Boost accumulator start value</Label>
+            <Input
+              type="number"
+              min={0}
+              step={1}
+              value={form.random_boost_accumulator}
+              onChange={(e) => update("random_boost_accumulator", e.target.value)}
+              placeholder="0"
+            />
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              Sets the initial starting value of the random boost counter. Visitors see: paid orders + this value +
+              future increments (capped by total seats). <strong>Note:</strong> changing Random value or Total seats
+              will automatically reset this to 0.
+            </p>
+          </div>
+
+          {/* Row 4: Paid orders | Status */}
+          <div>
+            <Label>Paid orders (completed checkouts)</Label>
+            <div className="mt-1 flex h-11 items-center rounded-lg border border-gray-200 bg-gray-50 px-4 text-sm font-semibold text-gray-800 dark:border-gray-700 dark:bg-white/[0.04] dark:text-white/90">
+              {mode === "edit" && typeof paidOrdersCount === "number" ? paidOrdersCount : 0}
+            </div>
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              From successful payments only. Cannot be edited.
             </p>
           </div>
           <div>
@@ -214,6 +240,7 @@ export default function PaymentLinkForm({
               <option value="publish">Published</option>
             </select>
           </div>
+
         </div>
       </div>
 
