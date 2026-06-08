@@ -7,15 +7,6 @@ interface TopCoursesProps {
   loading?: boolean;
 }
 
-function formatRevenue(amount: number): string {
-  if (amount >= 100_000) {
-    return `₹${(amount / 100_000).toFixed(1)}L`;
-  }
-  if (amount >= 1_000) {
-    return `₹${(amount / 1_000).toFixed(1)}K`;
-  }
-  return `₹${amount}`;
-}
 
 const CATEGORY_COLORS: Record<string, string> = {
   GST: "bg-orange-50 text-orange-600 dark:bg-orange-500/10 dark:text-orange-400",
@@ -81,9 +72,6 @@ export default function TopCourses({ courses, loading = false }: TopCoursesProps
         <span className="w-16 shrink-0 text-right text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">
           Enrolled
         </span>
-        <span className="w-16 shrink-0 text-right text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">
-          Revenue
-        </span>
       </div>
 
       {/* List */}
@@ -138,12 +126,6 @@ export default function TopCourses({ courses, loading = false }: TopCoursesProps
                     </span>
                   </div>
 
-                  {/* Revenue */}
-                  <div className="w-16 shrink-0 text-right">
-                    <span className="text-sm font-semibold text-gray-800 dark:text-white/90">
-                      {formatRevenue(course.revenue)}
-                    </span>
-                  </div>
                 </li>
               );
             })}
