@@ -46,6 +46,9 @@ export interface User {
   instagram?: string;
   youtube?: string;
 
+  // Tax
+  gst?: string | null;
+
   // Membership
   membership?: string | null;
   plan?: string;
@@ -217,6 +220,7 @@ export type UserImportRow = {
   instagram?: string;
   youtube?: string;
   bio?: string;
+  gst?: string;
 };
 
 export type UserImportFieldError = {

@@ -144,8 +144,9 @@ export const PERM_BANNERS_EDIT = "banners:edit";
 export const PERM_BANNERS_DELETE = "banners:delete";
 
 
-// Course Allotment (bulk enroll users into course batches)
+// Course & Membership Allotment (bulk enroll users)
 export const PERM_USERS_COURSE_ALLOTMENT = "users:course_allotment";
+export const PERM_USERS_MEMBERSHIP_ALLOTMENT = "users:membership_allotment";
 
 // Admin users (CRUD for panel users)
 export const PERM_ADMIN_USERS_LIST = "admin_users:list";
@@ -232,6 +233,8 @@ export const ALL_PERMISSIONS = [
   PERM_BANNERS_CREATE,
   PERM_BANNERS_EDIT,
   PERM_BANNERS_DELETE,
+  PERM_USERS_COURSE_ALLOTMENT,
+  PERM_USERS_MEMBERSHIP_ALLOTMENT,
 ] as const;
 
 export type Permission = (typeof ALL_PERMISSIONS)[number];
