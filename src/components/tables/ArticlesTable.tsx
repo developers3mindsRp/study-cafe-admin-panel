@@ -237,18 +237,38 @@ export const ArticlesTable = forwardRef<DataTableRef, ArticlesTableProps>(
         key: "status",
         header: "Status",
         sortable: true,
-        render: (row: ArticleRecord) => (
-          <div>
-            <Badge size="sm" color={statusColor(row.status)}>
-              {statusLabel(row.status)}
-            </Badge>
-            {row.status === "scheduled" && row.scheduled_publish_at ? (
-              <span className="mt-1 block text-theme-xs text-gray-500 dark:text-gray-400">
-                {new Date(row.scheduled_publish_at).toLocaleString()}
-              </span>
-            ) : null}
-          </div>
-        ),
+        render: (row: ArticleRecord) => {
+          const isPublished = row.status === "publish" || row.status === "published";
+          const isScheduled = row.status === "scheduled";
+          const isDraft = row.status === "draft";
+
+          let dateLabel: string | null = null;
+          let dateValue: string | null = null;
+
+          if (isScheduled && row.scheduled_publish_at) {
+            dateLabel = "Scheduled for";
+            dateValue = new Date(row.scheduled_publish_at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" });
+          } else if (isPublished && (row.published_at || row.updated_at)) {
+            dateLabel = "Published at";
+            dateValue = new Date((row.published_at || row.updated_at)!).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" });
+          } else if (isDraft && row.updated_at) {
+            dateLabel = "Updated at";
+            dateValue = new Date(row.updated_at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" });
+          }
+
+          return (
+            <div>
+              <Badge size="sm" color={statusColor(row.status)}>
+                {statusLabel(row.status)}
+              </Badge>
+              {dateLabel && dateValue && (
+                <span className="mt-1 block text-theme-xs text-gray-500 dark:text-gray-400">
+                  {dateLabel}: {dateValue}
+                </span>
+              )}
+            </div>
+          );
+        },
       },
       {
         key: "blog_access_tier",
