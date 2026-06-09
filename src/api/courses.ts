@@ -358,11 +358,12 @@ export interface BulkEnrollResult {
 
 export async function bulkEnrollByEmails(
   batchId: number,
-  emails: string[]
+  emails: string[],
+  opts?: { price?: string; paymentId?: string; courseId?: number }
 ): Promise<BulkEnrollResult[]> {
   const res = await api.post<BulkEnrollResult[]>(
     `/admin/batches/${batchId}/enrollments/bulk`,
-    { emails }
+    { emails, ...opts }
   );
   return Array.isArray(res.data) ? res.data : [];
 }

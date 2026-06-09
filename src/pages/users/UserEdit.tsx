@@ -15,6 +15,18 @@ import { CourseBatchAssignSection } from "./components/CourseBatchAssignSection"
 
 type UserPayload = Partial<User>;
 
+interface PlanFields {
+    price: string;
+    payment_id: string;
+    plan_purchased: string;
+    plan_expiry: string;
+}
+
+function toDatetimeLocal(d: Date): string {
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 export default function UserEdit() {
     const navigate = useNavigate();
     const { id } = useParams();
@@ -24,6 +36,12 @@ export default function UserEdit() {
     const [submitting, setSubmitting] = useState(false);
     const [plans, setPlans] = useState<Plan[]>([]);
     const [originalMembership, setOriginalMembership] = useState<string>("");
+    const [planFields, setPlanFields] = useState<PlanFields>({
+        price: "",
+        payment_id: "",
+        plan_purchased: toDatetimeLocal(new Date()),
+        plan_expiry: "",
+    });
 
     const {
         courses,
@@ -95,6 +113,23 @@ export default function UserEdit() {
                     const activeMembershipType = activeMembership?.membership_type || "";
                     setOriginalMembership(activeMembershipType);
 
+                    // Pre-fill plan fields from existing users.plan JSON if present
+                    if (user.plan && typeof user.plan === "string") {
+                        try {
+                            const existing = JSON.parse(user.plan);
+                            if (existing && typeof existing === "object") {
+                                setPlanFields({
+                                    price: existing.price || "",
+                                    payment_id: existing.payment_id || "",
+                                    plan_purchased: existing.plan_purchased || toDatetimeLocal(new Date()),
+                                    plan_expiry: existing.plan_expiry || "",
+                                });
+                            }
+                        } catch {
+                            // plan is a plain slug string, leave defaults
+                        }
+                    }
+
                     setFormData({
                         name: user.name || "",
                         email: user.email || "",
@@ -136,6 +171,26 @@ export default function UserEdit() {
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
+        if (name === "membership") {
+            const selected = plans.find(p => p.slug === value);
+            if (selected) {
+                const startDate = planFields.plan_purchased
+                    ? new Date(planFields.plan_purchased.replace(" ", "T"))
+                    : new Date();
+                const from = isNaN(startDate.getTime()) ? new Date() : startDate;
+                const expiry = (selected.is_lifetime || !selected.duration_days)
+                    ? new Date(from.getFullYear() + 10, from.getMonth(), from.getDate())
+                    : new Date(from.getTime() + selected.duration_days * 24 * 60 * 60 * 1000);
+                setPlanFields(prev => ({ ...prev, plan_expiry: toDatetimeLocal(expiry) }));
+            } else {
+                setPlanFields(prev => ({ ...prev, plan_expiry: "" }));
+            }
+        }
+    };
+
+    const handlePlanFieldChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        setPlanFields(prev => ({ ...prev, [name]: value }));
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -147,25 +202,50 @@ export default function UserEdit() {
             await usersApi.update(id, formData);
             const userId = Number(id);
 
-            // Grant membership if it changed
             const newMembership = formData.membership || "";
-            if (newMembership && newMembership !== originalMembership) {
-                const startsAt = new Date().toISOString();
+            const membershipChanged = newMembership && newMembership !== originalMembership;
+
+            if (newMembership) {
+                const startDate = planFields.plan_purchased
+                    ? new Date(planFields.plan_purchased.replace(" ", "T"))
+                    : new Date();
+                const from = isNaN(startDate.getTime()) ? new Date() : startDate;
                 const matchedPlan = plans.find(p => p.slug === newMembership);
-                let expiresAt: string;
+                let expiryDate: Date;
                 if (matchedPlan) {
-                    const expiry = matchedPlan.is_lifetime || !matchedPlan.duration_days
-                        ? new Date(new Date().getFullYear() + 10, new Date().getMonth(), new Date().getDate())
-                        : new Date(Date.now() + Number(matchedPlan.duration_days) * 24 * 60 * 60 * 1000);
-                    expiresAt = expiry.toISOString();
+                    expiryDate = matchedPlan.is_lifetime || !matchedPlan.duration_days
+                        ? new Date(from.getFullYear() + 10, from.getMonth(), from.getDate())
+                        : new Date(from.getTime() + Number(matchedPlan.duration_days) * 24 * 60 * 60 * 1000);
                 } else {
-                    expiresAt = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();
+                    expiryDate = new Date(from.getTime() + 365 * 24 * 60 * 60 * 1000);
                 }
-                await api.post(`/admin/users/${id}/membership`, {
-                    membershipType: newMembership,
-                    startsAt,
-                    expiresAt,
-                });
+                const planValidity = matchedPlan && !matchedPlan.is_lifetime && matchedPlan.duration_days
+                    ? String(matchedPlan.duration_days)
+                    : undefined;
+
+                if (membershipChanged) {
+                    // Full re-grant: creates a new user_memberships row + updates users.plan
+                    await api.post(`/admin/users/${id}/membership`, {
+                        membershipType: newMembership,
+                        startsAt: from.toISOString(),
+                        expiresAt: expiryDate.toISOString(),
+                        price: planFields.price || undefined,
+                        paymentId: planFields.payment_id || undefined,
+                        planValidity,
+                        planPurchasedFormatted: planFields.plan_purchased || undefined,
+                        planExpiryFormatted: planFields.plan_expiry || toDatetimeLocal(expiryDate),
+                    });
+                } else {
+                    // Same plan — only update the plan JSON on users.plan (payment details changed)
+                    const planJson = {
+                        price: planFields.price || undefined,
+                        plan_validity: planValidity,
+                        plan_purchased: planFields.plan_purchased || toDatetimeLocal(from),
+                        plan_expiry: planFields.plan_expiry || toDatetimeLocal(expiryDate),
+                        payment_id: planFields.payment_id || undefined,
+                    };
+                    await usersApi.update(id, { plan: JSON.stringify(planJson) });
+                }
             }
 
             const enrollPromises = Object.entries(selectedBatches)
@@ -226,26 +306,72 @@ export default function UserEdit() {
                                     hint="Email cannot be changed directly."
                                 />
                             </div>
-                            <div>
-                                <div>
-                                    <Label>Membership</Label>
-                                    <div className="relative">
-                                        <select
-                                            name="membership"
-                                            value={formData.membership || ""}
-                                            onChange={handleChange}
-                                            className="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-900 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:text-white"
-                                        >
-                                            <option value="">Select Plan</option>
-                                            {plans.map((plan) => (
-                                                <option key={plan.id} value={plan.slug}>
-                                                    {plan.name} ({plan.currency} {plan.price})
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
+                            <div className="md:col-span-2">
+                                <Label>Membership</Label>
+                                <div className="relative">
+                                    <select
+                                        name="membership"
+                                        value={formData.membership || ""}
+                                        onChange={handleChange}
+                                        className="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-900 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:text-white"
+                                    >
+                                        <option value="">Select Plan</option>
+                                        {plans.map((plan) => (
+                                            <option key={plan.id} value={plan.slug}>
+                                                {plan.name} ({plan.currency} {plan.price})
+                                            </option>
+                                        ))}
+                                    </select>
                                 </div>
                             </div>
+
+                            {formData.membership && (
+                                <>
+                                    <div>
+                                        <Label>Price</Label>
+                                        <Input
+                                            type="text"
+                                            name="price"
+                                            value={planFields.price}
+                                            onChange={handlePlanFieldChange}
+                                            placeholder="eg. 3999"
+                                        />
+                                    </div>
+                                    <div>
+                                        <Label>Date of Purchase</Label>
+                                        <Input
+                                            type="text"
+                                            name="plan_purchased"
+                                            value={planFields.plan_purchased}
+                                            onChange={handlePlanFieldChange}
+                                            placeholder="YYYY-MM-DD HH:MM"
+                                        />
+                                    </div>
+                                    <div>
+                                        <Label>Plan Expiry</Label>
+                                        <Input
+                                            type="text"
+                                            name="plan_expiry"
+                                            value={planFields.plan_expiry}
+                                            onChange={handlePlanFieldChange}
+                                            placeholder="Auto-computed from plan duration"
+                                        />
+                                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                            Auto-filled from plan duration. Edit if needed.
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <Label>RazorPay Payment ID</Label>
+                                        <Input
+                                            type="text"
+                                            name="payment_id"
+                                            value={planFields.payment_id}
+                                            onChange={handlePlanFieldChange}
+                                            placeholder="Payment ID"
+                                        />
+                                    </div>
+                                </>
+                            )}
                             <div>
                                 <Label>Status</Label>
                                 <div className="relative">

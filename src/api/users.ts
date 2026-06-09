@@ -205,6 +205,10 @@ export type UserImportRow = {
   role?: string;
   status?: string;
   membership?: string;
+  plan_price?: string;
+  payment_id?: string;
+  plan_purchased?: string;
+  plan_expiry?: string;
   designation?: string;
   profession?: string;
   company?: string;
