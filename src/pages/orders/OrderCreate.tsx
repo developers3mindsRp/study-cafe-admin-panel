@@ -82,7 +82,12 @@ export default function OrderCreate() {
       let amount = prev.amount;
       if (prev.type === "course") {
         const course = courses.find(c => String(c.id) === value);
-        if (course) amount = course.sale_price || course.price;
+        if (course) {
+          amount =
+            course.sale_price != null && course.sale_price !== ""
+              ? course.sale_price
+              : course.price;
+        }
       } else {
         const plan = plans.find(p => String(p.id) === value);
         if (plan) amount = plan.price;
