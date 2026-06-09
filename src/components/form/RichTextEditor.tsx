@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
@@ -9,6 +9,7 @@ import Subscript from "@tiptap/extension-subscript";
 import Superscript from "@tiptap/extension-superscript";
 import TextAlign from "@tiptap/extension-text-align";
 import type { Editor } from "@tiptap/core";
+import { LinkBubbleMenu, LinkToolbarButton, LINK_EXTENSION_OPTIONS } from "./EditorLinkControls";
 
 interface RichTextEditorProps {
   value?: string;
@@ -20,40 +21,7 @@ interface RichTextEditorProps {
 }
 
 function Toolbar({ editor }: { editor: Editor | null }) {
-  const [linkUrl, setLinkUrl] = useState("");
-  const [showLinkInput, setShowLinkInput] = useState(false);
-  const linkInputRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!showLinkInput) return;
-    const handleClickOutside = (e: MouseEvent) => {
-      if (linkInputRef.current && !linkInputRef.current.contains(e.target as Node)) {
-        setShowLinkInput(false);
-      }
-    };
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setShowLinkInput(false);
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    document.addEventListener("keydown", handleEscape);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("keydown", handleEscape);
-    };
-  }, [showLinkInput]);
-
   if (!editor) return null;
-
-  const setLink = () => {
-    if (linkUrl === "") {
-      editor.chain().focus().extendMarkRange("link").unsetLink().run();
-      setShowLinkInput(false);
-      return;
-    }
-    editor.chain().focus().extendMarkRange("link").setLink({ href: linkUrl }).run();
-    setShowLinkInput(false);
-    setLinkUrl("");
-  };
 
   return (
     <div className="flex flex-wrap items-center gap-1 border-b border-gray-200 bg-gray-50 p-2 dark:border-gray-800 dark:bg-white/[0.03]">
@@ -206,47 +174,7 @@ function Toolbar({ editor }: { editor: Editor | null }) {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
         </svg>
       </button>
-      {/* Link */}
-      <div className="relative" ref={linkInputRef}>
-        <button
-          type="button"
-          onClick={() => {
-            const previousUrl = editor.getAttributes("link").href;
-            setLinkUrl(previousUrl || "");
-            setShowLinkInput((v) => !v);
-          }}
-          className={`rounded p-1.5 transition ${
-            editor.isActive("link")
-              ? "bg-brand-100 text-brand-600 dark:bg-brand-500/20 dark:text-brand-400"
-              : "text-gray-600 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-white/10"
-          }`}
-          title="Link"
-        >
-          <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-          </svg>
-        </button>
-        {showLinkInput && (
-          <div className="absolute left-0 top-full z-10 mt-1 flex gap-1 rounded-lg border border-gray-200 bg-white p-2 shadow-lg dark:border-gray-700 dark:bg-gray-800">
-            <input
-              type="url"
-              value={linkUrl}
-              onChange={(e) => setLinkUrl(e.target.value)}
-              placeholder="https://"
-              className="h-8 w-48 rounded border border-gray-200 px-2 text-sm dark:border-gray-600 dark:bg-gray-900 dark:text-white"
-              onKeyDown={(e) => e.key === "Enter" && setLink()}
-              autoFocus
-            />
-            <button
-              type="button"
-              onClick={setLink}
-              className="rounded bg-brand-500 px-2 py-1 text-sm text-white hover:bg-brand-600"
-            >
-              Apply
-            </button>
-          </div>
-        )}
-      </div>
+      <LinkToolbarButton editor={editor} />
       <button
         type="button"
         onClick={() => editor.chain().focus().toggleSubscript().run()}
@@ -342,7 +270,7 @@ export default function RichTextEditor({
       StarterKit,
       Placeholder.configure({ placeholder }),
       Underline,
-      Link.configure({ openOnClick: false, HTMLAttributes: { target: "_blank", rel: "noopener noreferrer" } }),
+      Link.configure(LINK_EXTENSION_OPTIONS),
       Highlight.configure({ multicolor: false }),
       Subscript,
       Superscript,
@@ -380,6 +308,7 @@ export default function RichTextEditor({
         style={{ minHeight: typeof minHeight === "number" ? `${minHeight}px` : minHeight }}
       >
         <EditorContent editor={editor} />
+        {editable && <LinkBubbleMenu editor={editor} />}
       </div>
     </div>
   );
