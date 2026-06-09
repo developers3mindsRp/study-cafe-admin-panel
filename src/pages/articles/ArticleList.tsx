@@ -22,6 +22,7 @@ import type { FilterFieldDef } from "../../components/filters";
 import { exportRowsToExcel } from "../../utils/exportToExcel";
 import { ARTICLE_EXPORT_COLUMNS } from "../../utils/articleExportColumns";
 import { ArticleExportModal } from "./components/ArticleExportModal";
+import { ArticleStatusBar } from "./components/ArticleStatusBar";
 import Button from "../../components/ui/button/Button";
 import { DownloadIcon } from "../../icons";
 
@@ -89,12 +90,25 @@ function ArticleListContent() {
   const [exporting, setExporting] = useState(false);
   const [dateFilterKey, setDateFilterKey] = useState(0);
   const [trashScope, setTrashScope] = useState<TrashScope>("active");
+  const [statusBarKey, setStatusBarKey] = useState(0);
   const isTrash = trashScope === "trash";
 
   const handleResetFilters = useCallback(() => {
     reset();
     setDateFilterKey((k) => k + 1);
   }, [reset]);
+
+  const handleStatusBarSelect = (status: string) => {
+    if (status === "trash") {
+      setTrashScope("trash");
+      reset();
+    } else {
+      setTrashScope("active");
+      reset();
+      if (status) set("status", status);
+    }
+    setDateFilterKey((k) => k + 1);
+  };
 
   const handleDeleteClick = (article: ArticleRecord) => {
     setDeleteTarget(article);
@@ -107,6 +121,7 @@ function ArticleListContent() {
       await articlesApi.delete(deleteTarget.id);
       setDeleteTarget(null);
       closeDeleteModal();
+      setStatusBarKey((k) => k + 1);
       await tableRef.current?.refetch();
     } catch (err) {
       console.error("Failed to delete article", err);
@@ -136,6 +151,7 @@ function ArticleListContent() {
       await restoreArticle(restoreTarget.id);
       setRestoreTarget(null);
       closeRestoreModal();
+      setStatusBarKey((k) => k + 1);
       await tableRef.current?.refetch();
     } catch (err) {
       console.error("Failed to restore article", err);
@@ -202,8 +218,13 @@ function ArticleListContent() {
           ) : null
         }
       />
-      <div className="space-y-6">
+      <div className="space-y-4">
         <TrashScopeTabs value={trashScope} onChange={setTrashScope} />
+        <ArticleStatusBar
+          activeStatus={isTrash ? "trash" : (values.status ?? "")}
+          onSelect={handleStatusBarSelect}
+          refreshKey={statusBarKey}
+        />
         {!isTrash ? (
           <FilterBar
             fields={articleFilterFields}
