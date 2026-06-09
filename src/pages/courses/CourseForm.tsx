@@ -1,21 +1,19 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { useLocation } from "react-router";
+import { useNavigate, useLocation } from "react-router";
 import Label from "../../components/form/Label";
 import Input from "../../components/form/input/InputField";
 import TextArea from "../../components/form/input/TextArea";
 import ImageUpload from "../../components/form/ImageUpload";
 import Button from "../../components/ui/button/Button";
 import ArticleEditor from "../../components/article-editor/ArticleEditor";
-import RichTextEditor from "../../components/form/RichTextEditor";
 import { ArrayEditor } from "./components/ArrayEditor";
 import IncludesInfoEditor, { type IncludesInfoItem } from "./components/IncludesInfoEditor";
 import CourseIncludesEditor, { type CourseIncludeItem } from "./components/CourseIncludesEditor";
-import { COURSE_RESTORE_STATE_KEY } from "./CoursePreview";
+import { COURSE_PREVIEW_STATE_KEY, COURSE_RESTORE_STATE_KEY } from "./CoursePreview";
 import { fetchCourseCats, generateCoursePreviewLink, type Course, type CourseCat } from "../../api/courses";
 import { usersApi, fetchAdminPanelUsers, type User } from "../../api/users";
 import { CourseCatMultiSelect } from "./components/CourseCatMultiSelect";
 import { AuthorUserSelect } from "./components/AuthorUserSelect";
-import { FilePickerMultiSelect } from "./components/FilePickerMultiSelect";
 import MetaFieldsForm, { type SEOMetaFields } from "../../components/form/MetaFieldsForm";
 import { slugifyForSeo, shouldResyncSlugFromSource } from "../../lib/slug";
 
@@ -72,58 +70,12 @@ export interface CourseFormData {
   affiliate_commission: string;
   /** '1year' (default) or 'lifetime' — determines enrolled access duration. */
   validity: 'lifetime' | '1year';
-  /** JSON-schema driven dynamic description sections for the course detail page.
-   *  Each item: { type: 'text'|'cards', title: string, content?: string, items?: {icon?:string, title:string, content:string}[] }
-   */
-  detail_sections: DetailSection[];
-}
-
-export type DetailSectionType = 'text' | 'cards';
-
-export interface DetailSectionCard {
-  icon: string;
-  title: string;
-  content: string;
-}
-
-export interface DetailSection {
-  type: DetailSectionType;
-  title: string;
-  /** Used when type === 'text' */
-  content: string;
-  /** Used when type === 'cards' */
-  items: DetailSectionCard[];
 }
 
 const safeJsonParse = (str: string | null | undefined, fallback: any = []) => {
   if (!str) return fallback;
   try { return JSON.parse(str); } catch { return fallback; }
 };
-
-const DEFAULT_DETAIL_SECTIONS: DetailSection[] = [
-  {
-    type: "text",
-    title: "How I will get the course:",
-    content: "This is an online Certification course so there will not be any physical delivery of the lectures. After the purchase of this Certification course, you can see this course under my account option under purchased courses. All the videos, study materials, PDF files and PPTs, will be uploaded there for quick access by participants. This Certification Course's Recording is valid for 1 Year.",
-    items: [],
-  },
-  {
-    type: "text",
-    title: "Who is Eligible to Join this Certification Course:",
-    content: "<p>There is no bound on the eligibility from our side for this Certification Course. Any person who wants to learn and master in Taxation can join this course. However, it will be more beneficial for the below-mentioned persons:</p><ul><li><p>Commerce Graduates/CA/CS/CMA/Law students</p></li><li><p>Tax professionals whether in JOB or Practice</p></li><li><p>Qualified CA/CS/CMA/LLB</p></li><li><p>Semi-qualified CA/CS/CMA working in CA Firms or in Industry</p></li><li><p>Any other person not covered above can join the course if interested.</p></li></ul>",
-    items: [],
-  },
-  {
-    type: "cards",
-    title: "Cards",
-    content: "",
-    items: [
-      { icon: "", title: "Course Duration", content: "The course duration is 2 Days and around 4+ hours." },
-      { icon: "", title: "Views Limitation", content: "This is a fully online course with 1-year unlimited access, available anytime and anywhere." },
-      { icon: "", title: "Course Timing", content: "Timing: 6:00 pm to 8:00 pm" },
-    ],
-  },
-];
 
 type TabKey = "basic" | "content" | "curriculum" | "faqs" | "author" | "seo";
 
@@ -137,7 +89,7 @@ const TABS: { key: TabKey; label: string }[] = [
 ];
 
 export default function CourseForm({ initial, onSubmit, loading = false }: { initial?: Course | null, onSubmit: (data: CourseFormData) => Promise<void>, loading?: boolean }) {
-
+  const navigate = useNavigate();
   const location = useLocation();
   const restoredData = location.state?.[COURSE_RESTORE_STATE_KEY] as CourseFormData | undefined;
 
@@ -172,7 +124,6 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
         og_description: restoredData.og_description ?? "",
         og_image_url: restoredData.og_image_url ?? "",
         validity: restoredData.validity ?? '1year',
-        detail_sections: Array.isArray(restoredData.detail_sections) ? restoredData.detail_sections : [],
       };
     }
     return {
@@ -254,9 +205,9 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
       canonical_url: initial?.canonical_url ?? "",
       robots:
         initial?.robots &&
-          ["index, follow", "noindex, nofollow", "index, nofollow", "noindex, follow"].includes(
-            initial.robots,
-          )
+        ["index, follow", "noindex, nofollow", "index, nofollow", "noindex, follow"].includes(
+          initial.robots,
+        )
           ? initial.robots
           : "index, follow",
       og_title: initial?.og_title ?? "",
@@ -267,7 +218,6 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
           ? String(initial.affiliate_commission)
           : "0",
       validity: (initial?.validity === 'lifetime' ? 'lifetime' : '1year') as 'lifetime' | '1year',
-      detail_sections: (safeJsonParse((initial as any)?.detail_sections, null) as DetailSection[] | null) ?? DEFAULT_DETAIL_SECTIONS,
     };
   });
 
@@ -282,7 +232,7 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
 
   // Fetch admin panel users once — they are few and always relevant as authors.
   useEffect(() => {
-    fetchAdminPanelUsers().then(setAdminUsers).catch(() => { });
+    fetchAdminPanelUsers().then(setAdminUsers).catch(() => {});
   }, []);
 
   /**
@@ -333,7 +283,7 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
   }, [adminUsers]);
 
   useEffect(() => {
-    fetchCourseCats().then(setCourseCats).catch(() => { });
+    fetchCourseCats().then(setCourseCats).catch(() => {});
   }, []);
 
   const handleAuthorSelect = (userId: string, user?: User) => {
@@ -342,9 +292,9 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
       updateField(
         'author_name',
         user.name?.trim() ||
-        user.display_name?.trim() ||
-        user.email?.trim() ||
-        '',
+          user.display_name?.trim() ||
+          user.email?.trim() ||
+          '',
       );
       updateField(
         'author_role',
@@ -365,6 +315,16 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
       role: initial?.author_role ?? "",
     } as User;
   }, [initial?.author_user_id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handlePreview = () => {
+    const returnPath = location.pathname;
+    navigate('/courses/preview', {
+      state: {
+        [COURSE_PREVIEW_STATE_KEY]: form,
+        returnPath,
+      },
+    });
+  };
 
   const [livePreviewLoading, setLivePreviewLoading] = useState(false);
 
@@ -401,6 +361,55 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
           {initial ? `Editing: ${initial.title || "Course"}` : "New Course"}
         </span>
         <div className="flex items-center gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-6">
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="is_published"
+                  checked={form.is_published}
+                  onChange={(e) => updateField('is_published', e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
+                />
+                <Label htmlFor="is_published" className="!mb-0 cursor-pointer">Published</Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="hide_from_public"
+                  checked={form.hide_from_public}
+                  onChange={(e) => updateField('hide_from_public', e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
+                />
+                <Label htmlFor="hide_from_public" className="!mb-0 cursor-pointer">Hide from Public</Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="taxable"
+                  checked={form.taxable}
+                  onChange={(e) => updateField('taxable', e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
+                />
+                <Label htmlFor="taxable" className="!mb-0 cursor-pointer">Taxable</Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="validity_lifetime"
+                  checked={form.validity === 'lifetime'}
+                  onChange={(e) => updateField('validity', e.target.checked ? 'lifetime' : '1year')}
+                  className="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
+                />
+                <div>
+                  <Label htmlFor="validity_lifetime" className="!mb-0 cursor-pointer">Lifetime Access</Label>
+                  <span className="text-xs text-gray-400 mt-[-2px] block">(By default, access is 1 year from purchase)</span>
+                </div>
+               
+              </div>
+            </div>
+          <Button type="button" variant="outline" size="sm" onClick={handlePreview}>
+            Preview
+          </Button>
           {initial?.id && (
             <Button
               type="button"
@@ -425,10 +434,11 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
             key={tab.key}
             type="button"
             onClick={() => setActiveTab(tab.key)}
-            className={`whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition-colors ${activeTab === tab.key
+            className={`whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+              activeTab === tab.key
                 ? "bg-white text-brand-600 shadow-sm dark:bg-gray-800 dark:text-brand-400"
                 : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-              }`}
+            }`}
           >
             {tab.label}
           </button>
@@ -540,7 +550,7 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
             </div>
           </div>
 
-          <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] sm:p-6">
+          {/* <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] sm:p-6">
             <h3 className="mb-4 text-lg font-semibold text-gray-800 dark:text-white/90">Settings</h3>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-6">
               <div className="flex items-center gap-2">
@@ -585,7 +595,7 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
                 <span className="text-xs text-gray-400">(By default, access is 1 year from purchase)</span>
               </div>
             </div>
-          </div>
+          </div> */}
         </div>
       )}
 
@@ -637,170 +647,6 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
               value={form.course_includes}
               onChange={(v) => updateField('course_includes', v)}
             />
-          </div>
-
-          <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] sm:p-6">
-            <div className="mb-4 flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">Course Detail Sections</h3>
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  Dynamic sections shown on the course detail page (How to get, Eligibility, Views Limitation, etc.). Each section is either a rich-text block or a card grid.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => updateField('detail_sections', [...form.detail_sections, { type: 'text', title: '', content: '', items: [] }])}
-                className="inline-flex items-center gap-1 rounded-lg bg-brand-50 px-3 py-1.5 text-xs font-medium text-brand-600 transition hover:bg-brand-100 dark:bg-brand-500/10 dark:text-brand-400 dark:hover:bg-brand-500/20"
-              >
-                + Add Section
-              </button>
-            </div>
-            <div className="space-y-4">
-              {form.detail_sections.map((sec, idx) => (
-                <div key={idx} className="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900/50 space-y-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-3">
-                      <div className="sm:col-span-2">
-                        <Label>Section Title</Label>
-                        <Input
-                          value={sec.title}
-                          onChange={(e) => {
-                            const next = [...form.detail_sections];
-                            next[idx] = { ...next[idx], title: e.target.value };
-                            updateField('detail_sections', next);
-                          }}
-                          placeholder="e.g. How I will get the course"
-                        />
-                      </div>
-                      <div>
-                        <Label>Type</Label>
-                        <select
-                          value={sec.type}
-                          onChange={(e) => {
-                            const next = [...form.detail_sections];
-                            next[idx] = { ...next[idx], type: e.target.value as DetailSectionType };
-                            updateField('detail_sections', next);
-                          }}
-                          className="h-11 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-700 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200"
-                        >
-                          <option value="text">Text block</option>
-                          <option value="cards">Cards grid</option>
-                        </select>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => updateField('detail_sections', form.detail_sections.filter((_, i) => i !== idx))}
-                      className="mt-6 rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-500/10"
-                      title="Remove section"
-                    >
-                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                    </button>
-                  </div>
-
-                  {sec.type === 'text' && (
-                    <div>
-                      <Label>Content</Label>
-                      <RichTextEditor
-                        value={sec.content}
-                        onChange={(html) => {
-                          const next = [...form.detail_sections];
-                          next[idx] = { ...next[idx], content: html };
-                          updateField('detail_sections', next);
-                        }}
-                        placeholder="Section content…"
-                        minHeight="150px"
-                      />
-                    </div>
-                  )}
-
-                  {sec.type === 'cards' && (
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Cards ({sec.items.length})</span>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const next = [...form.detail_sections];
-                            next[idx] = { ...next[idx], items: [...next[idx].items, { icon: '', title: '', content: '' }] };
-                            updateField('detail_sections', next);
-                          }}
-                          className="inline-flex items-center gap-1 rounded-md bg-brand-50 px-2 py-1 text-xs font-medium text-brand-600 transition hover:bg-brand-100 dark:bg-brand-500/10 dark:text-brand-400 dark:hover:bg-brand-500/20"
-                        >
-                          + Add Card
-                        </button>
-                      </div>
-                      {sec.items.map((card, cIdx) => (
-                        <div key={cIdx} className="rounded-lg border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-900 grid grid-cols-1 sm:grid-cols-3 gap-3 items-start">
-                          <div>
-                            <Label>Icon (URL or emoji)</Label>
-                            <Input
-                              value={card.icon}
-                              onChange={(e) => {
-                                const next = [...form.detail_sections];
-                                const items = [...next[idx].items];
-                                items[cIdx] = { ...items[cIdx], icon: e.target.value };
-                                next[idx] = { ...next[idx], items };
-                                updateField('detail_sections', next);
-                              }}
-                              placeholder="⏳ or https://…"
-                            />
-                          </div>
-                          <div>
-                            <Label>Card Title</Label>
-                            <Input
-                              value={card.title}
-                              onChange={(e) => {
-                                const next = [...form.detail_sections];
-                                const items = [...next[idx].items];
-                                items[cIdx] = { ...items[cIdx], title: e.target.value };
-                                next[idx] = { ...next[idx], items };
-                                updateField('detail_sections', next);
-                              }}
-                              placeholder="Course Duration"
-                            />
-                          </div>
-                          <div className="flex items-start gap-2">
-                            <div className="flex-1">
-                              <Label>Card Content</Label>
-                              <Input
-                                value={card.content}
-                                onChange={(e) => {
-                                  const next = [...form.detail_sections];
-                                  const items = [...next[idx].items];
-                                  items[cIdx] = { ...items[cIdx], content: e.target.value };
-                                  next[idx] = { ...next[idx], items };
-                                  updateField('detail_sections', next);
-                                }}
-                                placeholder="2 Days and 4+ hours"
-                              />
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const next = [...form.detail_sections];
-                                next[idx] = { ...next[idx], items: next[idx].items.filter((_, ci) => ci !== cIdx) };
-                                updateField('detail_sections', next);
-                              }}
-                              className="mt-6 rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-500/10"
-                              title="Remove card"
-                            >
-                              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                      {sec.items.length === 0 && (
-                        <p className="text-xs text-gray-400 italic">No cards yet. Click &quot;+ Add Card&quot; to begin.</p>
-                      )}
-                    </div>
-                  )}
-                </div>
-              ))}
-              {form.detail_sections.length === 0 && (
-                <p className="text-sm text-gray-400 italic text-center py-4">No sections yet. Click &quot;+ Add Section&quot; to begin.</p>
-              )}
-            </div>
           </div>
         </div>
       )}
@@ -906,7 +752,7 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
                                 className="p-1 text-gray-400 transition hover:text-error-500"
                                 title="Remove section"
                               >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                               </button>
                             )}
                           </div>
@@ -936,11 +782,12 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
                     </div>
 
                     <div>
-                      <Label>Attached Files</Label>
-                      <FilePickerMultiSelect
-                        value={Array.isArray(day.files) ? day.files : (day.files ? String(day.files).split(',').map((f: string) => f.trim()).filter(Boolean) : [])}
-                        onChange={(ids) => updateDay(dayIndex, { files: ids })}
-                      />
+                      <Label>File IDs (comma-separated)</Label>
+                      <Input value={Array.isArray(day.files) ? day.files.join(', ') : (day.files || '')} onChange={e => {
+                        const val = e.target.value;
+                        const filesArr = val ? val.split(',').map((f: string) => f.trim()).filter(Boolean) : [];
+                        updateDay(dayIndex, { files: filesArr });
+                      }} placeholder="e.g. 96620, 96621" />
                     </div>
                   </div>
                 );
