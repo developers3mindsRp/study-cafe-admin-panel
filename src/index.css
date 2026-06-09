@@ -857,9 +857,16 @@ span.flatpickr-weekday,
 .rich-text-editor-content .tiptap a {
   color: #09339b;
   text-decoration: underline;
+  cursor: text;
 }
 .rich-text-editor-content .tiptap a:hover {
   opacity: 0.8;
+}
+.rich-text-editor-content .tiptap a.ProseMirror-selectednode,
+.rich-text-editor-content .tiptap a[data-selected="true"] {
+  background-color: rgba(9, 51, 155, 0.12);
+  border-radius: 2px;
+  outline: 1px solid rgba(9, 51, 155, 0.35);
 }
 .rich-text-editor-content .tiptap code {
   @apply rounded bg-gray-100 px-1 py-0.5 text-sm dark:bg-gray-800;
