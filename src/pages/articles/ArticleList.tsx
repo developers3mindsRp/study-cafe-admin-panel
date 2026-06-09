@@ -11,8 +11,10 @@ import {
   articlesApi,
   fetchAllArticlesForExport,
   fetchArticleCategories,
+  restoreArticle,
   type ArticleRecord,
 } from "../../api/articles";
+import { TrashScopeTabs, type TrashScope } from "../../components/trash/TrashScopeTabs";
 import { ArticlesTable } from "../../components/tables";
 import type { DataTableRef } from "../../components/tables/data-table";
 import { FilterBar, useFilterState } from "../../components/filters";
@@ -78,11 +80,16 @@ export default function ArticleList() {
 function ArticleListContent() {
   const tableRef = useRef<DataTableRef>(null);
   const [deleteTarget, setDeleteTarget] = useState<ArticleRecord | null>(null);
+  const [restoreTarget, setRestoreTarget] = useState<ArticleRecord | null>(null);
+  const [restoreLoading, setRestoreLoading] = useState(false);
   const { isOpen: isDeleteModalOpen, openModal: openDeleteModal, closeModal: closeDeleteModal } = useModal();
+  const { isOpen: isRestoreModalOpen, openModal: openRestoreModal, closeModal: closeRestoreModal } = useModal();
   const { isOpen: isExportModalOpen, openModal: openExportModal, closeModal: closeExportModal } = useModal();
   const { values, set, reset, hasActive } = useFilterState();
   const [exporting, setExporting] = useState(false);
   const [dateFilterKey, setDateFilterKey] = useState(0);
+  const [trashScope, setTrashScope] = useState<TrashScope>("active");
+  const isTrash = trashScope === "trash";
 
   const handleResetFilters = useCallback(() => {
     reset();
@@ -110,6 +117,32 @@ function ArticleListContent() {
   const handleDeleteCancel = () => {
     setDeleteTarget(null);
     closeDeleteModal();
+  };
+
+  const handleRestoreClick = (article: ArticleRecord) => {
+    setRestoreTarget(article);
+    openRestoreModal();
+  };
+
+  const handleRestoreCancel = () => {
+    setRestoreTarget(null);
+    closeRestoreModal();
+  };
+
+  const handleRestoreConfirm = async () => {
+    if (!restoreTarget) return;
+    setRestoreLoading(true);
+    try {
+      await restoreArticle(restoreTarget.id);
+      setRestoreTarget(null);
+      closeRestoreModal();
+      await tableRef.current?.refetch();
+    } catch (err) {
+      console.error("Failed to restore article", err);
+      alert("Failed to restore article");
+    } finally {
+      setRestoreLoading(false);
+    }
   };
 
   const handleExportConfirm = useCallback(async () => {
@@ -157,41 +190,48 @@ function ArticleListContent() {
       <PageBreadcrumb
         pageTitle="Articles"
         actions={
-          <RequirePermission permissions={[PERM_ARTICLES_CREATE]} fallback={null}>
-            <Link
-              to="/articles/create"
-              className="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-medium text-white transition bg-brand-500 shadow-theme-xs hover:bg-brand-600"
-            >
-              Create New
-            </Link>
-          </RequirePermission>
+          !isTrash ? (
+            <RequirePermission permissions={[PERM_ARTICLES_CREATE]} fallback={null}>
+              <Link
+                to="/articles/create"
+                className="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-medium text-white transition bg-brand-500 shadow-theme-xs hover:bg-brand-600"
+              >
+                Create New
+              </Link>
+            </RequirePermission>
+          ) : null
         }
       />
       <div className="space-y-6">
-        <FilterBar
-          fields={articleFilterFields}
-          values={values}
-          onChange={set}
-          onReset={handleResetFilters}
-          hasActive={hasActive}
-          resetKey={dateFilterKey}
-          actions={
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={exporting}
-              className="h-10 whitespace-nowrap"
-              startIcon={<DownloadIcon className="size-4 shrink-0" />}
-              onClick={openExportModal}
-            >
-              {hasActive ? "Export filtered" : "Export Excel"}
-            </Button>
-          }
-        />
+        <TrashScopeTabs value={trashScope} onChange={setTrashScope} />
+        {!isTrash ? (
+          <FilterBar
+            fields={articleFilterFields}
+            values={values}
+            onChange={set}
+            onReset={handleResetFilters}
+            hasActive={hasActive}
+            resetKey={dateFilterKey}
+            actions={
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={exporting}
+                className="h-10 whitespace-nowrap"
+                startIcon={<DownloadIcon className="size-4 shrink-0" />}
+                onClick={openExportModal}
+              >
+                {hasActive ? "Export filtered" : "Export Excel"}
+              </Button>
+            }
+          />
+        ) : null}
         <ArticlesTable
           ref={tableRef}
           onDeleteClick={handleDeleteClick}
+          onRestoreClick={handleRestoreClick}
+          trashScope={trashScope}
           filterStatus={values.status ?? ""}
           filterCategoryId={values.category_id ?? ""}
           filterAccessTier={values.blog_access_tier ?? ""}
@@ -204,8 +244,29 @@ function ArticleListContent() {
         isOpen={isDeleteModalOpen}
         onClose={handleDeleteCancel}
         onConfirm={handleDeleteConfirm}
-        title="Delete Article"
-        itemName={deleteTarget?.title}
+        title="Move to Trash"
+        message={
+          deleteTarget
+            ? `Move "${deleteTarget.title}" to trash? You can restore it later from the Trash tab.`
+            : undefined
+        }
+        confirmLabel="Move to Trash"
+      />
+
+      <ConfirmDeleteModal
+        isOpen={isRestoreModalOpen}
+        onClose={handleRestoreCancel}
+        onConfirm={handleRestoreConfirm}
+        title="Restore Article"
+        message={
+          restoreTarget
+            ? `Restore "${restoreTarget.title}"? It will appear again in the Active list.`
+            : undefined
+        }
+        confirmLabel="Restore"
+        loadingLabel="Restoring…"
+        confirmVariant="brand"
+        isLoading={restoreLoading}
       />
 
       <ArticleExportModal

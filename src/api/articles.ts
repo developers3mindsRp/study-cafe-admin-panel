@@ -71,6 +71,8 @@ export interface ArticleListParams {
   search?: string;
   sortBy?: string;
   sortOrder?: "ASC" | "DESC";
+  /** `active` (default) or `trash` */
+  trashScope?: "active" | "trash";
 }
 
 export interface ArticlesPaginatedResponse {
@@ -100,6 +102,7 @@ export async function fetchArticlesPaginated(
     blog_access_tier?: string;
     date_from?: string;
     date_to?: string;
+    trashScope?: "active" | "trash";
   }
 ): Promise<DataTableFetchResult<ArticleRecord>> {
   const { data } = await api.get<any>(BASE_URL, {
@@ -109,6 +112,7 @@ export async function fetchArticlesPaginated(
       search: params.search || undefined,
       sortBy: params.sortBy || undefined,
       sortOrder: params.sortOrder,
+      ...(params.trashScope === "trash" ? { trashed: 1 } : {}),
       ...(params.status ? { status: params.status } : {}),
       ...(params.category_id ? { category_id: params.category_id } : {}),
       ...(params.blog_access_tier ? { blog_access_tier: params.blog_access_tier } : {}),
@@ -140,8 +144,13 @@ export async function fetchArticles(params: ArticleListParams = {}) {
     search: params.search ?? "",
     sortBy: params.sortBy ?? "created_at",
     sortOrder: params.sortOrder ?? "DESC",
+    trashScope: params.trashScope,
   });
   return res.data;
+}
+
+export async function restoreArticle(id: string | number): Promise<void> {
+  await articlesApi.restore(String(id));
 }
 
 export interface ArticlesExportParams {

@@ -106,6 +106,28 @@ export const MODULE_LEVELS: ModuleConfig[] = [
     ],
   },
   {
+    key: "roles",
+    name: "Roles & Permissions",
+    levels: [
+      { value: "none", label: "None", permissions: [] },
+      { value: "view", label: "View only", permissions: ["roles:list", "roles:view"] },
+      { value: "edit", label: "Edit (includes view)", permissions: ["roles:list", "roles:view", "roles:edit"] },
+      { value: "create", label: "Create (includes view, edit)", permissions: ["roles:list", "roles:view", "roles:edit", "roles:create"] },
+      { value: "delete", label: "Delete / Full", permissions: ["roles:list", "roles:view", "roles:edit", "roles:create", "roles:delete"] },
+    ],
+  },
+  {
+    key: "banners",
+    name: "Banners",
+    levels: [
+      { value: "none", label: "None", permissions: [] },
+      { value: "view", label: "View only", permissions: ["banners:list", "banners:view"] },
+      { value: "edit", label: "Edit (includes view)", permissions: ["banners:list", "banners:view", "banners:edit"] },
+      { value: "create", label: "Create (includes view, edit)", permissions: ["banners:list", "banners:view", "banners:edit", "banners:create"] },
+      { value: "delete", label: "Delete / Full", permissions: ["banners:list", "banners:view", "banners:edit", "banners:create", "banners:delete"] },
+    ],
+  },
+  {
     key: "newsletter",
     name: "Newsletter",
     levels: [
@@ -135,6 +157,15 @@ export const MODULE_LEVELS: ModuleConfig[] = [
       { value: "edit", label: "Edit (includes view)", permissions: ["courses:list", "courses:view", "courses:edit"] },
       { value: "create", label: "Create (includes view, edit)", permissions: ["courses:list", "courses:view", "courses:edit", "courses:create"] },
       { value: "delete", label: "Delete / Full", permissions: ["courses:list", "courses:view", "courses:edit", "courses:create", "courses:delete"] },
+    ],
+  },
+  {
+    key: "course_common_sections",
+    name: "Courses \u2192 Common Sections",
+    levels: [
+      { value: "none", label: "None", permissions: [] },
+      { value: "view", label: "View only", permissions: ["courses:list", "courses:view"] },
+      { value: "edit", label: "Edit (includes view)", permissions: ["courses:list", "courses:view", "courses:edit"] },
     ],
   },
   {
@@ -236,7 +267,7 @@ export const MODULE_LEVELS: ModuleConfig[] = [
   },
   {
     key: "global_settings",
-    name: "Global Settings",
+    name: "Global Settings (Common, Marketing, Payment Gateway)",
     levels: [
       { value: "none", label: "None", permissions: [] },
       {
@@ -249,6 +280,15 @@ export const MODULE_LEVELS: ModuleConfig[] = [
         label: "Edit (includes view)",
         permissions: ["global_settings:list", "global_settings:view", "global_settings:edit"],
       },
+    ],
+  },
+  {
+    key: "users",
+    name: "Users – Course & Membership Allotment",
+    levels: [
+      { value: "none", label: "None", permissions: [] },
+      { value: "view", label: "Allot courses", permissions: ["users:course_allotment"] },
+      { value: "edit", label: "Allot courses & memberships", permissions: ["users:course_allotment", "users:membership_allotment"] },
     ],
   },
 ];

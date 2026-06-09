@@ -144,8 +144,9 @@ export const PERM_BANNERS_EDIT = "banners:edit";
 export const PERM_BANNERS_DELETE = "banners:delete";
 
 
-// Course Allotment (bulk enroll users into course batches)
+// Course & Membership Allotment (bulk enroll users)
 export const PERM_USERS_COURSE_ALLOTMENT = "users:course_allotment";
+export const PERM_USERS_MEMBERSHIP_ALLOTMENT = "users:membership_allotment";
 
 // Admin users (CRUD for panel users)
 export const PERM_ADMIN_USERS_LIST = "admin_users:list";
@@ -153,6 +154,13 @@ export const PERM_ADMIN_USERS_VIEW = "admin_users:view";
 export const PERM_ADMIN_USERS_CREATE = "admin_users:create";
 export const PERM_ADMIN_USERS_EDIT = "admin_users:edit";
 export const PERM_ADMIN_USERS_DELETE = "admin_users:delete";
+
+// Roles (dynamic role templates)
+export const PERM_ROLES_LIST = "roles:list";
+export const PERM_ROLES_VIEW = "roles:view";
+export const PERM_ROLES_CREATE = "roles:create";
+export const PERM_ROLES_EDIT = "roles:edit";
+export const PERM_ROLES_DELETE = "roles:delete";
 
 /** All permissions for reference / super_admin grant */
 export const ALL_PERMISSIONS = [
@@ -227,11 +235,18 @@ export const ALL_PERMISSIONS = [
   PERM_ADMIN_USERS_CREATE,
   PERM_ADMIN_USERS_EDIT,
   PERM_ADMIN_USERS_DELETE,
+  PERM_ROLES_LIST,
+  PERM_ROLES_VIEW,
+  PERM_ROLES_CREATE,
+  PERM_ROLES_EDIT,
+  PERM_ROLES_DELETE,
   PERM_BANNERS_LIST,
   PERM_BANNERS_VIEW,
   PERM_BANNERS_CREATE,
   PERM_BANNERS_EDIT,
   PERM_BANNERS_DELETE,
+  PERM_USERS_COURSE_ALLOTMENT,
+  PERM_USERS_MEMBERSHIP_ALLOTMENT,
 ] as const;
 
 export type Permission = (typeof ALL_PERMISSIONS)[number];

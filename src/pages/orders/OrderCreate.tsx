@@ -19,6 +19,8 @@ export default function OrderCreate() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [plans, setPlans] = useState<Plan[]>([]);
 
+  const [paymentId, setPaymentId] = useState("");
+
   const [formData, setFormData] = useState<CreateOrderPayload>({
     user_id: 0,
     type: "course",
@@ -141,6 +143,7 @@ export default function OrderCreate() {
         amount: Number(grandTotal), // Use the calculated grand total
         user_id: Number(formData.user_id),
         coupon_code: appliedCoupon?.coupon.code || couponCode || undefined,
+        payment_id: formData.status === "paid" && paymentId.trim() ? paymentId.trim() : undefined,
       });
       alert("Order created successfully!");
       navigate(`/orders/${res.order_id}`);
@@ -240,13 +243,29 @@ export default function OrderCreate() {
               <select
                 className="h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
                 value={formData.status}
-                onChange={(e) => handleChange("status", e.target.value)}
+                onChange={(e) => {
+                  handleChange("status", e.target.value);
+                  if (e.target.value !== "paid") setPaymentId("");
+                }}
               >
                 <option value="pending">Pending</option>
                 <option value="paid">Paid (Triggers fulfillment)</option>
-                <option value="failed">Failed</option>
+                <option value="failed">Payment failed</option>
               </select>
             </div>
+            {formData.status === "paid" && (
+              <div>
+                <Label>Razorpay Payment ID</Label>
+                <Input
+                  placeholder="e.g. pay_xxxxxxxx (optional for manual orders)"
+                  value={paymentId}
+                  onChange={(e) => setPaymentId(e.target.value.trim())}
+                />
+                <p className="mt-1 text-theme-xs text-gray-500 dark:text-gray-400">
+                  Enter the Razorpay payment ID when completing a payment received on the gateway.
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">

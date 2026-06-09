@@ -14,5 +14,6 @@ export const adminUsersApiPaths = {
   roles: "/auth/admin/roles",
   createRole: "/auth/admin/role",
   users: "/auth/admin/users",
+  lookup: "/auth/admin/users/lookup",
   user: (id: number) => `/auth/admin/users/${id}`,
 } as const;

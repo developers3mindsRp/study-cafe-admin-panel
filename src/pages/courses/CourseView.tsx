@@ -325,6 +325,7 @@ export default function CourseView() {
             {course.gateway && <Field label="Gateway">{course.gateway}</Field>}
             <Field label="Taxable">{course.taxable ? "Yes" : "No"}</Field>
             <Field label="Hide from Public">{course.hide_from_public ? "Yes" : "No"}</Field>
+            <Field label="Completion certificate">{course.certificate_enabled !== false ? "Provided" : "Not provided"}</Field>
             {course.created_at && <Field label="Created">{new Date(course.created_at).toLocaleDateString()}</Field>}
             <div className="sm:col-span-2 lg:col-span-3">
               <Field label="Categories">

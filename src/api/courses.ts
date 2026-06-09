@@ -37,6 +37,8 @@ export interface Course {
   is_published: boolean;
   /** When true, course is omitted from public catalog and marketing pages (learners with access still reach /learn/...). */
   hide_from_public?: boolean;
+  /** When true, learners who complete the course may download a completion certificate. */
+  certificate_enabled?: boolean;
   status: string;
   start_date: string | null;
   end_date: string | null;
@@ -87,9 +89,19 @@ export interface CourseCatPayload {
   is_featured?: boolean;
 }
 
-export async function fetchCourses(): Promise<Course[]> {
-  const res = await api.get<Course[]>("/admin/courses");
+export async function fetchCourses(params?: { trashed?: boolean }): Promise<Course[]> {
+  const res = await api.get<Course[]>("/admin/courses", {
+    params: params?.trashed ? { trashed: "1" } : undefined,
+  });
   return Array.isArray(res.data) ? res.data : [];
+}
+
+export async function deleteCourse(id: number): Promise<void> {
+  await api.delete(`/admin/courses/${id}`);
+}
+
+export async function restoreCourse(id: number): Promise<void> {
+  await api.post(`/admin/courses/${id}/restore`);
 }
 
 export async function fetchCourseCats(): Promise<CourseCat[]> {

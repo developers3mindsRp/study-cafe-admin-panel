@@ -22,6 +22,7 @@ import {
   fetchTags,
   type ArticleRecord,
 } from "../../api/articles";
+import type { TrashScope } from "../trash/TrashScopeTabs";
 import type { DataTableFetchParams, DataTableFetchResult } from "./data-table/DataTable.types";
 import { PREVIEW_STATE_KEY } from "../../pages/articles/ArticlePreview";
 import type { ArticleFormData } from "../../pages/articles/ArticleForm";
@@ -32,6 +33,8 @@ const WEBSITE_URL = getWebsiteUrl();
 
 export interface ArticlesTableProps {
   onDeleteClick?: (article: ArticleRecord) => void;
+  onRestoreClick?: (article: ArticleRecord) => void;
+  trashScope?: TrashScope;
   filterStatus?: string;
   filterCategoryId?: string;
   filterAccessTier?: string;
@@ -61,6 +64,8 @@ export const ArticlesTable = forwardRef<DataTableRef, ArticlesTableProps>(
   function ArticlesTable(
     {
       onDeleteClick,
+      onRestoreClick,
+      trashScope = "active",
       filterStatus = "",
       filterCategoryId = "",
       filterAccessTier = "",
@@ -70,18 +75,20 @@ export const ArticlesTable = forwardRef<DataTableRef, ArticlesTableProps>(
     ref
   ) {
     const navigate = useNavigate();
+    const isTrash = trashScope === "trash";
 
     const fetchData = useCallback(
       (params: DataTableFetchParams): Promise<DataTableFetchResult<ArticleRecord>> =>
         fetchArticlesPaginated({
           ...params,
+          trashScope,
           ...(filterStatus ? { status: filterStatus } : {}),
           ...(filterCategoryId ? { category_id: filterCategoryId } : {}),
           ...(filterAccessTier ? { blog_access_tier: filterAccessTier } : {}),
           ...(filterDateFrom ? { date_from: filterDateFrom } : {}),
           ...(filterDateTo ? { date_to: filterDateTo } : {}),
         }),
-      [filterStatus, filterCategoryId, filterAccessTier, filterDateFrom, filterDateTo]
+      [trashScope, filterStatus, filterCategoryId, filterAccessTier, filterDateFrom, filterDateTo]
     );
 
     const handlePreview = useCallback(async (articleId: number | string) => {
@@ -279,37 +286,52 @@ export const ArticlesTable = forwardRef<DataTableRef, ArticlesTableProps>(
             : null;
           return (
           <div className="flex flex-nowrap items-center justify-end gap-2">
-            {websiteUrl
-              ? <WebsiteViewLink href={websiteUrl} />
-              : <AdminViewLink to={`/articles/${row.id}`} />}
-            <RequirePermission permissions={[PERM_ARTICLES_EDIT]} fallback={null}>
-              <Link
-                to={`/articles/${row.id}/edit`}
-                className="inline-flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-2 text-sm text-gray-600 transition hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
-                title="Edit"
-              >
-                <PencilIcon className="size-4 shrink-0 fill-current" />
-                Edit
-              </Link>
-            </RequirePermission>
-            <RequirePermission permissions={[PERM_ARTICLES_DELETE]} fallback={null}>
-              <button
-                type="button"
-                onClick={() => onDeleteClick?.(row)}
-                className="inline-flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-2 text-sm text-gray-600 transition hover:bg-error-50 hover:text-error-500 dark:text-gray-400 dark:hover:bg-error-500/10 dark:hover:text-error-400"
-                title="Delete"
-              >
-                <TrashBinIcon className="size-4 shrink-0 fill-current" />
-                Delete
-              </button>
-            </RequirePermission>
+            {!isTrash ? (
+              <>
+                {websiteUrl
+                  ? <WebsiteViewLink href={websiteUrl} />
+                  : <AdminViewLink to={`/articles/${row.id}`} />}
+                <RequirePermission permissions={[PERM_ARTICLES_EDIT]} fallback={null}>
+                  <Link
+                    to={`/articles/${row.id}/edit`}
+                    className="inline-flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-2 text-sm text-gray-600 transition hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
+                    title="Edit"
+                  >
+                    <PencilIcon className="size-4 shrink-0 fill-current" />
+                    Edit
+                  </Link>
+                </RequirePermission>
+                <RequirePermission permissions={[PERM_ARTICLES_DELETE]} fallback={null}>
+                  <button
+                    type="button"
+                    onClick={() => onDeleteClick?.(row)}
+                    className="inline-flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-2 text-sm text-gray-600 transition hover:bg-error-50 hover:text-error-500 dark:text-gray-400 dark:hover:bg-error-500/10 dark:hover:text-error-400"
+                    title="Move to trash"
+                  >
+                    <TrashBinIcon className="size-4 shrink-0 fill-current" />
+                    Trash
+                  </button>
+                </RequirePermission>
+              </>
+            ) : (
+              <RequirePermission permissions={[PERM_ARTICLES_DELETE]} fallback={null}>
+                <button
+                  type="button"
+                  onClick={() => onRestoreClick?.(row)}
+                  className="inline-flex items-center justify-center rounded-lg px-3 py-1.5 text-sm font-medium text-brand-600 transition hover:bg-brand-50 dark:text-brand-400 dark:hover:bg-brand-500/10"
+                  title="Restore"
+                >
+                  Restore
+                </button>
+              </RequirePermission>
+            )}
           </div>
           );
         },
       },
     ];
 
-    const filterKey = [filterStatus, filterCategoryId, filterAccessTier, filterDateFrom, filterDateTo].join("|");
+    const filterKey = [trashScope, filterStatus, filterCategoryId, filterAccessTier, filterDateFrom, filterDateTo].join("|");
 
     return (
       <DataTable<ArticleRecord>
@@ -325,7 +347,7 @@ export const ArticlesTable = forwardRef<DataTableRef, ArticlesTableProps>(
         enableSorting
         enablePagination
         searchPlaceholder="Search articles…"
-        emptyMessage="No articles yet."
+        emptyMessage={isTrash ? "Trash is empty." : "No articles yet."}
       />
     );
   }

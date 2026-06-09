@@ -21,6 +21,8 @@ export interface UserExportModalProps {
   onClose: () => void;
   onConfirm: (selection: UserExportSelection) => void | Promise<void>;
   isExporting?: boolean;
+  exportProgressLabel?: string;
+  exportProgressTitle?: string;
 }
 
 const CATEGORY_TABS: { id: UserExportCategory; label: string; helper: string }[] = [
@@ -46,6 +48,8 @@ export function UserExportModal({
   onClose,
   onConfirm,
   isExporting = false,
+  exportProgressLabel = "Download Excel",
+  exportProgressTitle,
 }: UserExportModalProps) {
   const [category, setCategory] = useState<UserExportCategory>("membership");
   const [membership, setMembership] = useState("");
@@ -198,7 +202,7 @@ export function UserExportModal({
                 disabled={isExporting}
                 className="mt-1.5 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 pr-11 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
               >
-                <option value="">Select a membership‚Ä¶</option>
+                <option value="">Select a membershipù</option>
                 {USER_MEMBERSHIP_FILTER_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>
                     {o.label}
@@ -220,10 +224,10 @@ export function UserExportModal({
               >
                 <option value="">
                   {loadingCourses
-                    ? "Loading courses‚Ä¶"
+                    ? "Loading coursesù"
                     : courses.length === 0
                       ? "No courses found"
-                      : "Select a course‚Ä¶"}
+                      : "Select a courseù"}
                 </option>
                 {courses.map((c) => (
                   <option key={c.id} value={String(c.id)}>
@@ -246,10 +250,10 @@ export function UserExportModal({
               >
                 <option value="">
                   {loadingStates
-                    ? "Loading states‚Ä¶"
+                    ? "Loading statesù"
                     : states.length === 0
                       ? "No states found"
-                      : "Select a state‚Ä¶"}
+                      : "Select a stateù"}
                 </option>
                 {states.map((s) => (
                   <option key={s.name} value={s.name}>
@@ -269,9 +273,10 @@ export function UserExportModal({
             type="button"
             onClick={handleConfirm}
             disabled={!canSubmit}
+            title={exportProgressTitle}
             className="inline-flex items-center justify-center gap-2 rounded-lg bg-brand-500 px-4 py-3 text-sm font-medium text-white shadow-theme-xs transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {isExporting ? "Exporting‚Ä¶" : "Download Excel"}
+            {isExporting ? exportProgressLabel : "Download Excel"}
           </button>
         </div>
       </div>
