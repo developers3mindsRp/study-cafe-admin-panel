@@ -5,12 +5,20 @@ import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import { ConfirmDeleteModal } from "../../components/ui/modal/ConfirmDeleteModal";
 import { DataTable, type DataTableRef } from "../../components/tables/data-table/DataTable";
 import Badge from "../../components/ui/badge/Badge";
-import { EyeIcon, PencilIcon, TrashBinIcon } from "../../icons";
+import { DownloadIcon, EyeIcon, PencilIcon, TrashBinIcon } from "../../icons";
 import { useModal } from "../../hooks/useModal";
 import { RequirePermission } from "../../components/auth/RequirePermission";
 import { adminUsersApi, type AdminPanelUser } from "../../api/adminUsers";
 import { PERM_ADMIN_USERS_LIST, PERM_ADMIN_USERS_VIEW, PERM_ADMIN_USERS_EDIT, PERM_ADMIN_USERS_DELETE } from "../../constants/permissions";
 import { withClientPagination } from "../../utils/dataTableUtils";
+import { exportRowsToExcel } from "../../utils/exportToExcel";
+import { ExportProgressBar } from "../../components/export/ExportProgressBar";
+import {
+  formatExportProgressLabel,
+  formatExportProgressTitle,
+  type ExportProgress,
+} from "../../utils/exportProgress";
+import { ADMIN_PANEL_USER_EXPORT_COLUMNS } from "../../utils/adminUserExportColumns";
 
 // Wrap list API in client-side pagination adapter
 const fetchAdminUsersPaginated = withClientPagination(
@@ -18,10 +26,46 @@ const fetchAdminUsersPaginated = withClientPagination(
   ["name", "email", "role"]
 );
 
+const ADMIN_USER_SEARCH_KEYS: (keyof AdminPanelUser)[] = ["name", "email", "role"];
+
+function filterAdminUsersForExport(rows: AdminPanelUser[], search: string): AdminPanelUser[] {
+  const q = search.trim().toLowerCase();
+  if (!q) return rows;
+  return rows.filter((item) =>
+    ADMIN_USER_SEARCH_KEYS.some((key) => {
+      const val = item[key];
+      return val != null && String(val).toLowerCase().includes(q);
+    })
+  );
+}
+
+function sortAdminUsersForExport(
+  rows: AdminPanelUser[],
+  sortBy: string,
+  sortOrder: "ASC" | "DESC"
+): AdminPanelUser[] {
+  if (!sortBy) return rows;
+  return [...rows].sort((a, b) => {
+    const valA = a[sortBy as keyof AdminPanelUser];
+    const valB = b[sortBy as keyof AdminPanelUser];
+    if (typeof valA === "string" && typeof valB === "string") {
+      return sortOrder === "DESC" ? valB.localeCompare(valA) : valA.localeCompare(valB);
+    }
+    if (valA == null && valB == null) return 0;
+    if (valA == null) return sortOrder === "DESC" ? -1 : 1;
+    if (valB == null) return sortOrder === "DESC" ? 1 : -1;
+    if (valA < valB) return sortOrder === "DESC" ? 1 : -1;
+    if (valA > valB) return sortOrder === "DESC" ? -1 : 1;
+    return 0;
+  });
+}
+
 export default function AdminUserList() {
   const [deleteTarget, setDeleteTarget] = useState<AdminPanelUser | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [exportProgress, setExportProgress] = useState<ExportProgress | null>(null);
+  const exporting = exportProgress !== null;
   const { isOpen: isDeleteModalOpen, openModal: openDeleteModal, closeModal: closeDeleteModal } = useModal();
   const dataTableRef = useRef<DataTableRef>(null);
 
@@ -49,6 +93,36 @@ export default function AdminUserList() {
     setDeleteTarget(null);
     closeDeleteModal();
   };
+
+  const handleExportExcel = useCallback(async () => {
+    const q = dataTableRef.current?.getQueryState();
+    if (!q) return;
+    setExportProgress({ loaded: 0, total: null, phase: "fetching" });
+    try {
+      const all = await adminUsersApi.list();
+      let rows = filterAdminUsersForExport(all, q.search);
+      rows = sortAdminUsersForExport(rows, q.sortBy, q.sortOrder);
+      setExportProgress({ loaded: rows.length, total: rows.length, phase: "writing" });
+      const datePart = new Date().toISOString().slice(0, 10);
+      const filteredPart = q.search.trim() ? "-filtered" : "";
+      exportRowsToExcel({
+        filename: `admin-users-export-${datePart}${filteredPart}`,
+        sheetName: "Admin Users",
+        columns: ADMIN_PANEL_USER_EXPORT_COLUMNS,
+        rows,
+      });
+    } catch (err: unknown) {
+      const msg =
+        err && typeof err === "object" && "response" in err
+          ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
+          : err instanceof Error
+            ? err.message
+            : "Export failed";
+      alert(msg || "Export failed");
+    } finally {
+      setExportProgress(null);
+    }
+  }, []);
 
   const columns = [
     {
@@ -133,17 +207,30 @@ export default function AdminUserList() {
       <PageBreadcrumb
         pageTitle="Admin Users"
         actions={
-          <RequirePermission permissions={["admin_users:create"]}>
-            <Link
-              to="/admin-users/create"
-              className="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-medium text-white transition bg-brand-500 shadow-theme-xs hover:bg-brand-600"
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={handleExportExcel}
+              disabled={exporting}
+              title={formatExportProgressTitle(exportProgress)}
+              className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-800"
             >
-              Create Admin User
-            </Link>
-          </RequirePermission>
+              <DownloadIcon className="size-4 shrink-0 fill-current" />
+              {formatExportProgressLabel(exportProgress, "Export Excel")}
+            </button>
+            <RequirePermission permissions={["admin_users:create"]}>
+              <Link
+                to="/admin-users/create"
+                className="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-medium text-white transition bg-brand-500 shadow-theme-xs hover:bg-brand-600"
+              >
+                Create Admin User
+              </Link>
+            </RequirePermission>
+          </div>
         }
       />
       <div className="space-y-6">
+        <ExportProgressBar progress={exportProgress} label="Exporting admin users" />
         {error && (
           <div className="rounded-lg border border-error-200 bg-error-50 px-4 py-3 text-sm text-error-700 dark:border-error-800 dark:bg-error-500/10 dark:text-error-400">
             {error}

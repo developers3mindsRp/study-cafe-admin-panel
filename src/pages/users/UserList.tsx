@@ -20,6 +20,12 @@ import {
   type User,
 } from "../../api/users";
 import { exportRowsToExcel } from "../../utils/exportToExcel";
+import { ExportProgressBar } from "../../components/export/ExportProgressBar";
+import {
+  formatExportProgressLabel,
+  formatExportProgressTitle,
+  type ExportProgress,
+} from "../../utils/exportProgress";
 import {
   USER_EXPORT_COLUMNS,
   usersMembershipSummaryAoa,
@@ -40,6 +46,8 @@ import {
 } from "./components/UserExportModal";
 import { UserImportModal } from "./components/UserImportModal";
 import { USER_MEMBERSHIP_FILTER_OPTIONS } from "./constants/userMembershipOptions";
+import { TrashScopeTabs, type TrashScope } from "../../components/trash/TrashScopeTabs";
+import { restoreUser } from "../../api/users";
 
 const userFilterFields: FilterFieldDef[] = [
   {
@@ -103,27 +111,35 @@ function UserListContent() {
   const tableRef = useRef<DataTableRef>(null);
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [restoreTarget, setRestoreTarget] = useState<User | null>(null);
+  const [isRestoreModalOpen, setIsRestoreModalOpen] = useState(false);
+  const [restoreLoading, setRestoreLoading] = useState(false);
   const [isAllotmentModalOpen, setIsAllotmentModalOpen] = useState(false);
   const [isMembershipModalOpen, setIsMembershipModalOpen] = useState(false);
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const { values, set, reset, hasActive } = useFilterState();
-  const [exporting, setExporting] = useState(false);
+  const [exportProgress, setExportProgress] = useState<ExportProgress | null>(null);
+  const exporting = exportProgress !== null;
+  const [trashScope, setTrashScope] = useState<TrashScope>("active");
 
   const listFilters = useMemo(() => usersListFiltersFromValues(values), [values]);
+  const isTrash = trashScope === "trash";
   const filtersActive = useMemo(() => usersListFiltersAreActive(listFilters), [listFilters]);
 
   const handleExportExcel = useCallback(async () => {
     const q = tableRef.current?.getQueryState();
     if (!q) return;
-    setExporting(true);
+    setExportProgress({ loaded: 0, total: null, phase: "fetching" });
     try {
       const rows = await fetchAllUsersForExport({
         filters: listFilters,
         search: q.search,
         sortBy: q.sortBy,
         sortOrder: q.sortOrder,
+        onProgress: setExportProgress,
       });
+      setExportProgress({ loaded: rows.length, total: rows.length, phase: "writing" });
       const datePart = new Date().toISOString().slice(0, 10);
       const filteredPart = filtersActive || q.search.trim() ? "-filtered" : "";
       exportRowsToExcel({
@@ -141,21 +157,22 @@ function UserListContent() {
             : "Export failed";
       alert(msg || "Export failed");
     } finally {
-      setExporting(false);
+      setExportProgress(null);
     }
   }, [listFilters, filtersActive]);
 
   const handleExportConfirm = useCallback(
     async (selection: UserExportSelection) => {
-      setExporting(true);
+      setExportProgress({ loaded: 0, total: null, phase: "fetching" });
       try {
         const filters: UsersListFilters = emptyUsersListFilters();
         if (selection.category === "membership") filters.membership = selection.value;
         else if (selection.category === "course") filters.courseId = selection.value;
         else if (selection.category === "state") filters.state = selection.value;
 
-        const rows = await fetchAllUsersForExport({ filters });
+        const rows = await fetchAllUsersForExport({ filters, onProgress: setExportProgress });
         const exportRows = rows as UserExportRow[];
+        setExportProgress({ loaded: exportRows.length, total: exportRows.length, phase: "writing" });
 
         const slug = selection.label
           .toLowerCase()
@@ -185,7 +202,7 @@ function UserListContent() {
               : "Export failed";
         alert(msg || "Export failed");
       } finally {
-        setExporting(false);
+        setExportProgress(null);
       }
     },
     []
@@ -214,6 +231,32 @@ function UserListContent() {
     setIsDeleteModalOpen(false);
   };
 
+  const handleRestoreClick = (user: User) => {
+    setRestoreTarget(user);
+    setIsRestoreModalOpen(true);
+  };
+
+  const handleRestoreCancel = () => {
+    setRestoreTarget(null);
+    setIsRestoreModalOpen(false);
+  };
+
+  const handleRestoreConfirm = async () => {
+    if (!restoreTarget) return;
+    setRestoreLoading(true);
+    try {
+      await restoreUser(restoreTarget.id);
+      setRestoreTarget(null);
+      setIsRestoreModalOpen(false);
+      await tableRef.current?.refetch();
+    } catch (err) {
+      console.error("Failed to restore user", err);
+      alert("Failed to restore user");
+    } finally {
+      setRestoreLoading(false);
+    }
+  };
+
   return (
     <>
       <PageMeta
@@ -232,45 +275,52 @@ function UserListContent() {
               <DownloadIcon className="size-4 shrink-0 fill-current" />
               Export Excel
             </button>
-            <RequirePermission permissions={[PERM_USERS_MEMBERSHIP_ALLOTMENT]} fallback={null}>
-              <button
-                type="button"
-                onClick={() => setIsMembershipModalOpen(true)}
-                className="inline-flex items-center justify-center gap-2 rounded-lg border border-brand-500 px-4 py-3 text-sm font-medium text-brand-600 transition hover:bg-brand-50 dark:border-brand-400 dark:text-brand-400 dark:hover:bg-brand-500/10"
-              >
-                Allot Membership
-              </button>
-            </RequirePermission>
-            <RequirePermission permissions={[PERM_USERS_COURSE_ALLOTMENT]} fallback={null}>
-              <button
-                type="button"
-                onClick={() => setIsAllotmentModalOpen(true)}
-                className="inline-flex items-center justify-center gap-2 rounded-lg border border-brand-500 px-4 py-3 text-sm font-medium text-brand-600 transition hover:bg-brand-50 dark:border-brand-400 dark:text-brand-400 dark:hover:bg-brand-500/10"
-              >
-                Allot Course
-              </button>
-            </RequirePermission>
-            <RequirePermission permissions={[PERM_ADMIN_USERS_CREATE]} fallback={null}>
-              <button
-                type="button"
-                onClick={() => setIsImportModalOpen(true)}
-                className="inline-flex items-center justify-center gap-2 rounded-lg border border-brand-500 px-4 py-3 text-sm font-medium text-brand-600 transition hover:bg-brand-50 dark:border-brand-400 dark:text-brand-400 dark:hover:bg-brand-500/10"
-              >
-                Import Users
-              </button>
-            </RequirePermission>
-            <RequirePermission permissions={[PERM_ADMIN_USERS_CREATE]} fallback={null}>
-              <Link
-                to="/users/create"
-                className="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-medium text-white transition bg-brand-500 shadow-theme-xs hover:bg-brand-600"
-              >
-                Add User
-              </Link>
-            </RequirePermission>
+{!isTrash ? (
+  <>
+    <RequirePermission permissions={[PERM_USERS_MEMBERSHIP_ALLOTMENT]} fallback={null}>
+      <button
+        type="button"
+        onClick={() => setIsMembershipModalOpen(true)}
+        className="inline-flex items-center justify-center gap-2 rounded-lg border border-brand-500 px-4 py-3 text-sm font-medium text-brand-600 transition hover:bg-brand-50 dark:border-brand-400 dark:text-brand-400 dark:hover:bg-brand-500/10"
+      >
+        Allot Membership
+      </button>
+    </RequirePermission>
+    <RequirePermission permissions={[PERM_USERS_COURSE_ALLOTMENT]} fallback={null}>
+      <button
+        type="button"
+        onClick={() => setIsAllotmentModalOpen(true)}
+        className="inline-flex items-center justify-center gap-2 rounded-lg border border-brand-500 px-4 py-3 text-sm font-medium text-brand-600 transition hover:bg-brand-50 dark:border-brand-400 dark:text-brand-400 dark:hover:bg-brand-500/10"
+      >
+        Allot Course
+      </button>
+    </RequirePermission>
+    <RequirePermission permissions={[PERM_ADMIN_USERS_CREATE]} fallback={null}>
+      <button
+        type="button"
+        onClick={() => setIsImportModalOpen(true)}
+        className="inline-flex items-center justify-center gap-2 rounded-lg border border-brand-500 px-4 py-3 text-sm font-medium text-brand-600 transition hover:bg-brand-50 dark:border-brand-400 dark:text-brand-400 dark:hover:bg-brand-500/10"
+      >
+        Import Users
+      </button>
+    </RequirePermission>
+    <RequirePermission permissions={[PERM_ADMIN_USERS_CREATE]} fallback={null}>
+      <Link
+        to="/users/create"
+        className="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-medium text-white transition bg-brand-500 shadow-theme-xs hover:bg-brand-600"
+      >
+        Add User
+      </Link>
+    </RequirePermission>
+  </>
+) : null}
           </div>
         }
       />
       <div className="space-y-6">
+        <ExportProgressBar progress={exportProgress} label="Exporting users" />
+        <TrashScopeTabs value={trashScope} onChange={setTrashScope} />
+        {!isTrash ? (
         <FilterBar
           fields={userFilterFields}
           values={values}
@@ -286,15 +336,22 @@ function UserListContent() {
               className="h-10 whitespace-nowrap"
               startIcon={<DownloadIcon className="size-4 shrink-0" />}
               onClick={handleExportExcel}
+              title={formatExportProgressTitle(exportProgress)}
             >
-              {exporting ? "Exporting…" : filtersActive ? "Export filtered" : "Export Excel"}
+              {formatExportProgressLabel(
+                exportProgress,
+                filtersActive ? "Export filtered" : "Export Excel",
+              )}
             </Button>
           }
         />
+        ) : null}
         <UsersTable
           ref={tableRef}
           onDeleteClick={handleDeleteClick}
+          onRestoreClick={handleRestoreClick}
           filters={listFilters}
+          trashScope={trashScope}
         />
       </div>
 
@@ -302,8 +359,29 @@ function UserListContent() {
         isOpen={isDeleteModalOpen}
         onClose={handleDeleteCancel}
         onConfirm={handleDeleteConfirm}
-        title="Delete User"
-        itemName={deleteTarget?.name ?? deleteTarget?.email}
+        title="Move to Trash"
+        message={
+          deleteTarget
+            ? `Move "${deleteTarget.name ?? deleteTarget.email}" to trash? You can restore it later from the Trash tab.`
+            : undefined
+        }
+        confirmLabel="Move to Trash"
+      />
+
+      <ConfirmDeleteModal
+        isOpen={isRestoreModalOpen}
+        onClose={handleRestoreCancel}
+        onConfirm={handleRestoreConfirm}
+        title="Restore User"
+        message={
+          restoreTarget
+            ? `Restore "${restoreTarget.name ?? restoreTarget.email}"? It will appear again in the Active list.`
+            : undefined
+        }
+        confirmLabel="Restore"
+        loadingLabel="Restoring…"
+        confirmVariant="brand"
+        isLoading={restoreLoading}
       />
 
       <CourseAllotmentModal
@@ -321,6 +399,8 @@ function UserListContent() {
         onClose={() => setExportModalOpen(false)}
         onConfirm={handleExportConfirm}
         isExporting={exporting}
+        exportProgressLabel={formatExportProgressLabel(exportProgress, "Download Excel")}
+        exportProgressTitle={formatExportProgressTitle(exportProgress)}
       />
 
       <UserImportModal

@@ -155,6 +155,13 @@ export const PERM_ADMIN_USERS_CREATE = "admin_users:create";
 export const PERM_ADMIN_USERS_EDIT = "admin_users:edit";
 export const PERM_ADMIN_USERS_DELETE = "admin_users:delete";
 
+// Roles (dynamic role templates)
+export const PERM_ROLES_LIST = "roles:list";
+export const PERM_ROLES_VIEW = "roles:view";
+export const PERM_ROLES_CREATE = "roles:create";
+export const PERM_ROLES_EDIT = "roles:edit";
+export const PERM_ROLES_DELETE = "roles:delete";
+
 /** All permissions for reference / super_admin grant */
 export const ALL_PERMISSIONS = [
   PERM_ARTICLES_LIST,
@@ -228,6 +235,11 @@ export const ALL_PERMISSIONS = [
   PERM_ADMIN_USERS_CREATE,
   PERM_ADMIN_USERS_EDIT,
   PERM_ADMIN_USERS_DELETE,
+  PERM_ROLES_LIST,
+  PERM_ROLES_VIEW,
+  PERM_ROLES_CREATE,
+  PERM_ROLES_EDIT,
+  PERM_ROLES_DELETE,
   PERM_BANNERS_LIST,
   PERM_BANNERS_VIEW,
   PERM_BANNERS_CREATE,

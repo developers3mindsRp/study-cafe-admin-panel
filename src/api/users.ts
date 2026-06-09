@@ -6,9 +6,11 @@
  */
 
 import { createCrudApi, type ListQuery } from "./apiFactory";
+import type { TrashScope } from "../components/trash/TrashScopeTabs";
 import { api } from "./axios";
 import type { DataTableFetchParams, DataTableFetchResult } from "../components/tables/data-table";
 import { fetchAllPaginatedForExport } from "../utils/fetchAllPaginatedForExport";
+import type { ExportProgressCallback } from "../utils/exportProgress";
 
 export interface User {
   id: string;
@@ -71,6 +73,10 @@ const BASE_URL = "/users";
 
 export const usersApi = createCrudApi<User>(BASE_URL)();
 
+export async function restoreUser(id: string | number): Promise<void> {
+  await usersApi.restore(String(id));
+}
+
 /** Fetch all membership records for a user from the admin API. */
 export async function fetchUserMemberships(userId: string | number): Promise<UserMembership[]> {
   try {
@@ -101,11 +107,12 @@ export type BuildUsersListParamsInput = {
   search?: string;
   sortBy?: string;
   sortOrder?: "ASC" | "DESC";
+  trashScope?: TrashScope;
 };
 
 /** One query shape for list + export — keeps filtered export in sync with the grid. */
 export function buildUsersListParams(input: BuildUsersListParamsInput): ListQuery {
-  const { filters, page, limit, search, sortBy, sortOrder } = input;
+  const { filters, page, limit, search, sortBy, sortOrder, trashScope } = input;
   const params: ListQuery = {};
 
   if (page != null) params.page = page;
@@ -125,6 +132,7 @@ export function buildUsersListParams(input: BuildUsersListParamsInput): ListQuer
   if (courseId) params.course_id = courseId;
   if (filters.joinedFrom) params.joined_from = filters.joinedFrom;
   if (filters.joinedTo) params.joined_to = filters.joinedTo;
+  if (trashScope === "trash") params.trashed = "1";
 
   return params;
 }
@@ -171,11 +179,12 @@ export function emptyUsersListFilters(): UsersListFilters {
 
 /** Server-side paginated list for DataTable. */
 export async function fetchUsersPaginated(
-  params: DataTableFetchParams & { filters: UsersListFilters },
+  params: DataTableFetchParams & { filters: UsersListFilters; trashScope?: TrashScope },
 ): Promise<DataTableFetchResult<User>> {
   const res = await usersApi.list(
     buildUsersListParams({
       filters: params.filters,
+      trashScope: params.trashScope,
       page: params.page,
       limit: params.limit,
       search: params.search,
@@ -279,10 +288,14 @@ export async function fetchAdminPanelUsers(): Promise<User[]> {
 
 /** Loads every user page matching list filters + search/sort. */
 export async function fetchAllUsersForExport(
-  params: Omit<BuildUsersListParamsInput, "page" | "limit">,
+  params: Omit<BuildUsersListParamsInput, "page" | "limit"> & {
+    onProgress?: ExportProgressCallback;
+  },
 ): Promise<User[]> {
-  const query = buildUsersListParams(params);
+  const { onProgress, ...rest } = params;
+  const query = buildUsersListParams(rest);
   return fetchAllPaginatedForExport({
+    onProgress,
     fetchPage: async (page, limit) => {
       const res = await usersApi.list({ ...query, page, limit });
       return { data: res.data ?? [], total: res.total ?? 0 };

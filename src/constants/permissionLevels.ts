@@ -106,6 +106,28 @@ export const MODULE_LEVELS: ModuleConfig[] = [
     ],
   },
   {
+    key: "roles",
+    name: "Roles & Permissions",
+    levels: [
+      { value: "none", label: "None", permissions: [] },
+      { value: "view", label: "View only", permissions: ["roles:list", "roles:view"] },
+      { value: "edit", label: "Edit (includes view)", permissions: ["roles:list", "roles:view", "roles:edit"] },
+      { value: "create", label: "Create (includes view, edit)", permissions: ["roles:list", "roles:view", "roles:edit", "roles:create"] },
+      { value: "delete", label: "Delete / Full", permissions: ["roles:list", "roles:view", "roles:edit", "roles:create", "roles:delete"] },
+    ],
+  },
+  {
+    key: "banners",
+    name: "Banners",
+    levels: [
+      { value: "none", label: "None", permissions: [] },
+      { value: "view", label: "View only", permissions: ["banners:list", "banners:view"] },
+      { value: "edit", label: "Edit (includes view)", permissions: ["banners:list", "banners:view", "banners:edit"] },
+      { value: "create", label: "Create (includes view, edit)", permissions: ["banners:list", "banners:view", "banners:edit", "banners:create"] },
+      { value: "delete", label: "Delete / Full", permissions: ["banners:list", "banners:view", "banners:edit", "banners:create", "banners:delete"] },
+    ],
+  },
+  {
     key: "newsletter",
     name: "Newsletter",
     levels: [

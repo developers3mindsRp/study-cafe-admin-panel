@@ -22,7 +22,21 @@ import { CloseLineIcon } from "../../icons";
 function statusLabel(s: string) {
   const x = (s || "").toLowerCase();
   if (x === "payment_link") return "Payment link";
+  if (x === "failed") return "Payment failed";
+  if (x === "paid" || x === "completed") return "Completed";
   return x || "—";
+}
+
+function isStatusLocked(status: string | null | undefined) {
+  const s = (status || "").toLowerCase();
+  return s === "refunded" || s === "cancelled";
+}
+
+function normalizeEditableStatus(status: string | null | undefined): UpdateOrderPayload["status"] {
+  const s = (status || "").toLowerCase();
+  if (s === "paid" || s === "completed") return "paid";
+  if (s === "pending" || s === "failed") return s;
+  return "pending";
 }
 
 function listPriceForCourse(c: Course): number | null {
@@ -68,6 +82,7 @@ export default function OrderEdit() {
     coupon: { code: string };
   } | null>(null);
   const [couponApplying, setCouponApplying] = useState(false);
+  const [paymentId, setPaymentId] = useState("");
 
   useEffect(() => {
     fetchCourses().then(setCourses).catch(console.error);
@@ -82,8 +97,9 @@ export default function OrderEdit() {
       originalRef.current = data;
       setSelectedEntityId(data.entity_id != null ? String(data.entity_id) : "");
       setBatchIdInput(data.batch_id != null ? String(data.batch_id) : "");
+      setPaymentId(data.payment_id || "");
       setFormData({
-        status: (data.status || "pending") as UpdateOrderPayload["status"],
+        status: normalizeEditableStatus(data.status),
         affiliate: data.affiliate || "",
         amount: data.amount ?? 0,
         refund_amount:
@@ -120,12 +136,17 @@ export default function OrderEdit() {
     return s === "paid" || s === "completed";
   }, [order]);
 
-  /** Refund inputs only when the order is refunded and the status field still says Refunded. */
+  const statusLocked = isStatusLocked(order?.status);
+
+  /** Refund inputs only when the order is already refunded. */
   const showRefundFields = useMemo(() => {
-    const formSt = (formData.status || "").toLowerCase();
-    const savedSt = (order?.status || "").toLowerCase();
-    return formSt === "refunded" && savedSt === "refunded";
-  }, [formData.status, order?.status]);
+    return (order?.status || "").toLowerCase() === "refunded";
+  }, [order?.status]);
+
+  const markingFailedAsPaid = useMemo(() => {
+    const orig = (originalRef.current?.status || "").toLowerCase();
+    return orig === "failed" && formData.status === "paid";
+  }, [formData.status, order]);
 
   const catalogFromSelection = useMemo(() => {
     if (!selectedEntityId) return null;
@@ -246,11 +267,9 @@ export default function OrderEdit() {
       if (!ok) return;
     }
 
-    if (formData.status === "refunded" && (originalRef.current?.status || "").toLowerCase() !== "refunded") {
-      const ok = window.confirm(
-        "Marking as refunded will revoke course/membership access for this order. Continue?",
-      );
-      if (!ok) return;
+    if (markingFailedAsPaid && !paymentId.trim()) {
+      alert("Razorpay Payment ID is required when marking a failed order as paid.");
+      return;
     }
 
     setLoading(true);
@@ -260,6 +279,14 @@ export default function OrderEdit() {
         amount: Number(formData.amount),
         affiliate: formData.affiliate || undefined,
       };
+
+      if (statusLocked) {
+        delete payload.status;
+      } else {
+        const trimmedPaymentId = paymentId.trim();
+        if (trimmedPaymentId) payload.payment_id = trimmedPaymentId;
+        else if (markingFailedAsPaid) payload.payment_id = "";
+      }
 
       if (canEditEntity && selectedEntityId) {
         payload.entity_id = selectedEntityId;
@@ -529,33 +556,55 @@ export default function OrderEdit() {
             </div>
             <div>
               <Label>Status</Label>
-              <select
-                className="h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
-                value={formData.status || ""}
-                onChange={(e) => handleChange("status", e.target.value)}
-              >
-                <option value="pending">Pending</option>
-                <option value="paid">Paid</option>
-                <option value="completed">Completed</option>
-                <option value="failed">Failed</option>
-                <option value="cancelled">Cancelled</option>
-                <option value="refunded">Refunded</option>
-              </select>
-              {formData.status === "paid" &&
+              {statusLocked ? (
+                <div className="flex h-11 items-center rounded-lg border border-gray-200 bg-gray-50 px-4 text-sm capitalize text-gray-700 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200">
+                  {statusLabel(order?.status || "")}
+                </div>
+              ) : (
+                <select
+                  className="h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
+                  value={formData.status || ""}
+                  onChange={(e) => {
+                    handleChange("status", e.target.value);
+                    if (e.target.value !== "paid") setPaymentId("");
+                  }}
+                >
+                  <option value="pending">Pending</option>
+                  <option value="paid">Paid (Triggers fulfillment)</option>
+                  <option value="failed">Payment failed</option>
+                </select>
+              )}
+              {!statusLocked && formData.status === "paid" &&
                 (originalRef.current?.status || "").toLowerCase() !== "paid" &&
                 (originalRef.current?.status || "").toLowerCase() !== "completed" && (
                   <p className="mt-1 text-xs text-brand-500">
                     Marking as paid will trigger fulfillment (enrollment / membership activation).
                   </p>
                 )}
-              {formData.status === "refunded" &&
-                (originalRef.current?.status || "").toLowerCase() !== "refunded" && (
-                  <p className="mt-1 text-xs text-error-500">
-                    Refunded status revokes access tied to this order.
-                  </p>
-                )}
             </div>
           </div>
+
+          {!statusLocked && formData.status === "paid" && (
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+              <div>
+                <Label>
+                  Razorpay Payment ID{" "}
+                  {markingFailedAsPaid && <span className="text-error-500">*</span>}
+                </Label>
+                <Input
+                  placeholder="e.g. pay_xxxxxxxx"
+                  value={paymentId}
+                  onChange={(e) => setPaymentId(e.target.value.trim())}
+                  required={markingFailedAsPaid}
+                />
+                <p className="mt-1 text-theme-xs text-gray-500 dark:text-gray-400">
+                  {markingFailedAsPaid
+                    ? "Required when completing a failed order that was paid on Razorpay."
+                    : "Enter the Razorpay payment ID from the dashboard, or leave blank for manual orders."}
+                </p>
+              </div>
+            </div>
+          )}
 
           {showRefundFields && (
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">

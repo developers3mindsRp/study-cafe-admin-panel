@@ -19,11 +19,27 @@ export interface AdminPanelUserDetail extends AdminPanelUser {
 export interface Role {
   id: number;
   name: string;
+  description?: string;
+  permissions?: string[];
+  is_system?: boolean;
+  is_admin_panel?: boolean;
+}
+
+export interface AdminUserLookupResult {
+  exists: boolean;
+  id?: number;
+  email?: string;
+  name?: string;
+  role?: string;
+  role_id?: number;
+  is_admin_panel?: boolean;
+  can_promote?: boolean;
+  message?: string;
 }
 
 export interface CreateAdminUserPayload {
   email: string;
-  password: string;
+  password?: string;
   name?: string;
   role_id: number;
   permission_overrides?: string[];
@@ -39,8 +55,10 @@ export interface UpdateAdminUserPayload {
 
 export const adminUsersApi = {
   async getRoles(): Promise<Role[]> {
-    const { data } = await api.get<Role[]>(adminUsersApiPaths.roles);
-    return data;
+    const { data } = await api.get<Role[]>(adminUsersApiPaths.roles, {
+      params: { admin_panel: "1" },
+    });
+    return Array.isArray(data) ? data : [];
   },
 
   /** POST /auth/admin/role — create a custom role (name). */
@@ -56,6 +74,13 @@ export const adminUsersApi = {
 
   async getOne(id: number): Promise<AdminPanelUserDetail> {
     const { data } = await api.get<AdminPanelUserDetail>(adminUsersApiPaths.user(id));
+    return data;
+  },
+
+  async lookupByEmail(email: string): Promise<AdminUserLookupResult> {
+    const { data } = await api.get<AdminUserLookupResult>(adminUsersApiPaths.lookup, {
+      params: { email: email.trim() },
+    });
     return data;
   },
 

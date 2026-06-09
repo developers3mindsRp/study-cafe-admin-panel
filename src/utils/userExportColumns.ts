@@ -14,7 +14,7 @@ function roleLabel(row: User & { Role?: { name?: string } }): string {
   return exportStr(row.Role?.name ?? row.role);
 }
 
-/** Admin users list export — columns align with CSV import template. */
+/** Users (students) list export — columns align with CSV import template. */
 export const USER_EXPORT_COLUMNS: ExcelColumn<User>[] = [
   { header: "Email", accessor: (r) => exportStr(r.email) },
   {
@@ -22,8 +22,6 @@ export const USER_EXPORT_COLUMNS: ExcelColumn<User>[] = [
     accessor: () => "",
   },
   { header: "Name", accessor: (r) => exportStr(r.name) },
-  { header: "First name", accessor: (r) => exportStr(r.first_name) },
-  { header: "Last name", accessor: (r) => exportStr(r.last_name) },
   { header: "Phone", accessor: (r) => exportStr(r.phone) },
   { header: "Role", accessor: (r) => roleLabel(r as User & { Role?: { name?: string } }) },
   { header: "Status", accessor: (r) => exportStr(r.status) },

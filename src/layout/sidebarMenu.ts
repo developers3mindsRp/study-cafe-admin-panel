@@ -213,8 +213,9 @@ export const mainNavItemsConfig: NavItemConfig[] = [
     subItems: [
       { name: "List", path: "/admin-users", requiredPermission: ["admin_users:list", "admin_users:view"] },
       { name: "Create", path: "/admin-users/create", requiredPermission: ["admin_users:create"] },
+      { name: "Roles", path: "/roles", requiredPermission: ["roles:list", "roles:view"] },
     ],
-    requiredPermission: ["admin_users:list", "admin_users:view", "admin_users:create", "admin_users:edit", "admin_users:delete"],
+    requiredPermission: ["admin_users:list", "admin_users:view", "admin_users:create", "admin_users:edit", "admin_users:delete", "roles:list", "roles:view"],
   },
   {
     iconKey: "user",

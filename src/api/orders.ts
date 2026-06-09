@@ -1,5 +1,8 @@
 import { api } from "./axios";
+import type { TrashScope } from "../components/trash/TrashScopeTabs";
+import type { CourseAccessScope } from "../components/orders/CourseAccessTabs";
 import { fetchAllPaginatedForExport } from "../utils/fetchAllPaginatedForExport";
+import type { ExportProgressCallback } from "../utils/exportProgress";
 
 /** Refund is only valid once payment succeeded (matches order-service refund rules). */
 export function orderStatusAllowsRefund(status: string | null | undefined): boolean {
@@ -38,6 +41,8 @@ export interface OrderRecord {
     content?: string;
     term?: string;
   } | null;
+  /** Course orders only: lifetime | active | expired (paid/completed). */
+  course_access?: "lifetime" | "active" | "expired" | null;
 }
 
 export interface FetchOrdersResult {
@@ -55,6 +60,8 @@ export type OrdersListFilters = {
   type: string;
   amountMin: string;
   amountMax: string;
+  /** pending | failed | completed (paid + completed rows) */
+  status: string;
 };
 
 export type BuildOrdersListParamsInput = {
@@ -64,11 +71,13 @@ export type BuildOrdersListParamsInput = {
   sortOrder?: string;
   limit?: number;
   offset?: number;
+  trashScope?: TrashScope;
+  courseAccessScope?: CourseAccessScope;
 };
 
 /** One query shape for list, export, and API — keeps filtered export in sync with the grid. */
 export function buildOrdersListParams(input: BuildOrdersListParamsInput) {
-  const { filters, search, sortBy, sortOrder, limit, offset } = input;
+  const { filters, search, sortBy, sortOrder, limit, offset, trashScope, courseAccessScope } = input;
   const params: NonNullable<Parameters<typeof fetchOrders>[0]> = {};
 
   if (limit != null) params.limit = limit;
@@ -84,6 +93,9 @@ export function buildOrdersListParams(input: BuildOrdersListParamsInput) {
   const max = filters.amountMax.trim();
   if (min) params.amountMin = min;
   if (max) params.amountMax = max;
+  if (filters.status) params.status = filters.status;
+  if (trashScope === "trash") params.trashed = "1";
+  if (courseAccessScope) params.course_access = courseAccessScope;
 
   return params;
 }
@@ -95,7 +107,8 @@ export function ordersListFiltersAreActive(filters: OrdersListFilters): boolean 
       filters.courseId ||
       filters.type ||
       filters.amountMin.trim() ||
-      filters.amountMax.trim(),
+      filters.amountMax.trim() ||
+      filters.status,
   );
 }
 
@@ -114,6 +127,10 @@ export async function fetchOrders(params?: {
   amountMin?: number | string;
   /** Inclusive max order amount. */
   amountMax?: number | string;
+  /** When set (e.g. "1"), list soft-deleted orders only. */
+  trashed?: string | number;
+  /** Filter by course access window: active | expired */
+  course_access?: string;
 }): Promise<FetchOrdersResult> {
   const res = await api.get<any>("/admin/orders", { params: params ?? {} });
 
@@ -151,11 +168,15 @@ const ORDERS_EXPORT_PAGE_SIZE = 500;
 
 /** Loads every order page matching list filters + search/sort (max 500 per request). */
 export async function fetchAllOrdersForExport(
-  params: Omit<BuildOrdersListParamsInput, "limit" | "offset">,
+  params: Omit<BuildOrdersListParamsInput, "limit" | "offset"> & {
+    onProgress?: ExportProgressCallback;
+  },
 ): Promise<OrderRecord[]> {
-  const query = buildOrdersListParams(params);
+  const { onProgress, ...rest } = params;
+  const query = buildOrdersListParams(rest);
   return fetchAllPaginatedForExport({
     pageSize: ORDERS_EXPORT_PAGE_SIZE,
+    onProgress,
     fetchPage: async (page, limit) => {
       const offset = (page - 1) * limit;
       const res = await fetchOrders({ ...query, limit, offset });
@@ -186,6 +207,8 @@ export interface CreateOrderPayload {
   buyer_gst?: string;
   affiliate?: string;
   coupon_code?: string;
+  /** Razorpay payment ID when status is paid (optional for manual orders). */
+  payment_id?: string;
   utm?: {
     source?: string;
     medium?: string;
@@ -201,7 +224,9 @@ export async function createOrder(data: CreateOrderPayload): Promise<OrderRecord
 }
 
 export interface UpdateOrderPayload {
-  status?: "pending" | "paid" | "failed" | "cancelled" | "completed" | "refunded";
+  status?: "pending" | "paid" | "failed";
+  /** Required when marking a failed order as paid; optional otherwise. */
+  payment_id?: string;
   buyer_name?: string;
   buyer_email?: string;
   buyer_mobile?: string;
@@ -240,4 +265,8 @@ export async function refundOrder(orderId: string | number, payload: { amount: n
 
 export async function deleteOrder(id: number): Promise<void> {
   await api.delete(`/admin/orders/${id}`);
+}
+
+export async function restoreOrder(id: number): Promise<void> {
+  await api.post(`/admin/orders/${id}/restore`);
 }

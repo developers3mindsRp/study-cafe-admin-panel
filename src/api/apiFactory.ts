@@ -65,6 +65,10 @@ export function createCrudApi<T extends { id: string | number }>(basePath: strin
                 await api.delete(`${basePath}/${id}`);
             },
 
+            async restore(id: string | number): Promise<void> {
+                await api.post(`${basePath}/${id}/restore`);
+            },
+
             // Spread any custom extensions
             ...extensions,
         };

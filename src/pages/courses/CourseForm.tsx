@@ -49,6 +49,7 @@ export interface CourseFormData {
   gateway: string;
   is_published: boolean;
   hide_from_public: boolean;
+  certificate_enabled: boolean;
   author_user_id: string;
   author_name: string;
   author_role: string;
@@ -101,6 +102,7 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
       return {
         ...restoredData,
         hide_from_public: restoredData.hide_from_public ?? false,
+        certificate_enabled: restoredData.certificate_enabled !== false,
         course_includes: Array.isArray(restoredData.course_includes)
           ? restoredData.course_includes
           : [],
@@ -185,6 +187,7 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
       gateway: initial?.gateway ?? "",
       is_published: initial?.is_published ?? false,
       hide_from_public: initial?.hide_from_public ?? false,
+      certificate_enabled: initial?.certificate_enabled !== false,
       author_user_id: initial?.author_user_id != null
         ? String(initial.author_user_id)
         : primaryAuthor?.user_id != null
@@ -572,6 +575,16 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
                   className="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
                 />
                 <Label htmlFor="hide_from_public" className="!mb-0 cursor-pointer">Hide from Public</Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="certificate_enabled"
+                  checked={form.certificate_enabled}
+                  onChange={(e) => updateField('certificate_enabled', e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
+                />
+                <Label htmlFor="certificate_enabled" className="!mb-0 cursor-pointer">Provide completion certificate</Label>
               </div>
               <div className="flex items-center gap-2">
                 <input

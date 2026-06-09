@@ -77,6 +77,9 @@ import AdminUserList from "./pages/admin-users/AdminUserList";
 import AdminUserView from "./pages/admin-users/AdminUserView";
 import AdminUserCreate from "./pages/admin-users/AdminUserCreate";
 import AdminUserEdit from "./pages/admin-users/AdminUserEdit";
+import RoleList from "./pages/roles/RoleList";
+import RoleCreate from "./pages/roles/RoleCreate";
+import RoleEdit from "./pages/roles/RoleEdit";
 import UserList from "./pages/users/UserList";
 import UserCreate from "./pages/users/UserCreate";
 import UserEdit from "./pages/users/UserEdit";
@@ -413,6 +416,17 @@ const router = createBrowserRouter(
           </Route>
           <Route path="/admin-users/:id/edit" element={<RequirePermissionRoute permissions={["admin_users:edit"]} />}>
             <Route index element={<AdminUserEdit />} />
+          </Route>
+
+          {/* Roles & Permissions */}
+          <Route path="/roles" element={<RequirePermissionRoute permissions={["roles:list"]} />}>
+            <Route index element={<RoleList />} />
+          </Route>
+          <Route path="/roles/create" element={<RequirePermissionRoute permissions={["roles:create"]} />}>
+            <Route index element={<RoleCreate />} />
+          </Route>
+          <Route path="/roles/:id/edit" element={<RequirePermissionRoute permissions={["roles:edit"]} />}>
+            <Route index element={<RoleEdit />} />
           </Route>
 
           {/* Students / Users (Non-Admin) */}

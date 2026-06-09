@@ -15,13 +15,23 @@ import {
   fetchOrders,
   orderStatusAllowsRefund,
   ordersListFiltersAreActive,
+  restoreOrder,
   type OrderRecord,
   type OrdersListFilters,
 } from "../../api/orders";
+import { TrashScopeTabs, type TrashScope } from "../trash/TrashScopeTabs";
+import { CourseAccessTabs, type CourseAccessScope } from "../orders/CourseAccessTabs";
 import { exportRowsToExcel } from "../../utils/exportToExcel";
+import { ExportProgressBar } from "../export/ExportProgressBar";
+import {
+  formatExportProgressLabel,
+  formatExportProgressTitle,
+  type ExportProgress,
+} from "../../utils/exportProgress";
 import { ORDER_EXPORT_COLUMNS } from "../../utils/orderExportColumns";
 import type { DataTableFetchParams, DataTableFetchResult } from "./data-table/DataTable.types";
 import RefundModal from "../../pages/orders/RefundModal";
+import { ConfirmDeleteModal } from "../ui/modal/ConfirmDeleteModal";
 import Select from "../form/Select";
 import { fetchCourses, type Course } from "../../api/courses";
 import DatePicker from "../form/date-picker";
@@ -35,7 +45,15 @@ const ORDERS_FILTER_INITIAL: OrdersListFilters = {
   type: "",
   amountMin: "",
   amountMax: "",
+  status: "",
 };
+
+const statusFilterOptions = [
+  { value: "", label: "All statuses" },
+  { value: "pending", label: "Pending" },
+  { value: "failed", label: "Payment failed" },
+  { value: "completed", label: "Completed" },
+];
 
 function statusColor(s: string) {
   if (s === "paid" || s === "completed") return "success";
@@ -48,12 +66,22 @@ export function OrdersTable() {
   const tableRef = useRef<DataTableRef>(null);
   const [selectedOrder, setSelectedOrder] = useState<OrderRecord | null>(null);
   const [isRefundOpen, setIsRefundOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<OrderRecord | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [restoreTarget, setRestoreTarget] = useState<OrderRecord | null>(null);
+  const [isRestoreModalOpen, setIsRestoreModalOpen] = useState(false);
+  const [restoreLoading, setRestoreLoading] = useState(false);
   
   // Filters
   const [courses, setCourses] = useState<Course[]>([]);
   const [filters, setFilters] = useState({ ...ORDERS_FILTER_INITIAL });
   const [filterBarKey, setFilterBarKey] = useState(0);
-  const [exporting, setExporting] = useState(false);
+  const [exportProgress, setExportProgress] = useState<ExportProgress | null>(null);
+  const exporting = exportProgress !== null;
+  const [trashScope, setTrashScope] = useState<TrashScope>("active");
+  const [courseAccessScope, setCourseAccessScope] = useState<CourseAccessScope>("active");
+  const isTrash = trashScope === "trash";
 
   const hasActiveFilters = useMemo(
     () => ordersListFiltersAreActive(filters),
@@ -68,14 +96,17 @@ export function OrdersTable() {
   const handleExportExcel = useCallback(async () => {
     const q = tableRef.current?.getQueryState();
     if (!q) return;
-    setExporting(true);
+    setExportProgress({ loaded: 0, total: null, phase: "fetching" });
     try {
       const rows = await fetchAllOrdersForExport({
         filters,
         search: q.search,
         sortBy: q.sortBy,
         sortOrder: q.sortOrder,
+        courseAccessScope: isTrash ? undefined : courseAccessScope,
+        onProgress: setExportProgress,
       });
+      setExportProgress({ loaded: rows.length, total: rows.length, phase: "writing" });
       const datePart = new Date().toISOString().slice(0, 10);
       const filteredPart = hasActiveFilters || q.search.trim() ? "-filtered" : "";
       exportRowsToExcel({
@@ -93,9 +124,9 @@ export function OrdersTable() {
             : "Export failed";
       alert(msg || "Export failed");
     } finally {
-      setExporting(false);
+      setExportProgress(null);
     }
-  }, [filters, hasActiveFilters]);
+  }, [filters, hasActiveFilters, courseAccessScope, isTrash]);
 
   useEffect(() => {
     fetchCourses().then(setCourses).catch(console.error);
@@ -115,6 +146,8 @@ export function OrdersTable() {
         sortOrder,
         limit,
         offset,
+        trashScope,
+        courseAccessScope: isTrash ? undefined : courseAccessScope,
       }),
     );
     
@@ -132,25 +165,58 @@ export function OrdersTable() {
         hasPreviousPage: page > 1,
       },
     };
-  }, [filters]);
+  }, [filters, trashScope, courseAccessScope, isTrash]);
+
+  const handleRestoreClick = (order: OrderRecord) => {
+    setRestoreTarget(order);
+    setIsRestoreModalOpen(true);
+  };
+
+  const handleRestoreConfirm = async () => {
+    if (!restoreTarget) return;
+    setRestoreLoading(true);
+    try {
+      await restoreOrder(restoreTarget.id);
+      setRestoreTarget(null);
+      setIsRestoreModalOpen(false);
+      tableRef.current?.refetch();
+    } catch (err: unknown) {
+      const msg =
+        err && typeof err === "object" && "response" in err
+          ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
+          : undefined;
+      alert(msg || "Failed to restore order");
+    } finally {
+      setRestoreLoading(false);
+    }
+  };
 
   const handleRefundClick = (order: OrderRecord) => {
     setSelectedOrder(order);
     setIsRefundOpen(true);
   };
 
-  const handleDeleteClick = async (order: OrderRecord) => {
-    if (window.confirm(`Are you sure you want to delete order ${order.order_id}?`)) {
-      try {
-        await deleteOrder(order.id);
-        tableRef.current?.refetch();
-      } catch (err: unknown) {
-        const msg =
-          err && typeof err === "object" && "response" in err
-            ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
-            : undefined;
-        alert(msg || "Failed to delete order");
-      }
+  const handleDeleteClick = (order: OrderRecord) => {
+    setDeleteTarget(order);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return;
+    setDeleteLoading(true);
+    try {
+      await deleteOrder(deleteTarget.id);
+      setDeleteTarget(null);
+      setIsDeleteModalOpen(false);
+      tableRef.current?.refetch();
+    } catch (err: unknown) {
+      const msg =
+        err && typeof err === "object" && "response" in err
+          ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
+          : undefined;
+      alert(msg || "Failed to delete order");
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -239,6 +305,33 @@ export function OrdersTable() {
       ),
     },
     {
+      key: "course_access",
+      header: "Access",
+      sortable: false,
+      render: (row: OrderRecord) => {
+        if (row.type !== "course" || !row.course_access) {
+          return <span className="text-theme-xs text-gray-400">—</span>;
+        }
+        const label =
+          row.course_access === "lifetime"
+            ? "Lifetime"
+            : row.course_access === "expired"
+              ? "Expired"
+              : "Active";
+        const color =
+          row.course_access === "lifetime"
+            ? "primary"
+            : row.course_access === "expired"
+              ? "error"
+              : "success";
+        return (
+          <Badge size="sm" color={color}>
+            {label}
+          </Badge>
+        );
+      },
+    },
+    {
       key: "created_at",
       header: "Date",
       sortable: true,
@@ -252,36 +345,49 @@ export function OrdersTable() {
       sortable: false,
       render: (row: OrderRecord) => (
         <div className="flex items-center justify-end gap-1">
-          <Link
-            to={`/orders/${encodeURIComponent(row.order_id)}`}
-            className="inline-flex items-center justify-center rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
-            title="View"
-          >
-            <EyeIcon className="size-5" />
-          </Link>
-          <Link
-            to={`/orders/${encodeURIComponent(row.order_id)}/edit`}
-            className="inline-flex items-center justify-center rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
-            title="Edit"
-          >
-            <PencilIcon className="size-5" />
-          </Link>
-          {orderStatusAllowsRefund(row.status) && (
+          {!isTrash ? (
+            <>
+              <Link
+                to={`/orders/${encodeURIComponent(row.order_id)}`}
+                className="inline-flex items-center justify-center rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
+                title="View"
+              >
+                <EyeIcon className="size-5" />
+              </Link>
+              <Link
+                to={`/orders/${encodeURIComponent(row.order_id)}/edit`}
+                className="inline-flex items-center justify-center rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
+                title="Edit"
+              >
+                <PencilIcon className="size-5" />
+              </Link>
+              {orderStatusAllowsRefund(row.status) && (
+                <button
+                  onClick={() => handleRefundClick(row)}
+                  className="inline-flex items-center justify-center rounded-lg p-2 text-error-500 hover:bg-error-50 hover:text-error-600 dark:text-error-400 dark:hover:bg-error-900/20"
+                  title="Refund"
+                >
+                  <DollarLineIcon className="size-5" />
+                </button>
+              )}
+              <button
+                onClick={() => handleDeleteClick(row)}
+                className="inline-flex items-center justify-center rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-error-600 dark:text-gray-400 dark:hover:bg-gray-800"
+                title="Move to trash"
+              >
+                <TrashBinIcon className="size-5" />
+              </button>
+            </>
+          ) : (
             <button
-              onClick={() => handleRefundClick(row)}
-              className="inline-flex items-center justify-center rounded-lg p-2 text-error-500 hover:bg-error-50 hover:text-error-600 dark:text-error-400 dark:hover:bg-error-900/20"
-              title="Refund"
+              type="button"
+              onClick={() => handleRestoreClick(row)}
+              className="inline-flex items-center justify-center rounded-lg px-3 py-1.5 text-sm font-medium text-brand-600 transition hover:bg-brand-50 dark:text-brand-400 dark:hover:bg-brand-500/10"
+              title="Restore"
             >
-              <DollarLineIcon className="size-5" />
+              Restore
             </button>
           )}
-          <button
-            onClick={() => handleDeleteClick(row)}
-            className="inline-flex items-center justify-center rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-error-600 dark:text-gray-400 dark:hover:bg-gray-800"
-            title="Delete"
-          >
-            <TrashBinIcon className="size-5" />
-          </button>
         </div>
       ),
     },
@@ -301,6 +407,19 @@ export function OrdersTable() {
 
   return (
     <div className="space-y-6">
+      <ExportProgressBar progress={exportProgress} label="Exporting orders" />
+      <div className="flex w-full flex-wrap items-center justify-between gap-4">
+        <TrashScopeTabs
+          value={trashScope}
+          onChange={setTrashScope}
+          activeLabel="All orders"
+          trashLabel="Trash"
+        />
+        {!isTrash ? (
+          <CourseAccessTabs value={courseAccessScope} onChange={setCourseAccessScope} />
+        ) : null}
+      </div>
+      {!isTrash ? (
       <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-theme-xs dark:border-gray-800 dark:bg-white/[0.03] sm:p-5">
         <div className="flex min-w-0 flex-nowrap items-end gap-3 overflow-x-auto pb-0.5">
           <div className="min-w-[10rem] max-w-[22rem] flex-[1.2] shrink-0">
@@ -321,6 +440,16 @@ export function OrdersTable() {
               defaultValue={filters.type}
               onChange={(val) => setFilters(f => ({ ...f, type: val }))}
               placeholder="Type"
+            />
+          </div>
+          <div className="w-[8.5rem] shrink-0 sm:w-[9.5rem]">
+            <label className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-400">Status</label>
+            <Select
+              key={`status-${filterBarKey}`}
+              options={statusFilterOptions}
+              defaultValue={filters.status}
+              onChange={(val) => setFilters((f) => ({ ...f, status: val }))}
+              placeholder="Status"
             />
           </div>
           <div className="w-[10rem] shrink-0 sm:w-[10.5rem]">
@@ -373,17 +502,19 @@ export function OrdersTable() {
             className="h-11 shrink-0 px-3 text-xs whitespace-nowrap"
             startIcon={<DownloadIcon className="size-4 shrink-0" />}
             onClick={handleExportExcel}
+            title={formatExportProgressTitle(exportProgress)}
           >
-            {exporting
-              ? "Exporting…"
-              : hasActiveFilters
-                ? "Export filtered"
-                : "Export Excel"}
+            {formatExportProgressLabel(
+              exportProgress,
+              hasActiveFilters ? "Export filtered" : "Export Excel",
+            )}
           </Button>
         </div>
       </div>
+      ) : null}
 
       <DataTable<OrderRecord>
+        key={`${trashScope}-${courseAccessScope}`}
         ref={tableRef}
         columns={columns}
         fetchData={fetchOrdersForTable}
@@ -394,8 +525,14 @@ export function OrdersTable() {
         enableSearch
         enableSorting
         enablePagination
-        searchPlaceholder="Search by order ID, email…"
-        emptyMessage="No orders found."
+        searchPlaceholder="Search name, email, phone, payment ID…"
+        emptyMessage={
+          isTrash
+            ? "Trash is empty."
+            : courseAccessScope === "expired"
+              ? "No expired course orders."
+              : "No orders found."
+        }
       />
 
       <RefundModal
@@ -403,6 +540,42 @@ export function OrdersTable() {
         isOpen={isRefundOpen}
         onClose={() => setIsRefundOpen(false)}
         onSuccess={() => tableRef.current?.refetch()}
+      />
+
+      <ConfirmDeleteModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setDeleteTarget(null);
+          setIsDeleteModalOpen(false);
+        }}
+        onConfirm={handleDeleteConfirm}
+        title="Move to Trash"
+        message={
+          deleteTarget
+            ? `Move order ${deleteTarget.order_id} to trash? You can restore it later from the Trash tab.`
+            : undefined
+        }
+        confirmLabel="Move to Trash"
+        isLoading={deleteLoading}
+      />
+
+      <ConfirmDeleteModal
+        isOpen={isRestoreModalOpen}
+        onClose={() => {
+          setRestoreTarget(null);
+          setIsRestoreModalOpen(false);
+        }}
+        onConfirm={handleRestoreConfirm}
+        title="Restore Order"
+        message={
+          restoreTarget
+            ? `Restore order ${restoreTarget.order_id}? It will appear again in the Active list.`
+            : undefined
+        }
+        confirmLabel="Restore"
+        loadingLabel="Restoring…"
+        confirmVariant="brand"
+        isLoading={restoreLoading}
       />
     </div>
   );

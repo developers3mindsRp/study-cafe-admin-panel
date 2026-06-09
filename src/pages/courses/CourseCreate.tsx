@@ -96,6 +96,7 @@ export default function CourseCreate() {
         gateway: data.gateway || null,
         is_published: data.is_published,
         hide_from_public: data.hide_from_public,
+        certificate_enabled: data.certificate_enabled,
         author_user_id: data.author_user_id ? Number(data.author_user_id) : null,
         author_name: data.author_name || null,
         author_role: data.author_role || null,
