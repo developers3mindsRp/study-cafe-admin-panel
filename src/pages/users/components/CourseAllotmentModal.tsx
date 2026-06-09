@@ -117,7 +117,7 @@ export function CourseAllotmentModal({ isOpen, onClose }: CourseAllotmentModalPr
       const res = await bulkEnrollByEmails(Number(selectedBatchId), uniqueEmails, {
         price: price.trim() || undefined,
         paymentId: paymentId.trim() || undefined,
-        courseId: selectedCourseId !== "" ? Number(selectedCourseId) : undefined,
+        courseId: selectedCourseId,
       });
       setResults(res);
       setStep("results");
