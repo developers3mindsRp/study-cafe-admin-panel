@@ -15,10 +15,28 @@ import { getApiErrorMessage } from "../../lib/apiError";
 
 type UserPayload = Partial<User> & { password?: string };
 
+interface PlanFields {
+    price: string;
+    payment_id: string;
+    plan_purchased: string;
+    plan_expiry: string;
+}
+
+function toDatetimeLocal(d: Date): string {
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 export default function UserCreate() {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const [plans, setPlans] = useState<Plan[]>([]);
+    const [planFields, setPlanFields] = useState<PlanFields>({
+        price: "",
+        payment_id: "",
+        plan_purchased: toDatetimeLocal(new Date()),
+        plan_expiry: "",
+    });
 
     const {
         courses,
@@ -83,6 +101,28 @@ export default function UserCreate() {
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
+        if (name === "membership") {
+            const selected = plans.find(p => p.slug === value);
+            if (selected) {
+                setPlanFields(prev => {
+                    const startDate = prev.plan_purchased
+                        ? new Date(prev.plan_purchased.replace(" ", "T"))
+                        : new Date();
+                    const from = isNaN(startDate.getTime()) ? new Date() : startDate;
+                    const expiry = (selected.is_lifetime || !selected.duration_days)
+                        ? new Date(from.getFullYear() + 10, from.getMonth(), from.getDate())
+                        : new Date(from.getTime() + selected.duration_days * 24 * 60 * 60 * 1000);
+                    return { ...prev, plan_expiry: toDatetimeLocal(expiry) };
+                });
+            } else {
+                setPlanFields(prev => ({ ...prev, plan_expiry: "" }));
+            }
+        }
+    };
+
+    const handlePlanFieldChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        setPlanFields(prev => ({ ...prev, [name]: value }));
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -90,11 +130,30 @@ export default function UserCreate() {
         try {
             setLoading(true);
             const { password: pwd, ...profile } = formData;
+
+            // Build plan JSON if membership is selected and any plan detail is filled
+            const selectedPlanObj = formData.membership ? plans.find(p => p.slug === formData.membership) : null;
+            let planValue: string | undefined;
+            if (selectedPlanObj) {
+                const hasDetails = planFields.price || planFields.payment_id || planFields.plan_purchased || planFields.plan_expiry;
+                if (hasDetails) {
+                    const planJson = {
+                        price: planFields.price || undefined,
+                        plan_validity: selectedPlanObj.duration_days ? String(selectedPlanObj.duration_days) : undefined,
+                        plan_purchased: planFields.plan_purchased || undefined,
+                        plan_expiry: planFields.plan_expiry || undefined,
+                        payment_id: planFields.payment_id || undefined,
+                    };
+                    planValue = JSON.stringify(planJson);
+                }
+            }
+
             const payload = {
                 ...profile,
                 ...(pwd != null && String(pwd).trim() !== ""
                     ? { password: String(pwd).trim() }
                     : {}),
+                ...(planValue !== undefined ? { plan: planValue } : {}),
             };
             const createdUser = await usersApi.create(payload);
             const userId = Number(createdUser.id);
@@ -195,6 +254,54 @@ export default function UserCreate() {
                                     </select>
                                 </div>
                             </div>
+
+                            {formData.membership && (
+                                <>
+                                    <div>
+                                        <Label>Price</Label>
+                                        <Input
+                                            type="text"
+                                            name="price"
+                                            value={planFields.price}
+                                            onChange={handlePlanFieldChange}
+                                            placeholder="eg. 3999"
+                                        />
+                                    </div>
+                                    <div>
+                                        <Label>Date of Purchase</Label>
+                                        <Input
+                                            type="text"
+                                            name="plan_purchased"
+                                            value={planFields.plan_purchased}
+                                            onChange={handlePlanFieldChange}
+                                            placeholder="YYYY-MM-DD HH:MM"
+                                        />
+                                    </div>
+                                    <div>
+                                        <Label>Plan Expiry</Label>
+                                        <Input
+                                            type="text"
+                                            name="plan_expiry"
+                                            value={planFields.plan_expiry}
+                                            onChange={handlePlanFieldChange}
+                                            placeholder="Auto-computed from plan duration"
+                                        />
+                                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                            Auto-filled from plan duration. Edit if needed.
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <Label>RazorPay Payment ID</Label>
+                                        <Input
+                                            type="text"
+                                            name="payment_id"
+                                            value={planFields.payment_id}
+                                            onChange={handlePlanFieldChange}
+                                            placeholder="Payment ID"
+                                        />
+                                    </div>
+                                </>
+                            )}
                             <div>
                                 <Label>Status</Label>
                                 <div className="relative">

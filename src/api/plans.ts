@@ -144,6 +144,11 @@ export async function bulkGrantMembershipByEmails(payload: {
   membershipType: string;
   startsAt: string;
   expiresAt: string;
+  price?: string;
+  paymentId?: string;
+  planValidity?: string;
+  planPurchasedFormatted?: string;
+  planExpiryFormatted?: string;
 }): Promise<BulkMembershipResult[]> {
   const res = await api.post<BulkMembershipResult[]>("/admin/memberships/bulk", payload);
   return Array.isArray(res.data) ? res.data : [];

@@ -42,6 +42,8 @@ export function CourseAllotmentModal({ isOpen, onClose }: CourseAllotmentModalPr
   const [batches, setBatches] = useState<{ id: number; name: string }[]>([]);
   const [batchesLoading, setBatchesLoading] = useState(false);
   const [selectedBatchId, setSelectedBatchId] = useState<number | "">("");
+  const [price, setPrice] = useState("");
+  const [paymentId, setPaymentId] = useState("");
 
   // Submit state
   const [submitting, setSubmitting] = useState(false);
@@ -86,6 +88,8 @@ export function CourseAllotmentModal({ isOpen, onClose }: CourseAllotmentModalPr
         setSelectedCourseId("");
         setBatches([]);
         setSelectedBatchId("");
+        setPrice("");
+        setPaymentId("");
         setResults([]);
         setSubmitError(null);
       }, 300);
@@ -110,7 +114,11 @@ export function CourseAllotmentModal({ isOpen, onClose }: CourseAllotmentModalPr
     setSubmitting(true);
     setSubmitError(null);
     try {
-      const res = await bulkEnrollByEmails(Number(selectedBatchId), uniqueEmails);
+      const res = await bulkEnrollByEmails(Number(selectedBatchId), uniqueEmails, {
+        price: price.trim() || undefined,
+        paymentId: paymentId.trim() || undefined,
+        courseId: selectedCourseId !== "" ? Number(selectedCourseId) : undefined,
+      });
       setResults(res);
       setStep("results");
     } catch (err: unknown) {
@@ -233,6 +241,36 @@ export function CourseAllotmentModal({ isOpen, onClose }: CourseAllotmentModalPr
               </div>
             )}
 
+            {/* Price */}
+            <div>
+              <Label htmlFor="allotment-price">Price</Label>
+              <p className="mb-1.5 text-xs text-brand-500 italic">
+                Only Enter The Price If Its Different Than The Selling Price of Course.
+              </p>
+              <input
+                id="allotment-price"
+                type="number"
+                min="0"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                placeholder="e.g. 12979"
+                className="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:text-white dark:placeholder:text-gray-500"
+              />
+            </div>
+
+            {/* RazorPay Payment ID */}
+            <div>
+              <Label htmlFor="allotment-payment-id">RazorPay Payment ID</Label>
+              <input
+                id="allotment-payment-id"
+                type="text"
+                value={paymentId}
+                onChange={(e) => setPaymentId(e.target.value)}
+                placeholder="e.g. pay_SqLNksiHVGuUeJ"
+                className="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:text-white dark:placeholder:text-gray-500"
+              />
+            </div>
+
             {submitError && (
               <p className="rounded-lg bg-error-50 px-4 py-3 text-sm text-error-600 dark:bg-error-500/10 dark:text-error-400">
                 {submitError}
@@ -315,6 +353,8 @@ export function CourseAllotmentModal({ isOpen, onClose }: CourseAllotmentModalPr
                 onClick={() => {
                   setStep("form");
                   setEmailsRaw("");
+                  setPrice("");
+                  setPaymentId("");
                   setResults([]);
                 }}
                 className="rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
