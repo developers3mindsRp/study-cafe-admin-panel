@@ -116,9 +116,6 @@ import AffiliateHistory from "./pages/affiliate/AffiliateHistory";
 import WithdrawalRequests from "./pages/affiliate/WithdrawalRequests";
 import FilesPage from "./pages/downloads/FilesPage";
 import CategoriesPage from "./pages/downloads/CategoriesPage";
-import BannerList from "./pages/banners/BannerList";
-import BannerCreate from "./pages/banners/BannerCreate";
-import BannerEdit from "./pages/banners/BannerEdit";
 import MediaLibrary from "./pages/media/MediaLibrary";
 
 function RootLayout() {
@@ -457,17 +454,6 @@ const router = createBrowserRouter(
           </Route>
           <Route path="/downloads/categories" element={<RequirePermissionRoute permissions={["downloads:list"]} />}>
             <Route index element={<CategoriesPage />} />
-          </Route>
-
-          {/* Banners */}
-          <Route path="/banners" element={<RequirePermissionRoute permissions={["banners:list"]} />}>
-            <Route index element={<BannerList />} />
-          </Route>
-          <Route path="/banners/create" element={<RequirePermissionRoute permissions={["banners:edit"]} />}>
-            <Route index element={<BannerCreate />} />
-          </Route>
-          <Route path="/banners/:id/edit" element={<RequirePermissionRoute permissions={["banners:edit"]} />}>
-            <Route index element={<BannerEdit />} />
           </Route>
 
           {/* Forms */}

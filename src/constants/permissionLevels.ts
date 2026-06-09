@@ -117,17 +117,6 @@ export const MODULE_LEVELS: ModuleConfig[] = [
     ],
   },
   {
-    key: "banners",
-    name: "Banners",
-    levels: [
-      { value: "none", label: "None", permissions: [] },
-      { value: "view", label: "View only", permissions: ["banners:list", "banners:view"] },
-      { value: "edit", label: "Edit (includes view)", permissions: ["banners:list", "banners:view", "banners:edit"] },
-      { value: "create", label: "Create (includes view, edit)", permissions: ["banners:list", "banners:view", "banners:edit", "banners:create"] },
-      { value: "delete", label: "Delete / Full", permissions: ["banners:list", "banners:view", "banners:edit", "banners:create", "banners:delete"] },
-    ],
-  },
-  {
     key: "newsletter",
     name: "Newsletter",
     levels: [
