@@ -245,7 +245,7 @@ export const MODULE_LEVELS: ModuleConfig[] = [
   },
   {
     key: "global_settings",
-    name: "Global Settings",
+    name: "Global Settings (Common, Marketing, Payment Gateway)",
     levels: [
       { value: "none", label: "None", permissions: [] },
       {

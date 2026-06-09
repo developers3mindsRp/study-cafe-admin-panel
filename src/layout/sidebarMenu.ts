@@ -248,6 +248,11 @@ export const mainNavItemsConfig: NavItemConfig[] = [
     name: "Global Settings",
     subItems: [
       {
+        name: "Common Settings",
+        path: "/settings/global/common",
+        requiredPermission: ["global_settings:list", "global_settings:view", "global_settings:edit"],
+      },
+      {
         name: "Marketing & analytics",
         path: "/settings/global",
         requiredPermission: ["global_settings:list", "global_settings:view", "global_settings:edit"],
