@@ -1,6 +1,6 @@
 import { api } from "./axios";
 
-/** All keys in global_settings (tracking_*, site_display_ads, future). */
+/** All keys in global_settings (tracking_*, site_display_ads, affiliate_*, future). */
 export async function fetchGlobalSettings(): Promise<Record<string, string | null>> {
     const res = await api.get<Record<string, string | null>>("/admin/platform/global-settings");
     return res.data ?? {};

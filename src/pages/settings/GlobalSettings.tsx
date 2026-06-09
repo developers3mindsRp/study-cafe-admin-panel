@@ -56,8 +56,8 @@ export default function GlobalSettings() {
 
     return (
         <>
-            <PageMeta title="Global Settings | StudyCafe Admin" description="Site-wide options for the public storefront" />
-            <PageBreadcrumb pageTitle="Global Settings" />
+            <PageMeta title="Marketing & Analytics | StudyCafe Admin" description="Tracking scripts for the public storefront" />
+            <PageBreadcrumb pageTitle="Marketing & analytics" />
 
             <div className="space-y-6">
                 {!canEdit && (

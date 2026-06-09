@@ -40,6 +40,7 @@ export const USER_EXPORT_COLUMNS: ExcelColumn<User>[] = [
   { header: "Twitter", accessor: (r) => exportStr(r.twitter) },
   { header: "Instagram", accessor: (r) => exportStr(r.instagram) },
   { header: "YouTube", accessor: (r) => exportStr(r.youtube) },
+  { header: "GST Number", accessor: (r) => exportStr(r.gst) },
   { header: "Bio", accessor: (r) => exportStr(r.bio) },
   { header: "ID", accessor: (r) => exportStr(r.id) },
   {

@@ -65,6 +65,9 @@ export default function UserEdit() {
         linkedin: "",
         instagram: "",
         youtube: "",
+
+        // Tax
+        gst: "",
     });
 
     useEffect(() => {
@@ -120,6 +123,8 @@ export default function UserEdit() {
                         linkedin: user.linkedin || "",
                         instagram: user.instagram || "",
                         youtube: user.youtube || "",
+
+                        gst: user.gst || "",
                     });
                 }
             } catch (err) {
@@ -395,6 +400,19 @@ export default function UserEdit() {
                                     onChange={handleChange}
                                     placeholder="Profession"
                                 />
+                            </div>
+                            <div>
+                                <Label>GST Number <span className="text-gray-400 text-xs font-normal">(Optional)</span></Label>
+                                <Input
+                                    type="text"
+                                    name="gst"
+                                    value={formData.gst || ""}
+                                    onChange={handleChange}
+                                    placeholder="e.g. 22AAAAA0000A1Z5"
+                                />
+                                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                    15-character GSTIN — leave blank if not applicable.
+                                </p>
                             </div>
                         </div>
                     </div>

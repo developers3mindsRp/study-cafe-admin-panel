@@ -160,6 +160,15 @@ export const MODULE_LEVELS: ModuleConfig[] = [
     ],
   },
   {
+    key: "course_common_sections",
+    name: "Courses \u2192 Common Sections",
+    levels: [
+      { value: "none", label: "None", permissions: [] },
+      { value: "view", label: "View only", permissions: ["courses:list", "courses:view"] },
+      { value: "edit", label: "Edit (includes view)", permissions: ["courses:list", "courses:view", "courses:edit"] },
+    ],
+  },
+  {
     key: "marketing_pages",
     name: "Courses → Marketing Pages",
     levels: [
@@ -258,7 +267,7 @@ export const MODULE_LEVELS: ModuleConfig[] = [
   },
   {
     key: "global_settings",
-    name: "Global Settings",
+    name: "Global Settings (Common, Marketing, Payment Gateway)",
     levels: [
       { value: "none", label: "None", permissions: [] },
       {
@@ -271,6 +280,15 @@ export const MODULE_LEVELS: ModuleConfig[] = [
         label: "Edit (includes view)",
         permissions: ["global_settings:list", "global_settings:view", "global_settings:edit"],
       },
+    ],
+  },
+  {
+    key: "users",
+    name: "Users – Course & Membership Allotment",
+    levels: [
+      { value: "none", label: "None", permissions: [] },
+      { value: "view", label: "Allot courses", permissions: ["users:course_allotment"] },
+      { value: "edit", label: "Allot courses & memberships", permissions: ["users:course_allotment", "users:membership_allotment"] },
     ],
   },
 ];

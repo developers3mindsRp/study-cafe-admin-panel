@@ -8,6 +8,7 @@ import {
   PERM_ADMIN_USERS_LIST,
   PERM_ADMIN_USERS_CREATE,
   PERM_USERS_COURSE_ALLOTMENT,
+  PERM_USERS_MEMBERSHIP_ALLOTMENT,
 } from "../../constants/permissions";
 import {
   emptyUsersListFilters,
@@ -274,45 +275,45 @@ function UserListContent() {
               <DownloadIcon className="size-4 shrink-0 fill-current" />
               Export Excel
             </button>
-            {!isTrash ? (
-              <>
-                <RequirePermission permissions={[PERM_USERS_COURSE_ALLOTMENT]} fallback={null}>
-                  <button
-                    type="button"
-                    onClick={() => setIsMembershipModalOpen(true)}
-                    className="inline-flex items-center justify-center gap-2 rounded-lg border border-brand-500 px-4 py-3 text-sm font-medium text-brand-600 transition hover:bg-brand-50 dark:border-brand-400 dark:text-brand-400 dark:hover:bg-brand-500/10"
-                  >
-                    Allot Membership
-                  </button>
-                </RequirePermission>
-                <RequirePermission permissions={[PERM_USERS_COURSE_ALLOTMENT]} fallback={null}>
-                  <button
-                    type="button"
-                    onClick={() => setIsAllotmentModalOpen(true)}
-                    className="inline-flex items-center justify-center gap-2 rounded-lg border border-brand-500 px-4 py-3 text-sm font-medium text-brand-600 transition hover:bg-brand-50 dark:border-brand-400 dark:text-brand-400 dark:hover:bg-brand-500/10"
-                  >
-                    Allot Course
-                  </button>
-                </RequirePermission>
-                <RequirePermission permissions={[PERM_ADMIN_USERS_CREATE]} fallback={null}>
-                  <button
-                    type="button"
-                    onClick={() => setIsImportModalOpen(true)}
-                    className="inline-flex items-center justify-center gap-2 rounded-lg border border-brand-500 px-4 py-3 text-sm font-medium text-brand-600 transition hover:bg-brand-50 dark:border-brand-400 dark:text-brand-400 dark:hover:bg-brand-500/10"
-                  >
-                    Import Users
-                  </button>
-                </RequirePermission>
-                <RequirePermission permissions={[PERM_ADMIN_USERS_CREATE]} fallback={null}>
-                  <Link
-                    to="/users/create"
-                    className="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-medium text-white transition bg-brand-500 shadow-theme-xs hover:bg-brand-600"
-                  >
-                    Add User
-                  </Link>
-                </RequirePermission>
-              </>
-            ) : null}
+{!isTrash ? (
+  <>
+    <RequirePermission permissions={[PERM_USERS_MEMBERSHIP_ALLOTMENT]} fallback={null}>
+      <button
+        type="button"
+        onClick={() => setIsMembershipModalOpen(true)}
+        className="inline-flex items-center justify-center gap-2 rounded-lg border border-brand-500 px-4 py-3 text-sm font-medium text-brand-600 transition hover:bg-brand-50 dark:border-brand-400 dark:text-brand-400 dark:hover:bg-brand-500/10"
+      >
+        Allot Membership
+      </button>
+    </RequirePermission>
+    <RequirePermission permissions={[PERM_USERS_COURSE_ALLOTMENT]} fallback={null}>
+      <button
+        type="button"
+        onClick={() => setIsAllotmentModalOpen(true)}
+        className="inline-flex items-center justify-center gap-2 rounded-lg border border-brand-500 px-4 py-3 text-sm font-medium text-brand-600 transition hover:bg-brand-50 dark:border-brand-400 dark:text-brand-400 dark:hover:bg-brand-500/10"
+      >
+        Allot Course
+      </button>
+    </RequirePermission>
+    <RequirePermission permissions={[PERM_ADMIN_USERS_CREATE]} fallback={null}>
+      <button
+        type="button"
+        onClick={() => setIsImportModalOpen(true)}
+        className="inline-flex items-center justify-center gap-2 rounded-lg border border-brand-500 px-4 py-3 text-sm font-medium text-brand-600 transition hover:bg-brand-50 dark:border-brand-400 dark:text-brand-400 dark:hover:bg-brand-500/10"
+      >
+        Import Users
+      </button>
+    </RequirePermission>
+    <RequirePermission permissions={[PERM_ADMIN_USERS_CREATE]} fallback={null}>
+      <Link
+        to="/users/create"
+        className="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-medium text-white transition bg-brand-500 shadow-theme-xs hover:bg-brand-600"
+      >
+        Add User
+      </Link>
+    </RequirePermission>
+  </>
+) : null}
           </div>
         }
       />
