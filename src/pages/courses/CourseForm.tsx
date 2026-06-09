@@ -71,6 +71,21 @@ export interface CourseFormData {
   affiliate_commission: string;
   /** '1year' (default) or 'lifetime' — determines enrolled access duration. */
   validity: 'lifetime' | '1year';
+  /** Dynamic sections on the public course detail page (JSON array). */
+  detail_sections: DetailSection[];
+}
+
+export interface DetailSectionCard {
+  icon: string;
+  title: string;
+  content: string;
+}
+
+export interface DetailSection {
+  type: "text" | "cards";
+  title: string;
+  content: string;
+  items: DetailSectionCard[];
 }
 
 const safeJsonParse = (str: string | null | undefined, fallback: any = []) => {
@@ -126,6 +141,9 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
         og_description: restoredData.og_description ?? "",
         og_image_url: restoredData.og_image_url ?? "",
         validity: restoredData.validity ?? '1year',
+        detail_sections: Array.isArray(restoredData.detail_sections)
+          ? restoredData.detail_sections
+          : [],
       };
     }
     return {
@@ -221,6 +239,7 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
           ? String(initial.affiliate_commission)
           : "0",
       validity: (initial?.validity === 'lifetime' ? 'lifetime' : '1year') as 'lifetime' | '1year',
+      detail_sections: safeJsonParse(initial?.detail_sections, []),
     };
   });
 
