@@ -26,13 +26,20 @@ export default function AdminUserCreate() {
     setError(null);
     setSubmitting(true);
     try {
-      await adminUsersApi.create({
-        email: formData.email,
-        password: formData.password,
-        name: formData.name || undefined,
+      const payload: Parameters<typeof adminUsersApi.create>[0] = {
+        email: formData.email.trim(),
         role_id: formData.role_id,
         permission_overrides: formData.permission_overrides?.length ? formData.permission_overrides : undefined,
-      });
+      };
+
+      if (formData.promoteExisting) {
+        // Existing site user — only role/permissions change; password and profile stay as-is.
+      } else {
+        payload.password = formData.password;
+        if (formData.name.trim()) payload.name = formData.name.trim();
+      }
+
+      await adminUsersApi.create(payload);
       navigate("/admin-users");
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || "Failed to create user";

@@ -8,8 +8,16 @@ interface ConfirmDeleteModalProps {
   title?: string;
   message?: string;
   itemName?: string;
+  confirmLabel?: string;
+  loadingLabel?: string;
+  confirmVariant?: "danger" | "brand";
   isLoading?: boolean;
 }
+
+const confirmButtonClass: Record<NonNullable<ConfirmDeleteModalProps["confirmVariant"]>, string> = {
+  danger: "bg-error-500 hover:bg-error-600",
+  brand: "bg-brand-500 hover:bg-brand-600",
+};
 
 export const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
   isOpen,
@@ -18,6 +26,9 @@ export const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
   title = "Confirm Delete",
   message = "Are you sure you want to delete this item? This action cannot be undone.",
   itemName,
+  confirmLabel = "Delete",
+  loadingLabel = "Deleting…",
+  confirmVariant = "danger",
   isLoading = false,
 }) => {
   const displayMessage = itemName
@@ -46,9 +57,9 @@ export const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
             type="button"
             onClick={onConfirm}
             disabled={isLoading}
-            className="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-medium text-white transition bg-error-500 shadow-theme-xs hover:bg-error-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            className={`inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-medium text-white transition shadow-theme-xs disabled:opacity-50 disabled:cursor-not-allowed ${confirmButtonClass[confirmVariant]}`}
           >
-            {isLoading ? "Deleting…" : "Delete"}
+            {isLoading ? loadingLabel : confirmLabel}
           </button>
         </div>
       </div>
