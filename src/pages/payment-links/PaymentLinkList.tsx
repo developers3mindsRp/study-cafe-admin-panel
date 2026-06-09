@@ -8,6 +8,10 @@ import { PencilIcon, TrashBinIcon } from "../../icons";
 import { useModal } from "../../hooks/useModal";
 import { RequirePermission } from "../../components/auth/RequirePermission";
 import { fetchPaymentLinksPaginated, deletePaymentLink, type PaymentLink } from "../../api/paymentLinks";
+import { getWebsiteUrl } from "../../config/env";
+import { WebsiteViewLink } from "../../components/common/WebsiteLink";
+
+const WEBSITE_URL = getWebsiteUrl();
 
 function formatDate(dateStr?: string | null) {
   if (!dateStr) return "—";
@@ -119,29 +123,35 @@ export default function PaymentLinkList() {
       header: "Actions",
       align: "end" as const,
       sortable: false,
-      render: (row: PaymentLink) => (
-        <div className="flex items-center justify-end gap-2">
-          <RequirePermission permissions={["payment_links:edit"]} fallback={null}>
-            <Link
-              to={`/payment-links/${row.id}/edit`}
-              className="inline-flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-2 text-sm text-gray-600 transition hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
-            >
-              <PencilIcon className="size-4 shrink-0 fill-current" />
-              Edit
-            </Link>
-          </RequirePermission>
-          <RequirePermission permissions={["payment_links:delete"]} fallback={null}>
-            <button
-              type="button"
-              onClick={() => handleDeleteClick(row)}
-              className="inline-flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-2 text-sm text-gray-600 transition hover:bg-error-50 hover:text-error-500 dark:text-gray-400 dark:hover:bg-error-500/10 dark:hover:text-error-400"
-            >
-              <TrashBinIcon className="size-4 shrink-0 fill-current" />
-              Delete
-            </button>
-          </RequirePermission>
-        </div>
-      ),
+      render: (row: PaymentLink) => {
+        const websiteUrl = row.status === "publish" && row.slug
+          ? `${WEBSITE_URL}/payment-links/${row.slug}`
+          : null;
+        return (
+          <div className="flex flex-nowrap items-center justify-end gap-2">
+            {websiteUrl && <WebsiteViewLink href={websiteUrl} />}
+            <RequirePermission permissions={["payment_links:edit"]} fallback={null}>
+              <Link
+                to={`/payment-links/${row.id}/edit`}
+                className="inline-flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-2 text-sm text-gray-600 transition hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
+              >
+                <PencilIcon className="size-4 shrink-0 fill-current" />
+                Edit
+              </Link>
+            </RequirePermission>
+            <RequirePermission permissions={["payment_links:delete"]} fallback={null}>
+              <button
+                type="button"
+                onClick={() => handleDeleteClick(row)}
+                className="inline-flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-2 text-sm text-gray-600 transition hover:bg-error-50 hover:text-error-500 dark:text-gray-400 dark:hover:bg-error-500/10 dark:hover:text-error-400"
+              >
+                <TrashBinIcon className="size-4 shrink-0 fill-current" />
+                Delete
+              </button>
+            </RequirePermission>
+          </div>
+        );
+      },
     },
   ];
 

@@ -7,9 +7,10 @@ import { PencilIcon, TrashBinIcon } from "../../icons";
 import { useModal } from "../../hooks/useModal";
 import { RequirePermission } from "../../components/auth/RequirePermission";
 import {
-  PERM_COURSES_EDIT,
+  PERM_COURSE_REVIEWS_VIEW,
+  PERM_COURSE_REVIEWS_EDIT,
+  PERM_COURSE_REVIEWS_DELETE,
   PERM_COURSES_VIEW,
-  PERM_COURSES_DELETE,
 } from "../../constants/permissions";
 import {
   fetchCourseReviewsTable,
@@ -139,7 +140,7 @@ export default function CourseReviewList() {
       sortable: false,
       render: (row: CourseReviewAdmin) => (
         <div className="flex items-center justify-end gap-2">
-          <RequirePermission permissions={[PERM_COURSES_EDIT]} fallback={null}>
+          <RequirePermission permissions={[PERM_COURSE_REVIEWS_EDIT]} fallback={null}>
             <button
               type="button"
               onClick={() => openEdit(row)}
@@ -150,7 +151,7 @@ export default function CourseReviewList() {
               Edit
             </button>
           </RequirePermission>
-          <RequirePermission permissions={[PERM_COURSES_DELETE]} fallback={null}>
+          <RequirePermission permissions={[PERM_COURSE_REVIEWS_DELETE]} fallback={null}>
             <button
               type="button"
               onClick={() => handleDeleteClick(row)}
@@ -169,7 +170,7 @@ export default function CourseReviewList() {
   return (
     <>
       <PageMeta title="Course reviews | StudyCafe Admin" description="Learner ratings and feedback" />
-      <RequirePermission permissions={[PERM_COURSES_VIEW]} fallback={<p className="p-6 text-gray-600">Access denied.</p>}>
+      <RequirePermission permissions={[PERM_COURSE_REVIEWS_VIEW, PERM_COURSES_VIEW]} fallback={<p className="p-6 text-gray-600">Access denied.</p>}>
         <PageBreadcrumb pageTitle="Course reviews" />
 
         <div className="space-y-6">

@@ -49,9 +49,9 @@ export const mainNavItemsConfig: NavItemConfig[] = [
     subItems: [
       { name: "List", path: "/courses", requiredPermission: ["courses:list", "courses:view"] },
       { name: "Create", path: "/courses/create", requiredPermission: ["courses:create"] },
-      { name: "Categories", path: "/courses/categories", requiredPermission: ["courses:list", "courses:view"] },
+      { name: "Categories", path: "/courses/categories", requiredPermission: ["course_categories:list", "courses:list"] },
       { name: "Page Settings", path: "/courses/settings", requiredPermission: ["courses:edit"] },
-      { name: "Reviews", path: "/courses/reviews", requiredPermission: ["courses:list", "courses:view"] },
+      { name: "Reviews", path: "/courses/reviews", requiredPermission: ["course_reviews:list", "courses:list"] },
     ],
     requiredPermission: ["courses:list", "courses:view", "courses:create", "courses:edit", "courses:delete"],
   },
@@ -226,6 +226,11 @@ export const mainNavItemsConfig: NavItemConfig[] = [
       {
         name: "Marketing & analytics",
         path: "/settings/global",
+        requiredPermission: ["global_settings:list", "global_settings:view", "global_settings:edit"],
+      },
+      {
+        name: "Payment Gateway",
+        path: "/settings/global/payment-gateway",
         requiredPermission: ["global_settings:list", "global_settings:view", "global_settings:edit"],
       },
       {

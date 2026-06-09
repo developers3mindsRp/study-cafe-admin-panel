@@ -8,6 +8,7 @@ import {
   PERM_ADMIN_USERS_LIST,
   PERM_ADMIN_USERS_CREATE,
   PERM_USERS_COURSE_ALLOTMENT,
+  PERM_USERS_MEMBERSHIP_ALLOTMENT,
 } from "../../constants/permissions";
 import {
   emptyUsersListFilters,
@@ -231,7 +232,7 @@ function UserListContent() {
               <DownloadIcon className="size-4 shrink-0 fill-current" />
               Export Excel
             </button>
-            <RequirePermission permissions={[PERM_USERS_COURSE_ALLOTMENT]} fallback={null}>
+            <RequirePermission permissions={[PERM_USERS_MEMBERSHIP_ALLOTMENT]} fallback={null}>
               <button
                 type="button"
                 onClick={() => setIsMembershipModalOpen(true)}

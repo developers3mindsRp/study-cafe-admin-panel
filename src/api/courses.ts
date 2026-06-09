@@ -68,6 +68,10 @@ export interface Course {
   affiliate_commission?: number | string;
   /** '1year' (default) or 'lifetime' — determines how long enrolled access lasts. */
   validity?: 'lifetime' | '1year';
+  /** Computed boolean: true when validity === 'lifetime'. */
+  is_lifetime?: boolean;
+  /** JSON string of dynamic description sections for the course detail page. */
+  detail_sections?: string | null;
 }
 
 export interface CourseCat {

@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Modal } from "../../../components/ui/modal";
-import Label from "../../../components/form/Label";
 import Button from "../../../components/ui/button/Button";
 import { plansApi, type Plan } from "../../../api/plans";
 import {
@@ -24,13 +23,6 @@ interface UserImportModalProps {
 }
 
 type Step = "form" | "results";
-
-function toLocalDateString(date: Date) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
 
 const STATUS_STYLES: Record<UserImportResult["status"], string> = {
   created: "bg-success-50 text-success-700 dark:bg-success-500/10 dark:text-success-400",
@@ -84,11 +76,6 @@ export function UserImportModal({ isOpen, onClose, onImported }: UserImportModal
 
   const [plans, setPlans] = useState<Plan[]>([]);
 
-  const today = toLocalDateString(new Date());
-  const oneYearLater = toLocalDateString(new Date(Date.now() + 365 * 24 * 60 * 60 * 1000));
-  const [startsAt, setStartsAt] = useState(today);
-  const [expiresAt, setExpiresAt] = useState(oneYearLater);
-
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [results, setResults] = useState<UserImportResult[]>([]);
@@ -110,30 +97,20 @@ export function UserImportModal({ isOpen, onClose, onImported }: UserImportModal
         setCsvError(null);
         setParsedRows([]);
         setFileName(null);
-        setStartsAt(today);
-        setExpiresAt(oneYearLater);
         setResults([]);
         setSummary({ imported: 0, failed: 0, skipped: 0 });
         setSubmitError(null);
         setClientValidation([]);
       }, 300);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
   const planSlugSet = useMemo(() => buildPlanSlugSet(plans), [plans]);
 
-  const rowsNeedMembership = parsedRows.some((r) => r.membership?.trim());
-
   const clientValidations = useMemo(() => {
     if (parsedRows.length === 0) return [];
-    return validateUserImportRows(parsedRows, {
-      planSlugs: planSlugSet,
-      requiresMembershipDates: rowsNeedMembership,
-      startsAt,
-      expiresAt,
-    });
-  }, [parsedRows, planSlugSet, rowsNeedMembership, startsAt, expiresAt]);
+    return validateUserImportRows(parsedRows, { planSlugs: planSlugSet });
+  }, [parsedRows, planSlugSet]);
 
   useEffect(() => {
     setClientValidation(clientValidations);
@@ -142,10 +119,7 @@ export function UserImportModal({ isOpen, onClose, onImported }: UserImportModal
   const clientInvalidCount = clientValidation.filter((v) => !v.valid).length;
   const clientValidCount = parsedRows.length - clientInvalidCount;
 
-  const canSubmit =
-    parsedRows.length > 0 &&
-    (!rowsNeedMembership || (startsAt && expiresAt && expiresAt > startsAt)) &&
-    !submitting;
+  const canSubmit = parsedRows.length > 0 && !submitting;
 
   const processFile = (file: File) => {
     setCsvError(null);
@@ -181,11 +155,7 @@ export function UserImportModal({ isOpen, onClose, onImported }: UserImportModal
     setSubmitting(true);
     setSubmitError(null);
     try {
-      const res = await importUsersFromCsv({
-        rows: parsedRows,
-        startsAt: rowsNeedMembership ? startsAt : undefined,
-        expiresAt: rowsNeedMembership ? expiresAt : undefined,
-      });
+      const res = await importUsersFromCsv({ rows: parsedRows });
       setResults(res.results);
       setSummary({
         imported: res.imported,
@@ -218,37 +188,14 @@ export function UserImportModal({ isOpen, onClose, onImported }: UserImportModal
         <p className="mb-6 text-sm text-gray-500 dark:text-gray-400">
           Valid rows are imported even when other rows fail. Set each user&apos;s plan in the{" "}
           <strong>membership</strong> column using a <code className="text-xs">premium_plans.slug</code>{" "}
-          value; linked courses are enrolled automatically. Leave membership empty to create the user
-          without a plan.
+          value; linked courses are enrolled automatically. Membership expiry is set automatically
+          from the plan&apos;s duration. Leave membership empty to create the user without a plan.
         </p>
 
         {step === "form" ? (
           <div className="space-y-5">
-            {rowsNeedMembership && (
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Membership starts</Label>
-                  <input
-                    type="date"
-                    value={startsAt}
-                    onChange={(e) => setStartsAt(e.target.value)}
-                    className="mt-1.5 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-transparent dark:text-white"
-                  />
-                </div>
-                <div>
-                  <Label>Membership expires</Label>
-                  <input
-                    type="date"
-                    value={expiresAt}
-                    onChange={(e) => setExpiresAt(e.target.value)}
-                    className="mt-1.5 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm dark:border-gray-700 dark:bg-transparent dark:text-white"
-                  />
-                </div>
-              </div>
-            )}
-
             <div>
-              <Label>CSV file</Label>
+              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">CSV file</label>
               <div
                 onDragOver={(e) => {
                   e.preventDefault();

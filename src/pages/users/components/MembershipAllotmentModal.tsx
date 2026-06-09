@@ -23,11 +23,16 @@ const STATUS_LABEL: Record<BulkMembershipResult["status"], string> = {
   error: "Error",
 };
 
-function toLocalDateString(date: Date) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+}
+
+function computeExpiry(plan: Plan): Date {
+  const start = new Date();
+  if (plan.is_lifetime || !plan.duration_days) {
+    return new Date(start.getFullYear() + 10, start.getMonth(), start.getDate());
+  }
+  return new Date(start.getTime() + plan.duration_days * 24 * 60 * 60 * 1000);
 }
 
 export function MembershipAllotmentModal({ isOpen, onClose }: MembershipAllotmentModalProps) {
@@ -38,14 +43,10 @@ export function MembershipAllotmentModal({ isOpen, onClose }: MembershipAllotmen
   const [plansLoading, setPlansLoading] = useState(false);
   const [selectedPlanId, setSelectedPlanId] = useState<number | "">("");
 
-  const today = toLocalDateString(new Date());
-  const oneYearLater = toLocalDateString(new Date(Date.now() + 365 * 24 * 60 * 60 * 1000));
-  const [startsAt, setStartsAt] = useState(today);
-  const [expiresAt, setExpiresAt] = useState(oneYearLater);
-
   const [submitting, setSubmitting] = useState(false);
   const [results, setResults] = useState<BulkMembershipResult[]>([]);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [grantedExpiresAt, setGrantedExpiresAt] = useState<string>("");
 
   useEffect(() => {
     if (!isOpen) return;
@@ -63,10 +64,9 @@ export function MembershipAllotmentModal({ isOpen, onClose }: MembershipAllotmen
         setStep("form");
         setEmailsRaw("");
         setSelectedPlanId("");
-        setStartsAt(today);
-        setExpiresAt(oneYearLater);
         setResults([]);
         setSubmitError(null);
+        setGrantedExpiresAt("");
       }, 300);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -82,26 +82,24 @@ export function MembershipAllotmentModal({ isOpen, onClose }: MembershipAllotmen
   ];
 
   const selectedPlan = plans.find((p) => p.id === Number(selectedPlanId));
+  const computedExpiry = selectedPlan ? computeExpiry(selectedPlan) : null;
 
-  const canSubmit =
-    uniqueEmails.length > 0 &&
-    selectedPlanId !== "" &&
-    startsAt &&
-    expiresAt &&
-    expiresAt > startsAt &&
-    !submitting;
+  const canSubmit = uniqueEmails.length > 0 && selectedPlanId !== "" && !submitting;
 
   const handleSubmit = async () => {
-    if (!canSubmit || !selectedPlan) return;
+    if (!canSubmit || !selectedPlan || !computedExpiry) return;
     setSubmitting(true);
     setSubmitError(null);
     try {
+      const startsAt = new Date().toISOString();
+      const expiresAt = computedExpiry.toISOString();
       const res = await bulkGrantMembershipByEmails({
         emails: uniqueEmails,
         membershipType: selectedPlan.slug,
-        startsAt: new Date(startsAt).toISOString(),
-        expiresAt: new Date(expiresAt).toISOString(),
+        startsAt,
+        expiresAt,
       });
+      setGrantedExpiresAt(expiresAt);
       setResults(res);
       setStep("results");
     } catch (err: unknown) {
@@ -177,36 +175,22 @@ export function MembershipAllotmentModal({ isOpen, onClose }: MembershipAllotmen
                   {plans.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.name}
-                      {p.duration_days ? ` — ${p.is_lifetime ? "Lifetime" : `${p.duration_days} days`}` : ""}
+                      {p.is_lifetime ? " — Lifetime" : p.duration_days ? ` — ${p.duration_days} days` : ""}
                     </option>
                   ))}
                 </select>
               )}
-            </div>
-
-            {/* Date range */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="membership-allotment-starts">Start Date</Label>
-                <input
-                  id="membership-allotment-starts"
-                  type="date"
-                  value={startsAt}
-                  onChange={(e) => setStartsAt(e.target.value)}
-                  className="mt-1.5 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-900 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:text-white"
-                />
-              </div>
-              <div>
-                <Label htmlFor="membership-allotment-expires">Expiry Date</Label>
-                <input
-                  id="membership-allotment-expires"
-                  type="date"
-                  value={expiresAt}
-                  min={startsAt}
-                  onChange={(e) => setExpiresAt(e.target.value)}
-                  className="mt-1.5 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-900 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:text-white"
-                />
-              </div>
+              {/* {selectedPlan && computedExpiry && (
+                <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                  Starts today · Expires{" "}
+                  <span className="font-medium text-gray-700 dark:text-gray-300">
+                    {formatDate(computedExpiry.toISOString())}
+                  </span>
+                  {selectedPlan.is_lifetime && (
+                    <span className="ml-1 text-gray-400">(lifetime — 10 yr)</span>
+                  )}
+                </p>
+              )} */}
             </div>
 
             {submitError && (
@@ -243,9 +227,11 @@ export function MembershipAllotmentModal({ isOpen, onClose }: MembershipAllotmen
             <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-white/[0.02]">
               <p className="mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">
                 {selectedPlan?.name}
-                <span className="ml-1 font-normal text-gray-400">
-                  · {startsAt} → {expiresAt}
-                </span>
+                {grantedExpiresAt && (
+                  <span className="ml-1 font-normal text-gray-400">
+                    · expires {formatDate(grantedExpiresAt)}
+                  </span>
+                )}
               </p>
               <div className="mt-2 flex flex-wrap gap-4 text-sm">
                 <span className="font-medium text-success-600 dark:text-success-400">

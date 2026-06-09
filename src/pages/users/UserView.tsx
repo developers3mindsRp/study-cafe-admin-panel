@@ -208,6 +208,7 @@ export default function UserView() {
                             <InfoBlock label="Designation" value={user?.designation} />
                             <InfoBlock label="Company" value={user?.company} />
                             <InfoBlock label="Profession" value={user?.profession} />
+                            <InfoBlock label="GST Number" value={user?.gst ?? undefined} />
                         </div>
                     </div>
 

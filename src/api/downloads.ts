@@ -144,6 +144,17 @@ export const downloadFilesApi = {
 };
 
 /**
+ * Lightweight search used by the file picker — returns up to `limit` files
+ * matching the given search term. No DataTable params required.
+ */
+export async function searchFiles(search: string, limit = 20): Promise<DownloadFile[]> {
+  const { data } = await api.get<unknown>(FILES_BASE, {
+    params: { page: 1, limit, search: search || undefined, sortBy: "title", sortOrder: "ASC", status: "publish" },
+  });
+  return toFetchResult<DownloadFile>(data).data;
+}
+
+/**
  * Server-side paginated fetch for the admin DataTable.
  * Called per page — no full load.
  */

@@ -78,6 +78,7 @@ export default function CourseEdit() {
           Math.max(0, Number(data.affiliate_commission)) || 0,
         ),
         validity: data.validity ?? '1year',
+        detail_sections: data.detail_sections?.length ? JSON.stringify(data.detail_sections) : null,
       });
       toast.success("Course updated successfully!");
       navigate("/courses");

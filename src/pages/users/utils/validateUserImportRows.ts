@@ -21,9 +21,6 @@ export function validateUserImportRows(
   rows: ParsedUserImportRow[],
   options: {
     planSlugs: Set<string>;
-    requiresMembershipDates?: boolean;
-    startsAt?: string;
-    expiresAt?: string;
   },
 ): UserImportRowValidation[] {
   const seenEmails = new Map<string, number>();
@@ -59,19 +56,6 @@ export function validateUserImportRows(
           field: "membership",
           message: `Unknown plan slug "${membershipSlug}" — must match premium_plans.slug`,
         });
-      }
-      if (options.requiresMembershipDates) {
-        if (!options.startsAt || !options.expiresAt) {
-          errors.push({
-            field: "membership",
-            message: "Membership start and expiry dates are required",
-          });
-        } else if (options.expiresAt <= options.startsAt) {
-          errors.push({
-            field: "membership",
-            message: "Membership expiry must be after start date",
-          });
-        }
       }
     }
 

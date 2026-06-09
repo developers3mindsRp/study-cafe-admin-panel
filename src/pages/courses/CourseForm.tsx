@@ -402,7 +402,7 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
                 />
                 <div>
                   <Label htmlFor="validity_lifetime" className="!mb-0 cursor-pointer">Lifetime Access</Label>
-                  <span className="text-xs text-gray-400 mt-[-3px] block">(By default, access is 1 year from purchase)</span>
+                  <span className="text-xs text-gray-400 mt-[-10px]">(By default, access is 1 year from purchase)</span>
                 </div>
                
               </div>

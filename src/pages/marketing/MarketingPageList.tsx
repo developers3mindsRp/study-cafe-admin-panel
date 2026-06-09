@@ -4,7 +4,7 @@ import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import { ConfirmDeleteModal } from "../../components/ui/modal/ConfirmDeleteModal";
 import { DataTable, type DataTableRef } from "../../components/tables/data-table/DataTable";
-import { EyeIcon, PencilIcon, TrashBinIcon } from "../../icons";
+import { PencilIcon, TrashBinIcon } from "../../icons";
 import { useModal } from "../../hooks/useModal";
 import { RequirePermission } from "../../components/auth/RequirePermission";
 import {
@@ -18,6 +18,10 @@ import {
   type MarketingPage,
 } from "../../api/marketingPages";
 import { withClientPagination } from "../../utils/dataTableUtils";
+import { getWebsiteUrl } from "../../config/env";
+import { WebsiteViewLink, AdminViewLink } from "../../components/common/WebsiteLink";
+
+const WEBSITE_URL = getWebsiteUrl();
 
 const fetchPaginated = withClientPagination(fetchMarketingPages, [
   "slug",
@@ -96,33 +100,39 @@ export default function MarketingPageList() {
     {
       key: "actions",
       header: "Actions",
-      render: (row: MarketingPage) => (
-        <div className="flex items-center gap-2">
-          <Link
-            to={`/marketing-pages/${row.id}`}
-            className="p-1 text-gray-500 hover:text-gray-800 dark:hover:text-white"
-          >
-            <EyeIcon className="w-5 h-5" />
-          </Link>
-          <RequirePermission permissions={[PERM_MARKETING_PAGES_EDIT]}>
-            <Link
-              to={`/marketing-pages/${row.id}/edit`}
-              className="p-1 text-gray-500 hover:text-gray-800 dark:hover:text-white"
-            >
-              <PencilIcon className="w-5 h-5" />
-            </Link>
-          </RequirePermission>
-          <RequirePermission permissions={[PERM_MARKETING_PAGES_DELETE]}>
-            <button
-              type="button"
-              onClick={() => handleDeleteClick(row)}
-              className="p-1 text-gray-500 hover:text-error-500"
-            >
-              <TrashBinIcon className="w-5 h-5" />
-            </button>
-          </RequirePermission>
-        </div>
-      ),
+      render: (row: MarketingPage) => {
+        const websiteUrl = row.is_published
+          ? `${WEBSITE_URL}/marketing/${row.slug}`
+          : null;
+        return (
+          <div className="flex items-center gap-2">
+            {websiteUrl
+              ? <WebsiteViewLink href={websiteUrl} />
+              : <AdminViewLink to={`/marketing-pages/${row.id}`} />}
+            <RequirePermission permissions={[PERM_MARKETING_PAGES_EDIT]}>
+              <Link
+                to={`/marketing-pages/${row.id}/edit`}
+                className="inline-flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-2 text-sm text-gray-600 transition hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
+                title="Edit"
+              >
+                <PencilIcon className="size-4 shrink-0 fill-current" />
+                Edit
+              </Link>
+            </RequirePermission>
+            <RequirePermission permissions={[PERM_MARKETING_PAGES_DELETE]}>
+              <button
+                type="button"
+                onClick={() => handleDeleteClick(row)}
+                className="inline-flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-2 text-sm text-gray-600 transition hover:bg-error-50 hover:text-error-500 dark:text-gray-400 dark:hover:bg-error-500/10 dark:hover:text-error-400"
+                title="Delete"
+              >
+                <TrashBinIcon className="size-4 shrink-0 fill-current" />
+                Delete
+              </button>
+            </RequirePermission>
+          </div>
+        );
+      },
     },
   ];
 

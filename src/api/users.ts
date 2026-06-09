@@ -46,9 +46,13 @@ export interface User {
   instagram?: string;
   youtube?: string;
 
+  // Tax
+  gst?: string | null;
+
   // Membership
   membership?: string | null;
   plan?: string;
+  membership_name?: string | null;
 }
 
 export interface UserMembership {
@@ -216,6 +220,7 @@ export type UserImportRow = {
   instagram?: string;
   youtube?: string;
   bio?: string;
+  gst?: string;
 };
 
 export type UserImportFieldError = {
@@ -244,8 +249,6 @@ export type UserImportSummary = {
 
 export async function importUsersFromCsv(payload: {
   rows: UserImportRow[];
-  startsAt?: string;
-  expiresAt?: string;
 }): Promise<UserImportSummary> {
   const res = await api.post<UserImportSummary>("/admin/users/import", payload);
   const data = res.data;

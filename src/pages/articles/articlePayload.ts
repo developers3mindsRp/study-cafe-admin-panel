@@ -14,9 +14,9 @@ export function articleFormToApiPayload(formData: ArticleFormData) {
       .map((id) => Number(id))
       .filter((n) => Number.isFinite(n) && n > 0),
   )];
-  // Only send tag_labels when there are no chip-selected tag_ids — prevents
-  // the comma text field from re-adding tags the user removed via ChipMultiSelect.
-  const tag_labels = chipTagIds.length > 0 ? [] : parseCommaSeparatedLabels(formData.tagsCommaRaw ?? "");
+  // Always send both: chip-selected tag_ids AND comma-separated tag_labels.
+  // The server will find-or-create labels and merge them with the id-based tags.
+  const tag_labels = parseCommaSeparatedLabels(formData.tagsCommaRaw ?? "");
 
   return {
     title: formData.meta.title,

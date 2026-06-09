@@ -43,6 +43,7 @@ export default function PaymentLinkEdit() {
         expiry: form.expiry,
         total_seats: Number(form.total_seats),
         random_value: form.random_value?.trim() || null,
+        random_boost_accumulator: Number(form.random_boost_accumulator ?? 0),
         status: form.status,
       });
       navigate("/payment-links");
@@ -70,6 +71,7 @@ export default function PaymentLinkEdit() {
     expiry: typeof data.expiry === "string" ? data.expiry : String(data.expiry),
     total_seats: String(data.total_seats ?? ""),
     random_value: data.random_value ?? "",
+    random_boost_accumulator: String(data.random_boost_accumulator ?? 0),
     status: (data.status === "publish" ? "publish" : "draft") as PaymentLinkFormValues["status"],
   };
 

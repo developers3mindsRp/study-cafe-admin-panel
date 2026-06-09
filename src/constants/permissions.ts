@@ -65,6 +65,25 @@ export const PERM_COURSES_CREATE = "courses:create";
 export const PERM_COURSES_EDIT = "courses:edit";
 export const PERM_COURSES_DELETE = "courses:delete";
 
+// Course Categories
+export const PERM_COURSE_CATEGORIES_LIST = "course_categories:list";
+export const PERM_COURSE_CATEGORIES_VIEW = "course_categories:view";
+export const PERM_COURSE_CATEGORIES_CREATE = "course_categories:create";
+export const PERM_COURSE_CATEGORIES_EDIT = "course_categories:edit";
+export const PERM_COURSE_CATEGORIES_DELETE = "course_categories:delete";
+
+// Course Reviews
+export const PERM_COURSE_REVIEWS_LIST = "course_reviews:list";
+export const PERM_COURSE_REVIEWS_VIEW = "course_reviews:view";
+export const PERM_COURSE_REVIEWS_EDIT = "course_reviews:edit";
+export const PERM_COURSE_REVIEWS_DELETE = "course_reviews:delete";
+
+// Media
+export const PERM_MEDIA_LIST = "media:list";
+export const PERM_MEDIA_VIEW = "media:view";
+export const PERM_MEDIA_EDIT = "media:edit";
+export const PERM_MEDIA_DELETE = "media:delete";
+
 // Marketing pages
 export const PERM_MARKETING_PAGES_LIST = "marketing_pages:list";
 export const PERM_MARKETING_PAGES_VIEW = "marketing_pages:view";
@@ -125,8 +144,9 @@ export const PERM_BANNERS_EDIT = "banners:edit";
 export const PERM_BANNERS_DELETE = "banners:delete";
 
 
-// Course Allotment (bulk enroll users into course batches)
+// Course & Membership Allotment (bulk enroll users)
 export const PERM_USERS_COURSE_ALLOTMENT = "users:course_allotment";
+export const PERM_USERS_MEMBERSHIP_ALLOTMENT = "users:membership_allotment";
 
 // Admin users (CRUD for panel users)
 export const PERM_ADMIN_USERS_LIST = "admin_users:list";
@@ -213,6 +233,8 @@ export const ALL_PERMISSIONS = [
   PERM_BANNERS_CREATE,
   PERM_BANNERS_EDIT,
   PERM_BANNERS_DELETE,
+  PERM_USERS_COURSE_ALLOTMENT,
+  PERM_USERS_MEMBERSHIP_ALLOTMENT,
 ] as const;
 
 export type Permission = (typeof ALL_PERMISSIONS)[number];

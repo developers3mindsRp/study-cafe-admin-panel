@@ -9,3 +9,9 @@ function requiredViteEnv(name: string): string {
 export function getApiBaseUrl(): string {
   return requiredViteEnv("VITE_API_BASE_URL");
 }
+
+export function getWebsiteUrl(): string {
+  const v = import.meta.env["VITE_WEBSITE_URL"];
+  if (!v || String(v).trim() === "") return "https://studycafe.in";
+  return String(v).trim().replace(/\/$/, "");
+}

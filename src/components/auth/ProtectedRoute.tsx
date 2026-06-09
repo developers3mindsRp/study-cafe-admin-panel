@@ -1,13 +1,8 @@
-import { Navigate, Outlet, useLocation } from "react-router";
+import { Navigate, Outlet } from "react-router";
 import { useAuth } from "../../context/AuthContext";
 
-/**
- * Wraps routes that require authentication.
- * Redirects to /signin?redirect=... if not logged in.
- */
 export function ProtectedRoute() {
   const { isAuthenticated, isInitialized } = useAuth();
-  const location = useLocation();
 
   if (!isInitialized) {
     return (
@@ -20,8 +15,7 @@ export function ProtectedRoute() {
   }
 
   if (!isAuthenticated) {
-    const redirect = encodeURIComponent(location.pathname + location.search);
-    return <Navigate to={`/signin?redirect=${redirect}`} replace />;
+    return <Navigate to="/signin" replace />;
   }
 
   return <Outlet />;
