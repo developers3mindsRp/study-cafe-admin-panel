@@ -25,8 +25,10 @@ function courseListPrice(c: Course): number {
 }
 
 function courseEffectivePrice(c: Course): number {
-  const sale = Number(c.sale_price);
-  if (Number.isFinite(sale) && sale > 0) return sale;
+  if (c.sale_price != null && c.sale_price !== "") {
+    const sale = Number(c.sale_price);
+    if (Number.isFinite(sale)) return sale;
+  }
   return courseListPrice(c);
 }
 

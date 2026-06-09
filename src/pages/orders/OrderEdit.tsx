@@ -41,7 +41,7 @@ function normalizeEditableStatus(status: string | null | undefined): UpdateOrder
 
 function listPriceForCourse(c: Course): number | null {
   const sale = c.sale_price;
-  if (sale != null && sale !== "" && Number(sale) > 0) {
+  if (sale != null && sale !== "") {
     const n = Number(sale);
     return Number.isFinite(n) ? n : null;
   }
