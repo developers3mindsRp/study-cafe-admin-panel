@@ -48,7 +48,7 @@ export function UserExportModal({
   onClose,
   onConfirm,
   isExporting = false,
-  exportProgressLabel = "Download Excel",
+  exportProgressLabel = "Download CSV",
   exportProgressTitle,
 }: UserExportModalProps) {
   const [category, setCategory] = useState<UserExportCategory>("membership");
@@ -202,7 +202,7 @@ export function UserExportModal({
                 disabled={isExporting}
                 className="mt-1.5 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 pr-11 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
               >
-                <option value="">Select a membershipù</option>
+                <option value="">Select a membership?</option>
                 {USER_MEMBERSHIP_FILTER_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>
                     {o.label}
@@ -224,10 +224,10 @@ export function UserExportModal({
               >
                 <option value="">
                   {loadingCourses
-                    ? "Loading coursesù"
+                    ? "Loading courses?"
                     : courses.length === 0
                       ? "No courses found"
-                      : "Select a courseù"}
+                      : "Select a course?"}
                 </option>
                 {courses.map((c) => (
                   <option key={c.id} value={String(c.id)}>
@@ -250,10 +250,10 @@ export function UserExportModal({
               >
                 <option value="">
                   {loadingStates
-                    ? "Loading statesù"
+                    ? "Loading states?"
                     : states.length === 0
                       ? "No states found"
-                      : "Select a stateù"}
+                      : "Select a state?"}
                 </option>
                 {states.map((s) => (
                   <option key={s.name} value={s.name}>
@@ -276,7 +276,7 @@ export function UserExportModal({
             title={exportProgressTitle}
             className="inline-flex items-center justify-center gap-2 rounded-lg bg-brand-500 px-4 py-3 text-sm font-medium text-white shadow-theme-xs transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {isExporting ? exportProgressLabel : "Download Excel"}
+            {isExporting ? exportProgressLabel : "Download CSV"}
           </button>
         </div>
       </div>

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import flatpickr from "flatpickr";
 import "flatpickr/dist/flatpickr.css";
 import Label from "./Label";
@@ -34,6 +34,16 @@ export default function DatePicker({
   dateFormat = "Y-m-d",
   required = false,
 }: PropsType) {
+  /**
+   * Keep onChange in a ref so flatpickr always calls the latest version
+   * without the useEffect having to teardown and re-create the instance
+   * on every parent render (which was clearing the selected date).
+   */
+  const onChangeRef = useRef<Hook | Hook[] | undefined>(onChange);
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
+
   useEffect(() => {
     const flatPickr = flatpickr(`#${id}`, {
       mode: mode || "single",
@@ -45,7 +55,12 @@ export default function DatePicker({
       defaultDate,
       minDate,
       maxDate,
-      onChange,
+      onChange: (...args) => {
+        const cb = onChangeRef.current;
+        if (!cb) return;
+        if (Array.isArray(cb)) cb.forEach((fn) => fn(...args));
+        else cb(...args);
+      },
       closeOnSelect: mode !== "range", // Stay open for range selection
       onReady: (_dates, _dateStr, instance) => {
         instance.calendarContainer.style.zIndex = "10050";
@@ -57,7 +72,7 @@ export default function DatePicker({
         flatPickr.destroy();
       }
     };
-  }, [mode, onChange, id, defaultDate, minDate, maxDate, dateFormat]);
+  }, [mode, id, defaultDate, minDate, maxDate, dateFormat]); // onChange intentionally excluded — handled via ref
 
   return (
     <div>

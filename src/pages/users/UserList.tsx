@@ -19,19 +19,14 @@ import {
   type UsersListFilters,
   type User,
 } from "../../api/users";
-import { exportRowsToExcel } from "../../utils/exportToExcel";
+import { exportRowsToCsv } from "../../utils/exportToCsv";
 import { ExportProgressBar } from "../../components/export/ExportProgressBar";
 import {
   formatExportProgressLabel,
   formatExportProgressTitle,
   type ExportProgress,
 } from "../../utils/exportProgress";
-import {
-  USER_EXPORT_COLUMNS,
-  usersMembershipSummaryAoa,
-  usersStateSummaryAoa,
-  type UserExportRow,
-} from "../../utils/userExportColumns";
+import { USER_EXPORT_COLUMNS } from "../../utils/userExportColumns";
 import { DownloadIcon } from "../../icons";
 import Button from "../../components/ui/button/Button";
 import { UsersTable } from "../../components/tables";
@@ -63,6 +58,18 @@ const userFilterFields: FilterFieldDef[] = [
     placeholder: "Filter by state…",
   },
   {
+    type: "text",
+    id: "designation",
+    label: "Designation",
+    placeholder: "Filter by designation…",
+  },
+  {
+    type: "text",
+    id: "profession",
+    label: "Profession",
+    placeholder: "Filter by profession…",
+  },
+  {
     type: "select",
     id: "status",
     label: "Status",
@@ -91,11 +98,13 @@ const userFilterFields: FilterFieldDef[] = [
     ],
   },
   {
-    type: "date-range",
+    type: "date-split",
     id: "joined",
     label: "Joined",
     fromId: "joinedFrom",
+    fromLabel: "From",
     toId: "joinedTo",
+    toLabel: "To",
   },
 ];
 
@@ -127,7 +136,7 @@ function UserListContent() {
   const isTrash = trashScope === "trash";
   const filtersActive = useMemo(() => usersListFiltersAreActive(listFilters), [listFilters]);
 
-  const handleExportExcel = useCallback(async () => {
+  const handleExportCsv = useCallback(async () => {
     const q = tableRef.current?.getQueryState();
     if (!q) return;
     setExportProgress({ loaded: 0, total: null, phase: "fetching" });
@@ -142,9 +151,8 @@ function UserListContent() {
       setExportProgress({ loaded: rows.length, total: rows.length, phase: "writing" });
       const datePart = new Date().toISOString().slice(0, 10);
       const filteredPart = filtersActive || q.search.trim() ? "-filtered" : "";
-      exportRowsToExcel({
+      exportRowsToCsv({
         filename: `users-export-${datePart}${filteredPart}`,
-        sheetName: "Users",
         columns: USER_EXPORT_COLUMNS,
         rows,
       });
@@ -171,8 +179,7 @@ function UserListContent() {
         else if (selection.category === "state") filters.state = selection.value;
 
         const rows = await fetchAllUsersForExport({ filters, onProgress: setExportProgress });
-        const exportRows = rows as UserExportRow[];
-        setExportProgress({ loaded: exportRows.length, total: exportRows.length, phase: "writing" });
+        setExportProgress({ loaded: rows.length, total: rows.length, phase: "writing" });
 
         const slug = selection.label
           .toLowerCase()
@@ -182,15 +189,10 @@ function UserListContent() {
         const datePart = new Date().toISOString().slice(0, 10);
         const filename = `users-export-${selection.category}-${slug || "all"}-${datePart}`;
 
-        exportRowsToExcel({
+        exportRowsToCsv({
           filename,
-          sheetName: "Users",
           columns: USER_EXPORT_COLUMNS,
-          rows: exportRows,
-          extraSheets: [
-            { name: "By state", aoa: usersStateSummaryAoa(exportRows) },
-            { name: "By membership", aoa: usersMembershipSummaryAoa(exportRows) },
-          ],
+          rows,
         });
         setExportModalOpen(false);
       } catch (err: unknown) {
@@ -273,7 +275,7 @@ function UserListContent() {
               className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-800"
             >
               <DownloadIcon className="size-4 shrink-0 fill-current" />
-              Export Excel
+              Export CSV
             </button>
 {!isTrash ? (
   <>
@@ -335,12 +337,12 @@ function UserListContent() {
               disabled={exporting}
               className="h-10 whitespace-nowrap"
               startIcon={<DownloadIcon className="size-4 shrink-0" />}
-              onClick={handleExportExcel}
+              onClick={handleExportCsv}
               title={formatExportProgressTitle(exportProgress)}
             >
               {formatExportProgressLabel(
                 exportProgress,
-                filtersActive ? "Export filtered" : "Export Excel",
+                filtersActive ? "Export filtered" : "Export CSV",
               )}
             </Button>
           }
@@ -399,7 +401,7 @@ function UserListContent() {
         onClose={() => setExportModalOpen(false)}
         onConfirm={handleExportConfirm}
         isExporting={exporting}
-        exportProgressLabel={formatExportProgressLabel(exportProgress, "Download Excel")}
+        exportProgressLabel={formatExportProgressLabel(exportProgress, "Download CSV")}
         exportProgressTitle={formatExportProgressTitle(exportProgress)}
       />
 
