@@ -114,7 +114,6 @@ export const mainNavItemsConfig: NavItemConfig[] = [
       { name: "Disclaimer", path: "/content/disclaimer", requiredPermission: ["content:list", "content:view", "content:edit"] },
       { name: "Refund Policy", path: "/content/refund-policy", requiredPermission: ["content:list", "content:view", "content:edit"] },
       { name: "Footer", path: "/content/footer", requiredPermission: ["content:list", "content:view", "content:edit"] },
-      { name: "Popup Banners", path: "/banners", requiredPermission: ["banners:list"] },
     ],
     requiredPermission: ["content:list", "content:view", "content:edit"],
   },

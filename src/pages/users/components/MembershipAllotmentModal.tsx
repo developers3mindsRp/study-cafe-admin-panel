@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Modal } from "../../../components/ui/modal";
 import Label from "../../../components/form/Label";
+import Input from "../../../components/form/input/InputField";
 import { CsvEmailUpload } from "./CsvEmailUpload";
 import { plansApi, bulkGrantMembershipByEmails, type Plan, type BulkMembershipResult } from "../../../api/plans";
 
@@ -27,12 +28,16 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
 }
 
-function computeExpiry(plan: Plan): Date {
-  const start = new Date();
+function toDatetimeLocal(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function computeExpiry(plan: Plan, from: Date): Date {
   if (plan.is_lifetime || !plan.duration_days) {
-    return new Date(start.getFullYear() + 10, start.getMonth(), start.getDate());
+    return new Date(from.getFullYear() + 10, from.getMonth(), from.getDate());
   }
-  return new Date(start.getTime() + plan.duration_days * 24 * 60 * 60 * 1000);
+  return new Date(from.getTime() + plan.duration_days * 24 * 60 * 60 * 1000);
 }
 
 export function MembershipAllotmentModal({ isOpen, onClose }: MembershipAllotmentModalProps) {
@@ -42,6 +47,12 @@ export function MembershipAllotmentModal({ isOpen, onClose }: MembershipAllotmen
   const [plans, setPlans] = useState<Plan[]>([]);
   const [plansLoading, setPlansLoading] = useState(false);
   const [selectedPlanId, setSelectedPlanId] = useState<number | "">("");
+  const [price, setPrice] = useState("");
+  const [paymentId, setPaymentId] = useState("");
+  const [dateOfPurchase, setDateOfPurchase] = useState(() => {
+    const now = new Date();
+    return now.toISOString().slice(0, 16).replace("T", " ");
+  });
 
   const [submitting, setSubmitting] = useState(false);
   const [results, setResults] = useState<BulkMembershipResult[]>([]);
@@ -64,6 +75,9 @@ export function MembershipAllotmentModal({ isOpen, onClose }: MembershipAllotmen
         setStep("form");
         setEmailsRaw("");
         setSelectedPlanId("");
+        setPrice("");
+        setPaymentId("");
+        setDateOfPurchase(new Date().toISOString().slice(0, 16).replace("T", " "));
         setResults([]);
         setSubmitError(null);
         setGrantedExpiresAt("");
@@ -82,7 +96,8 @@ export function MembershipAllotmentModal({ isOpen, onClose }: MembershipAllotmen
   ];
 
   const selectedPlan = plans.find((p) => p.id === Number(selectedPlanId));
-  const computedExpiry = selectedPlan ? computeExpiry(selectedPlan) : null;
+  const purchaseDate = dateOfPurchase ? new Date(dateOfPurchase.replace(" ", "T")) : new Date();
+  const computedExpiry = selectedPlan ? computeExpiry(selectedPlan, isNaN(purchaseDate.getTime()) ? new Date() : purchaseDate) : null;
 
   const canSubmit = uniqueEmails.length > 0 && selectedPlanId !== "" && !submitting;
 
@@ -91,13 +106,29 @@ export function MembershipAllotmentModal({ isOpen, onClose }: MembershipAllotmen
     setSubmitting(true);
     setSubmitError(null);
     try {
-      const startsAt = new Date().toISOString();
+      const startDate = dateOfPurchase && !isNaN(new Date(dateOfPurchase.replace(" ", "T")).getTime())
+        ? new Date(dateOfPurchase.replace(" ", "T"))
+        : new Date();
+      const startsAt = startDate.toISOString();
       const expiresAt = computedExpiry.toISOString();
+      // Store human-readable "YYYY-MM-DD HH:MM" in the plan JSON
+      const planPurchasedFormatted = toDatetimeLocal(startDate);
+      const planExpiryFormatted = toDatetimeLocal(computedExpiry);
+      const planValidity = selectedPlan.is_lifetime
+        ? undefined
+        : selectedPlan.duration_days
+          ? String(selectedPlan.duration_days)
+          : undefined;
       const res = await bulkGrantMembershipByEmails({
         emails: uniqueEmails,
         membershipType: selectedPlan.slug,
         startsAt,
         expiresAt,
+        price: price.trim() || undefined,
+        paymentId: paymentId.trim() || undefined,
+        planValidity,
+        planPurchasedFormatted,
+        planExpiryFormatted,
       });
       setGrantedExpiresAt(expiresAt);
       setResults(res);
@@ -180,17 +211,61 @@ export function MembershipAllotmentModal({ isOpen, onClose }: MembershipAllotmen
                   ))}
                 </select>
               )}
-              {/* {selectedPlan && computedExpiry && (
-                <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
-                  Starts today · Expires{" "}
-                  <span className="font-medium text-gray-700 dark:text-gray-300">
-                    {formatDate(computedExpiry.toISOString())}
-                  </span>
-                  {selectedPlan.is_lifetime && (
-                    <span className="ml-1 text-gray-400">(lifetime — 10 yr)</span>
-                  )}
+            </div>
+
+            {/* Price */}
+            <div>
+              <Label htmlFor="membership-allotment-price">Price</Label>
+              <Input
+                id="membership-allotment-price"
+                type="text"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                placeholder="eg. 3999"
+              />
+            </div>
+
+            {/* Date of Purchase */}
+            <div>
+              <Label htmlFor="membership-allotment-dop">Date of Purchase</Label>
+              <input
+                id="membership-allotment-dop"
+                type="text"
+                value={dateOfPurchase}
+                onChange={(e) => setDateOfPurchase(e.target.value)}
+                placeholder="YYYY-MM-DD HH:MM"
+                className="mt-1.5 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-900 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:text-white"
+              />
+              <p className="mt-1 text-xs text-gray-400">Format: YYYY-MM-DD HH:MM. Auto-filled to now.</p>
+            </div>
+
+            {/* Plan Expiry (read-only, computed) */}
+            {selectedPlan && computedExpiry && (
+              <div>
+                <Label>Plan Expiry</Label>
+                <input
+                  type="text"
+                  readOnly
+                  value={formatDate(computedExpiry.toISOString())}
+                  className="mt-1.5 w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 cursor-not-allowed"
+                />
+                <p className="mt-1 text-xs text-gray-400">
+                  Auto-computed from plan duration
+                  {selectedPlan.is_lifetime ? " (lifetime — 10 yr)" : selectedPlan.duration_days ? ` (${selectedPlan.duration_days} days)` : ""}.
                 </p>
-              )} */}
+              </div>
+            )}
+
+            {/* RazorPay Payment ID */}
+            <div>
+              <Label htmlFor="membership-allotment-payment-id">RazorPay Payment ID</Label>
+              <Input
+                id="membership-allotment-payment-id"
+                type="text"
+                value={paymentId}
+                onChange={(e) => setPaymentId(e.target.value)}
+                placeholder="Payment ID"
+              />
             </div>
 
             {submitError && (

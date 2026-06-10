@@ -87,13 +87,15 @@ export async function fetchUserMemberships(userId: string | number): Promise<Use
   }
 }
 
-/** Toolbar filters on the users list (shared by table + Excel export). */
+/** Toolbar filters on the users list (shared by table + CSV export). */
 export type UsersListFilters = {
   email: string;
   status: string;
   membership: string;
   role: string;
   state: string;
+  designation: string;
+  profession: string;
   /** Numeric course id (sent as string). Only used by export — no toolbar field. */
   courseId: string;
   joinedFrom: string;
@@ -128,6 +130,10 @@ export function buildUsersListParams(input: BuildUsersListParamsInput): ListQuer
   if (filters.role) params.role = filters.role;
   const state = filters.state.trim();
   if (state) params.state = state;
+  const designation = filters.designation?.trim();
+  if (designation) params.designation = designation;
+  const profession = filters.profession?.trim();
+  if (profession) params.profession = profession;
   const courseId = filters.courseId?.trim();
   if (courseId) params.course_id = courseId;
   if (filters.joinedFrom) params.joined_from = filters.joinedFrom;
@@ -144,6 +150,8 @@ export function usersListFiltersAreActive(filters: UsersListFilters): boolean {
       filters.membership ||
       filters.role ||
       filters.state.trim() ||
+      filters.designation?.trim() ||
+      filters.profession?.trim() ||
       filters.courseId?.trim() ||
       filters.joinedFrom ||
       filters.joinedTo,
@@ -157,6 +165,8 @@ export function usersListFiltersFromValues(values: Record<string, string | undef
     membership: values.membership ?? "",
     role: values.role ?? "",
     state: values.state ?? "",
+    designation: values.designation ?? "",
+    profession: values.profession ?? "",
     courseId: values.courseId ?? "",
     joinedFrom: values.joinedFrom ?? "",
     joinedTo: values.joinedTo ?? "",
@@ -171,6 +181,8 @@ export function emptyUsersListFilters(): UsersListFilters {
     membership: "",
     role: "",
     state: "",
+    designation: "",
+    profession: "",
     courseId: "",
     joinedFrom: "",
     joinedTo: "",
@@ -217,6 +229,10 @@ export type UserImportRow = {
   role?: string;
   status?: string;
   membership?: string;
+  plan_price?: string;
+  payment_id?: string;
+  plan_purchased?: string;
+  plan_expiry?: string;
   designation?: string;
   profession?: string;
   company?: string;

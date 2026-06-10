@@ -34,8 +34,10 @@ export const UsersTable = forwardRef<DataTableRef, UsersTableProps>(
     );
 
     const fetchData = useCallback(
-      (params: DataTableFetchParams): Promise<DataTableFetchResult<User>> =>
-        fetchUsersPaginated({ ...params, filters, trashScope }),
+      (params: DataTableFetchParams): Promise<DataTableFetchResult<User>> => {
+        console.log('[UsersTable] fetchData called, filters:', filters, 'params:', params);
+        return fetchUsersPaginated({ ...params, filters, trashScope });
+      },
       [filters, trashScope],
     );
 
@@ -58,14 +60,13 @@ export const UsersTable = forwardRef<DataTableRef, UsersTableProps>(
         key: "designation",
         header: "Designation",
         sortable: false,
-        render: (row: User) => (
-          <div>
-            <div>{row.designation || "—"}</div>
-            {row.profession && (
-              <div className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{row.profession}</div>
-            )}
-          </div>
-        ),
+        render: (row: User) => row.designation || "—",
+      },
+      {
+        key: "profession",
+        header: "Profession",
+        sortable: false,
+        render: (row: User) => row.profession || "—",
       },
       {
         key: "state",
@@ -102,8 +103,14 @@ export const UsersTable = forwardRef<DataTableRef, UsersTableProps>(
         key: "created_at",
         header: "Joined",
         sortable: true,
-        render: (row: User) =>
-          row.created_at ? new Date(row.created_at).toLocaleDateString() : "—",
+        render: (row: User) => {
+          if (!row.created_at) return "—";
+          const d = new Date(row.created_at);
+          const y = d.getFullYear();
+          const m = String(d.getMonth() + 1).padStart(2, "0");
+          const day = String(d.getDate()).padStart(2, "0");
+          return `${y}-${m}-${day}`;
+        },
       },
       {
         key: "actions",

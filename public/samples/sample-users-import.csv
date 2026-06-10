@@ -1,4 +1,4 @@
-email,password,name,first_name,last_name,phone,role,status,membership,designation,profession,company,city,state,country,linkedin,facebook,twitter,instagram,youtube,bio
-john.doe@example.com,Secret123,John Doe,John,Doe,+919876543210,student,active,premium,CA,Finance,Acme Corp,Mumbai,Maharashtra,India,,,,,,
-jane.smith@example.com,,Jane Smith,Jane,Smith,,student,active,basic,,,,,,,,,,,,
-new.user@example.com,,New User,,,+919800000001,student,active,,,,,,India,,,,,,
+email,password,name,first_name,last_name,phone,role,status,membership,plan_price,payment_id,plan_purchased,plan_expiry,designation,profession,company,city,state,country,linkedin,facebook,twitter,instagram,youtube,bio
+john.doe@example.com,Secret123,John Doe,John,Doe,+919876543210,student,active,premium,12979,pay_SqLNksiHVGuUeJ,2026-05-23 11:18,2036-05-23 11:00,CA,Finance,Acme Corp,Mumbai,Maharashtra,India,,,,,,
+jane.smith@example.com,,Jane Smith,Jane,Smith,,student,active,basic,3999,,2026-06-01 10:00,2027-06-01 10:00,,,,,,,,,,,,
+new.user@example.com,,New User,,,+919800000001,student,active,,,,,,,,,,India,,,,,,

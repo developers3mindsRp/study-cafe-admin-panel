@@ -136,14 +136,6 @@ export const PERM_GLOBAL_SETTINGS_EDIT = "global_settings:edit";
 // Admin (panel gate)
 export const PERM_ADMIN_ACCESS = "admin:access";
 
-// Banners
-export const PERM_BANNERS_LIST = "banners:list";
-export const PERM_BANNERS_VIEW = "banners:view";
-export const PERM_BANNERS_CREATE = "banners:create";
-export const PERM_BANNERS_EDIT = "banners:edit";
-export const PERM_BANNERS_DELETE = "banners:delete";
-
-
 // Course & Membership Allotment (bulk enroll users)
 export const PERM_USERS_COURSE_ALLOTMENT = "users:course_allotment";
 export const PERM_USERS_MEMBERSHIP_ALLOTMENT = "users:membership_allotment";
@@ -263,11 +255,6 @@ export const ALL_PERMISSIONS = [
   PERM_ROLES_CREATE,
   PERM_ROLES_EDIT,
   PERM_ROLES_DELETE,
-  PERM_BANNERS_LIST,
-  PERM_BANNERS_VIEW,
-  PERM_BANNERS_CREATE,
-  PERM_BANNERS_EDIT,
-  PERM_BANNERS_DELETE,
   PERM_USERS_COURSE_ALLOTMENT,
   PERM_USERS_MEMBERSHIP_ALLOTMENT,
 ] as const;

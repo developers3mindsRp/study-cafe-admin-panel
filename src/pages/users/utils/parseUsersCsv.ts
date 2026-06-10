@@ -15,6 +15,10 @@ export type ParsedUserImportRow = {
   role?: string;
   status?: string;
   membership?: string;
+  plan_price?: string;
+  payment_id?: string;
+  plan_purchased?: string;
+  plan_expiry?: string;
   designation?: string;
   profession?: string;
   company?: string;
@@ -123,6 +127,18 @@ export function parseUsersCsv(text: string): ParsedUserImportRow[] {
 
     const membership = cell(cols, colMap.membership);
     if (membership) row.membership = membership.toLowerCase();
+
+    const planPrice = cell(cols, colMap.plan_price);
+    if (planPrice) row.plan_price = planPrice;
+
+    const paymentId = cell(cols, colMap.payment_id);
+    if (paymentId) row.payment_id = paymentId;
+
+    const planPurchased = cell(cols, colMap.plan_purchased);
+    if (planPurchased) row.plan_purchased = planPurchased;
+
+    const planExpiry = cell(cols, colMap.plan_expiry);
+    if (planExpiry) row.plan_expiry = planExpiry;
 
     for (const field of [
       "designation",

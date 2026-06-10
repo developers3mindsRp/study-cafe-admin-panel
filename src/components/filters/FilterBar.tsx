@@ -27,6 +27,14 @@ const labelClass = "text-xs font-medium text-gray-600 dark:text-gray-400";
 const inputClass =
   "min-w-[140px] rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 transition focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white/90";
 
+/** Formats a Date using local calendar date (YYYY-MM-DD), avoiding UTC timezone shift. */
+function localDateString(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 // ─── Individual field renderers ───────────────────────────────────────────────
 
 function SelectField({
@@ -129,8 +137,8 @@ function DateRangeField({
         onChange={(dates) => {
           if (dates.length === 2) {
             const [start, end] = dates;
-            onChange(fromId, start ? start.toISOString().split("T")[0] : "");
-            onChange(toId, end ? end.toISOString().split("T")[0] : "");
+            onChange(fromId, start ? localDateString(start) : "");
+            onChange(toId, end ? localDateString(end) : "");
           } else if (dates.length === 0) {
             onChange(fromId, "");
             onChange(toId, "");
@@ -208,6 +216,54 @@ function MonthSelectField({
         defaultValue={value}
         onChange={(e) => handleChange(e.target.value)}
       />
+    </div>
+  );
+}
+
+function DateSplitField({
+  field,
+  values,
+  onChange,
+  resetKey = 0,
+}: {
+  field: Extract<FilterFieldDef, { type: "date-split" }>;
+  values: FilterValues;
+  onChange: (id: string, v: string) => void;
+  resetKey?: number;
+}) {
+  const fromId = field.fromId ?? `${field.id}From`;
+  const toId = field.toId ?? `${field.id}To`;
+  const fromLabel = field.fromLabel ?? "From";
+  const toLabel = field.toLabel ?? "To";
+
+  return (
+    <div className="flex flex-wrap items-end gap-3">
+      <div className="flex min-w-[11rem] flex-col gap-1.5">
+        <span className={labelClass}>{field.label} — {fromLabel}</span>
+        <DatePicker
+          key={`filter-split-from-${field.id}-${resetKey}`}
+          id={`filter-split-from-${field.id}`}
+          mode="single"
+          placeholder={`${fromLabel} date`}
+          defaultDate={values[fromId] || undefined}
+          onChange={(dates) => {
+            onChange(fromId, dates[0] ? localDateString(dates[0]) : "");
+          }}
+        />
+      </div>
+      <div className="flex min-w-[11rem] flex-col gap-1.5">
+        <span className={labelClass}>{field.label} — {toLabel}</span>
+        <DatePicker
+          key={`filter-split-to-${field.id}-${resetKey}`}
+          id={`filter-split-to-${field.id}`}
+          mode="single"
+          placeholder={`${toLabel} date`}
+          defaultDate={values[toId] || undefined}
+          onChange={(dates) => {
+            onChange(toId, dates[0] ? localDateString(dates[0]) : "");
+          }}
+        />
+      </div>
     </div>
   );
 }
@@ -326,6 +382,16 @@ export function FilterBar({
                 key={field.id}
                 field={field}
                 value={values[field.id] ?? ""}
+                onChange={onChange}
+                resetKey={resetKey}
+              />
+            );
+          case "date-split":
+            return (
+              <DateSplitField
+                key={field.id}
+                field={field}
+                values={values}
                 onChange={onChange}
                 resetKey={resetKey}
               />

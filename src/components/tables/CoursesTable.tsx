@@ -25,8 +25,10 @@ function courseListPrice(c: Course): number {
 }
 
 function courseEffectivePrice(c: Course): number {
-  const sale = Number(c.sale_price);
-  if (Number.isFinite(sale) && sale > 0) return sale;
+  if (c.sale_price != null && c.sale_price !== "") {
+    const sale = Number(c.sale_price);
+    if (Number.isFinite(sale)) return sale;
+  }
   return courseListPrice(c);
 }
 
@@ -174,20 +176,28 @@ export function CoursesTable({
         header: "Status",
         sortable: false,
         render: (row: Course) => (
-          <div className="flex flex-wrap items-center gap-1.5">
-            <Badge size="sm" color={row.is_published ? "success" : "error"}>
-              {row.is_published ? "Published" : "Draft"}
-            </Badge>
-            {row.hide_from_public ? (
-              <span
-                title="Not shown on the public course catalog or marketing course pages. Assigned learners still get access."
-                className="inline-flex"
-              >
-                <Badge size="sm" color="warning">
-                  Unlisted
-                </Badge>
+          <div>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <Badge size="sm" color={row.is_published ? "success" : "error"}>
+                {row.is_published ? "Published" : "Draft"}
+              </Badge>
+              {row.hide_from_public ? (
+                <span
+                  title="Not shown on the public course catalog or marketing course pages. Assigned learners still get access."
+                  className="inline-flex"
+                >
+                  <Badge size="sm" color="warning">
+                    Unlisted
+                  </Badge>
+                </span>
+              ) : null}
+            </div>
+            {row.updated_at && (
+              <span className="mt-1 block text-theme-xs text-gray-500 dark:text-gray-400">
+                {row.is_published ? "Published at" : "Updated at"}:{" "}
+                {new Date(row.updated_at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}
               </span>
-            ) : null}
+            )}
           </div>
         ),
       },

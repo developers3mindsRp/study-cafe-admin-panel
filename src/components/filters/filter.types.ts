@@ -52,6 +52,19 @@ export type FilterFieldDef =
       /** id for the last-day-of-month value; defaults to `${id}_to` */
       toId?: string;
       placeholder?: string;
+    }
+  | {
+      type: "date-split";
+      id: string;
+      label: string;
+      /** id for the "from" date value; defaults to `${id}From` */
+      fromId?: string;
+      /** label shown above the "from" picker; defaults to "From" */
+      fromLabel?: string;
+      /** id for the "to" date value; defaults to `${id}To` */
+      toId?: string;
+      /** label shown above the "to" picker; defaults to "To" */
+      toLabel?: string;
     };
 
 export type FilterValues = Record<string, string>;
