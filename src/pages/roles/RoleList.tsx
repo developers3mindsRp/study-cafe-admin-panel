@@ -3,15 +3,83 @@ import { Link } from "react-router";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import { ConfirmDeleteModal } from "../../components/ui/modal/ConfirmDeleteModal";
-import { DataTable, type DataTableRef } from "../../components/tables/data-table/DataTable";
+import {
+  DataTable,
+  type DataTableRef,
+} from "../../components/tables/data-table/DataTable";
+import type {
+  DataTableFetchParams,
+  DataTableFetchResult,
+} from "../../components/tables/data-table/DataTable.types";
 import { RequirePermission } from "../../components/auth/RequirePermission";
 import { rolesApi, type RoleRecord } from "../../api/roles";
 import { PERM_ROLES_CREATE, PERM_ROLES_DELETE, PERM_ROLES_EDIT, PERM_ROLES_LIST } from "../../constants/permissions";
-import { withClientPagination } from "../../utils/dataTableUtils";
-import Badge from "../../components/ui/badge/Badge";
 import { PencilIcon, TrashBinIcon } from "../../icons";
 
-const fetchRolesPaginated = withClientPagination(() => rolesApi.list(true), ["name", "description"]);
+/** System roles first, then ascending by the active sort column (default: name). */
+function sortRoles(
+  rows: RoleRecord[],
+  sortBy: string,
+  sortOrder: "ASC" | "DESC",
+): RoleRecord[] {
+  const dir = sortOrder === "DESC" ? -1 : 1;
+
+  return [...rows].sort((a, b) => {
+    if (a.is_system !== b.is_system) {
+      return a.is_system ? -1 : 1;
+    }
+
+    const valA = a[sortBy as keyof RoleRecord];
+    const valB = b[sortBy as keyof RoleRecord];
+
+    if (typeof valA === "string" && typeof valB === "string") {
+      return dir * valA.localeCompare(valB);
+    }
+
+    if (typeof valA === "number" && typeof valB === "number") {
+      return dir * (valA - valB);
+    }
+
+    return dir * String(valA ?? "").localeCompare(String(valB ?? ""));
+  });
+}
+
+async function fetchRolesPaginated(
+  params: DataTableFetchParams,
+): Promise<DataTableFetchResult<RoleRecord>> {
+  let data = await rolesApi.list(true);
+
+  if (params.search?.trim()) {
+    const q = params.search.trim().toLowerCase();
+    data = data.filter(
+      (row) =>
+        row.name.toLowerCase().includes(q) ||
+        (row.description ?? "").toLowerCase().includes(q),
+    );
+  }
+
+  const sortBy = params.sortBy || "name";
+  const sortOrder = params.sortOrder || "ASC";
+  data = sortRoles(data, sortBy, sortOrder);
+
+  const limit = params.limit || 10;
+  const page = params.page || 1;
+  const total = data.length;
+  const totalPages = Math.max(1, Math.ceil(total / limit));
+  const startIndex = (page - 1) * limit;
+
+  return {
+    data: data.slice(startIndex, startIndex + limit),
+    meta: {
+      total,
+      page,
+      limit,
+      totalPages,
+      hasNextPage: page < totalPages,
+      hasPreviousPage: page > 1,
+    },
+  };
+}
 
 export default function RoleList() {
   const tableRef = useRef<DataTableRef>(null);
@@ -54,31 +122,6 @@ export default function RoleList() {
       sortable: true,
       render: (row: RoleRecord) => (
         <span className="text-gray-600 dark:text-gray-300">{row.description || "—"}</span>
-      ),
-    },
-    {
-      key: "user_count",
-      header: "Users",
-      sortable: true,
-      render: (row: RoleRecord) => row.user_count ?? 0,
-    },
-    {
-      key: "flags",
-      header: "Type",
-      sortable: false,
-      render: (row: RoleRecord) => (
-        <div className="flex flex-wrap gap-1">
-          {row.is_system && (
-            <Badge size="sm" color="light">
-              System
-            </Badge>
-          )}
-          {row.is_admin_panel && (
-            <Badge size="sm" color="success">
-              Admin panel
-            </Badge>
-          )}
-        </div>
       ),
     },
     {
@@ -140,6 +183,8 @@ export default function RoleList() {
         columns={columns}
         fetchData={fetchRolesPaginated}
         initialPageSize={20}
+        initialSortBy="name"
+        initialSortOrder="ASC"
         enableSearch
         enableSorting
         searchPlaceholder="Search roles…"

@@ -167,7 +167,7 @@ const router = createBrowserRouter(
           </Route>
 
           {/* Media library */}
-          <Route path="/media" element={<RequirePermissionRoute permissions={["content:list", "content:view", "content:edit"]} />}>
+          <Route path="/media" element={<RequirePermissionRoute permissions={["media:list", "media:view", "media:edit"]} />}>
             <Route index element={<MediaLibrary />} />
           </Route>
 

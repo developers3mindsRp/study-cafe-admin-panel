@@ -136,7 +136,7 @@ export default function ArticleEdit() {
       caption: pickArticleStr(raw, "thumbnail_caption", "thumbnailCaption"),
     },
     body: typeof articleContent === "string" ? articleContent : "",
-    author: { name: "", role: "", imageUrl: "", bio: "" },
+    author: { name: article.author_name ?? "", role: "", imageUrl: "", bio: "" },
     tagsCommaRaw: "",
     shareEnabled: true,
     status: statusToForm(article.status),

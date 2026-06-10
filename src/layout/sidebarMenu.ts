@@ -208,6 +208,15 @@ export const mainNavItemsConfig: NavItemConfig[] = [
     requiredPermission: ["seo:list", "seo:view", "seo:create", "seo:edit", "seo:delete"],
   },
   {
+    iconKey: "group",
+    name: "Role Management",
+    subItems: [
+      { name: "List", path: "/roles", requiredPermission: ["roles:list", "roles:view"] },
+      { name: "Create", path: "/roles/create", requiredPermission: ["roles:create"] },
+    ],
+    requiredPermission: ["roles:list", "roles:view", "roles:create", "roles:edit", "roles:delete"],
+  },
+  {
     iconKey: "user",
     name: "Admin Users",
     subItems: [
@@ -215,15 +224,6 @@ export const mainNavItemsConfig: NavItemConfig[] = [
       { name: "Create", path: "/admin-users/create", requiredPermission: ["admin_users:create"] },
     ],
     requiredPermission: ["admin_users:list", "admin_users:view", "admin_users:create", "admin_users:edit", "admin_users:delete"],
-  },
-  {
-    iconKey: "group",
-    name: "Roles",
-    subItems: [
-      { name: "List", path: "/roles", requiredPermission: ["roles:list", "roles:view"] },
-      { name: "Create", path: "/roles/create", requiredPermission: ["roles:create"] },
-    ],
-    requiredPermission: ["roles:list", "roles:view", "roles:create", "roles:edit", "roles:delete"],
   },
   {
     iconKey: "user",

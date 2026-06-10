@@ -27,7 +27,6 @@ export default function AdminUserEdit() {
           password: "",
           role_id: user.role_id,
           is_active: user.is_active,
-          permission_overrides: user.permission_overrides ?? [],
         });
       })
       .catch(() => setError("Failed to load user or roles"))
@@ -44,7 +43,7 @@ export default function AdminUserEdit() {
         role_id: formData.role_id,
         is_active: formData.is_active,
         ...(formData.password ? { password: formData.password } : {}),
-        permission_overrides: formData.permission_overrides ?? [],
+        permission_overrides: [],
       });
       navigate("/admin-users");
     } catch (err: unknown) {

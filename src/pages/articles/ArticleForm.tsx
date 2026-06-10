@@ -752,7 +752,8 @@ export default function ArticleForm({
           </div>
         </div>
 
-        {/* Author Bio (Fixed Bottom) */}
+        {/* Author Bio — create only; author is locked after first save */}
+        {mode === "create" ? (
         <div className="rounded-2xl hidden border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] sm:p-6">
           <h3 className="mb-4 text-lg font-semibold text-gray-800 dark:text-white/90">
             Author Bio
@@ -813,6 +814,7 @@ export default function ArticleForm({
             </div>
           </div>
         </div>
+        ) : null}
 
         {/* Taxonomies (Categories, Tags, Article Types, Courts) — chip-style multi-select */}
         {taxonomyOptions && (
@@ -893,6 +895,18 @@ export default function ArticleForm({
                   {new Date(formData.scheduled_publish_at_local).toLocaleString()}
                 </span>
               </p>
+            ) : null}
+
+            {mode === "edit" ? (
+              <div className="mt-4 border-t border-gray-200 pt-4 dark:border-gray-800">
+                <Label>Author</Label>
+                <p className="mt-1 text-sm font-medium text-gray-800 dark:text-white/90">
+                  {formData.author.name?.trim() || "—"}
+                </p>
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  Original author is preserved when editing.
+                </p>
+              </div>
             ) : null}
 
             <div className="mt-5 flex flex-col gap-2">

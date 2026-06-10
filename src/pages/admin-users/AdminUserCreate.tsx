@@ -29,7 +29,7 @@ export default function AdminUserCreate() {
       const payload: Parameters<typeof adminUsersApi.create>[0] = {
         email: formData.email.trim(),
         role_id: formData.role_id,
-        permission_overrides: formData.permission_overrides?.length ? formData.permission_overrides : undefined,
+        permission_overrides: [],
       };
 
       if (formData.promoteExisting) {

@@ -1,9 +1,12 @@
-import { useMemo } from "react";
+import { useMemo, Fragment } from "react";
 import {
   MODULE_LEVELS,
+  PERMISSION_NAV_GROUPS,
   getLevelForModule,
   getModulePermissionKeys,
   getModuleAvailableActions,
+  getPermissionModuleLabel,
+  getUngroupedPermissionModules,
   isActionChecked,
   actionToModuleLevel,
   levelAfterTurningActionOff,
@@ -19,6 +22,8 @@ const ACTION_COLUMNS: { key: ModuleActionKey; label: string }[] = [
   { key: "add", label: "Add" },
   { key: "delete", label: "Delete" },
 ];
+
+const COL_SPAN = ACTION_COLUMNS.length + 2;
 
 export interface PermissionMatrixProps {
   value: string[];
@@ -107,6 +112,81 @@ export function PermissionMatrix({ value, onChange, disabled = false }: Permissi
     return moduleLevelRank(levelByModule[moduleKey] ?? "none") >= moduleLevelRank(max);
   };
 
+  const renderModuleRow = (moduleKey: string, label?: string, rowKey?: string) => {
+    const module = MODULE_LEVELS.find((m) => m.key === moduleKey);
+    if (!module) return null;
+    const available = getModuleAvailableActions(moduleKey);
+    const level = levelByModule[moduleKey] ?? "none";
+    const displayName = getPermissionModuleLabel(moduleKey, label);
+
+    return (
+      <tr
+        key={rowKey ?? moduleKey}
+        className="bg-white transition-colors hover:bg-gray-50/60 dark:bg-transparent dark:hover:bg-gray-800/40"
+      >
+        <td className="py-2.5 pl-6 pr-2">
+          <span className="text-theme-sm font-medium text-gray-700 dark:text-gray-300">
+            {displayName}
+          </span>
+        </td>
+        {ACTION_COLUMNS.map((col) => {
+          const exists = available.includes(col.key);
+          const checked = exists && isActionChecked(moduleKey, col.key, level);
+          return (
+            <td key={col.key} className="px-3 py-2.5 text-center">
+              {exists ? (
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  disabled={disabled}
+                  onChange={(e) => handleActionChange(moduleKey, col.key, e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
+                  aria-label={`${displayName} ${col.label}`}
+                />
+              ) : (
+                <span className="text-gray-300 dark:text-gray-600">—</span>
+              )}
+            </td>
+          );
+        })}
+        <td className="px-3 py-2.5 text-center">
+          <input
+            type="checkbox"
+            checked={isRowAllChecked(moduleKey)}
+            disabled={disabled}
+            onChange={(e) => handleRowAllChange(moduleKey, e.target.checked)}
+            className="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
+            aria-label={`${displayName} select all`}
+          />
+        </td>
+      </tr>
+    );
+  };
+
+  const renderStandaloneRow = (perm: string, label: string) => (
+    <tr
+      key={perm}
+      className="bg-white transition-colors hover:bg-gray-50/60 dark:bg-transparent dark:hover:bg-gray-800/40"
+    >
+      <td className="py-2.5 pl-6 pr-2">
+        <span className="text-theme-sm font-medium text-gray-700 dark:text-gray-300">{label}</span>
+      </td>
+      <td className="px-3 py-2.5 text-center">
+        <input
+          type="checkbox"
+          checked={permissions.includes(perm)}
+          disabled={disabled}
+          onChange={(e) => toggleSinglePerm(perm, e.target.checked)}
+          className="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
+          aria-label={label}
+        />
+      </td>
+      <td colSpan={ACTION_COLUMNS.length + 1} />
+    </tr>
+  );
+
+  const ungrouped = getUngroupedPermissionModules();
+
   return (
     <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
       <table className="w-full text-sm">
@@ -141,78 +221,35 @@ export function PermissionMatrix({ value, onChange, disabled = false }: Permissi
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-          {MODULE_LEVELS.map((module) => {
-            const available = getModuleAvailableActions(module.key);
-            const level = levelByModule[module.key] ?? "none";
-            return (
-              <tr
-                key={module.key}
-                className="bg-white transition-colors hover:bg-gray-50/60 dark:bg-transparent dark:hover:bg-gray-800/40"
-              >
-                <td className="py-2.5 pl-4 pr-2">
-                  <span className="text-theme-sm font-medium text-gray-700 dark:text-gray-300">
-                    {module.name}
-                  </span>
-                </td>
-                {ACTION_COLUMNS.map((col) => {
-                  const exists = available.includes(col.key);
-                  const checked = exists && isActionChecked(module.key, col.key, level);
-                  return (
-                    <td key={col.key} className="px-3 py-2.5 text-center">
-                      {exists ? (
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          disabled={disabled}
-                          onChange={(e) => handleActionChange(module.key, col.key, e.target.checked)}
-                          className="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
-                          aria-label={`${module.name} ${col.label}`}
-                        />
-                      ) : (
-                        <span className="text-gray-300 dark:text-gray-600">—</span>
-                      )}
-                    </td>
-                  );
-                })}
-                <td className="px-3 py-2.5 text-center">
-                  <input
-                    type="checkbox"
-                    checked={isRowAllChecked(module.key)}
-                    disabled={disabled}
-                    onChange={(e) => handleRowAllChange(module.key, e.target.checked)}
-                    className="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
-                    aria-label={`${module.name} select all`}
-                  />
+          {PERMISSION_NAV_GROUPS.map((group) => (
+            <Fragment key={group.name}>
+              <tr className="bg-gray-100/90 dark:bg-gray-800/80">
+                <td
+                  colSpan={COL_SPAN}
+                  className="py-2.5 pl-4 pr-2 text-theme-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300"
+                >
+                  {group.name}
                 </td>
               </tr>
-            );
-          })}
-          {[
-            { perm: "newsletter:send", label: "Newsletter Send" },
-            { perm: "users:course_allotment", label: "User course allotment" },
-          ].map((row) => (
-            <tr
-              key={row.perm}
-              className="bg-gray-50/40 transition-colors hover:bg-gray-50/80 dark:bg-gray-800/20 dark:hover:bg-gray-800/50"
-            >
-              <td className="py-2.5 pl-4 pr-2">
-                <span className="text-theme-sm font-medium text-gray-700 dark:text-gray-300">
-                  {row.label}
-                </span>
-                <p className="text-theme-xs text-gray-400 dark:text-gray-500">{row.perm}</p>
-              </td>
-              <td className="px-3 py-2.5 text-center">
-                <input
-                  type="checkbox"
-                  checked={permissions.includes(row.perm)}
-                  disabled={disabled}
-                  onChange={(e) => toggleSinglePerm(row.perm, e.target.checked)}
-                  className="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
-                />
-              </td>
-              <td colSpan={4} />
-            </tr>
+              {group.modules.map(({ key, label }, index) =>
+                renderModuleRow(key, label, `${group.name}:${key}:${label ?? index}`),
+              )}
+              {group.standalone?.map(({ perm, label }) => renderStandaloneRow(perm, label))}
+            </Fragment>
           ))}
+          {ungrouped.length > 0 && (
+            <Fragment key="other">
+              <tr className="bg-gray-100/90 dark:bg-gray-800/80">
+                <td
+                  colSpan={COL_SPAN}
+                  className="py-2.5 pl-4 pr-2 text-theme-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300"
+                >
+                  Other
+                </td>
+              </tr>
+              {ungrouped.map((module) => renderModuleRow(module.key))}
+            </Fragment>
+          )}
         </tbody>
       </table>
     </div>

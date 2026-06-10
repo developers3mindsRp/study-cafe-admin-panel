@@ -153,51 +153,46 @@ export const MODULE_LEVELS: ModuleConfig[] = [
     name: "Courses",
     levels: [
       { value: "none", label: "None", permissions: [] },
-      { value: "view", label: "View only", permissions: ["courses:list", "courses:view"] },
-      { value: "edit", label: "Edit (includes view)", permissions: ["courses:list", "courses:view", "courses:edit"] },
-      { value: "create", label: "Create (includes view, edit)", permissions: ["courses:list", "courses:view", "courses:edit", "courses:create"] },
-      { value: "delete", label: "Delete / Full", permissions: ["courses:list", "courses:view", "courses:edit", "courses:create", "courses:delete"] },
-    ],
-  },
-  {
-    key: "course_common_sections",
-    name: "Courses \u2192 Common Sections",
-    levels: [
-      { value: "none", label: "None", permissions: [] },
-      { value: "view", label: "View only", permissions: ["courses:list", "courses:view"] },
-      { value: "edit", label: "Edit (includes view)", permissions: ["courses:list", "courses:view", "courses:edit"] },
-    ],
-  },
-  {
-    key: "marketing_pages",
-    name: "Courses → Marketing Pages",
-    levels: [
-      { value: "none", label: "None", permissions: [] },
-      { value: "view", label: "View only", permissions: ["marketing_pages:list", "marketing_pages:view"] },
-      { value: "edit", label: "Edit (includes view)", permissions: ["marketing_pages:list", "marketing_pages:view", "marketing_pages:edit"] },
-      { value: "create", label: "Create (includes view, edit)", permissions: ["marketing_pages:list", "marketing_pages:view", "marketing_pages:edit", "marketing_pages:create"] },
-      { value: "delete", label: "Delete / Full", permissions: ["marketing_pages:list", "marketing_pages:view", "marketing_pages:edit", "marketing_pages:create", "marketing_pages:delete"] },
-    ],
-  },
-  {
-    key: "course_categories",
-    name: "Courses → Categories",
-    levels: [
-      { value: "none", label: "None", permissions: [] },
-      { value: "view", label: "View only", permissions: ["course_categories:list", "course_categories:view"] },
-      { value: "edit", label: "Edit (includes view)", permissions: ["course_categories:list", "course_categories:view", "course_categories:edit"] },
-      { value: "create", label: "Create (includes view, edit)", permissions: ["course_categories:list", "course_categories:view", "course_categories:edit", "course_categories:create"] },
-      { value: "delete", label: "Delete / Full", permissions: ["course_categories:list", "course_categories:view", "course_categories:edit", "course_categories:create", "course_categories:delete"] },
-    ],
-  },
-  {
-    key: "course_reviews",
-    name: "Courses → Reviews",
-    levels: [
-      { value: "none", label: "None", permissions: [] },
-      { value: "view", label: "View only", permissions: ["course_reviews:list", "course_reviews:view"] },
-      { value: "edit", label: "Edit (includes view)", permissions: ["course_reviews:list", "course_reviews:view", "course_reviews:edit"] },
-      { value: "delete", label: "Delete / Full", permissions: ["course_reviews:list", "course_reviews:view", "course_reviews:edit", "course_reviews:delete"] },
+      {
+        value: "view",
+        label: "View only",
+        permissions: [
+          "courses:list", "courses:view",
+          "course_categories:list", "course_categories:view",
+          "marketing_pages:list", "marketing_pages:view",
+          "course_reviews:list", "course_reviews:view",
+        ],
+      },
+      {
+        value: "edit",
+        label: "Edit (includes view)",
+        permissions: [
+          "courses:list", "courses:view", "courses:edit",
+          "course_categories:list", "course_categories:view", "course_categories:edit",
+          "marketing_pages:list", "marketing_pages:view", "marketing_pages:edit",
+          "course_reviews:list", "course_reviews:view", "course_reviews:edit",
+        ],
+      },
+      {
+        value: "create",
+        label: "Create (includes view, edit)",
+        permissions: [
+          "courses:list", "courses:view", "courses:edit", "courses:create",
+          "course_categories:list", "course_categories:view", "course_categories:edit", "course_categories:create",
+          "marketing_pages:list", "marketing_pages:view", "marketing_pages:edit", "marketing_pages:create",
+          "course_reviews:list", "course_reviews:view", "course_reviews:edit",
+        ],
+      },
+      {
+        value: "delete",
+        label: "Delete / Full",
+        permissions: [
+          "courses:list", "courses:view", "courses:edit", "courses:create", "courses:delete",
+          "course_categories:list", "course_categories:view", "course_categories:edit", "course_categories:create", "course_categories:delete",
+          "marketing_pages:list", "marketing_pages:view", "marketing_pages:edit", "marketing_pages:create", "marketing_pages:delete",
+          "course_reviews:list", "course_reviews:view", "course_reviews:edit", "course_reviews:delete",
+        ],
+      },
     ],
   },
   {
@@ -292,6 +287,84 @@ export const MODULE_LEVELS: ModuleConfig[] = [
     ],
   },
 ];
+
+/** Sidebar-aligned groups for the role permission matrix (order matches main nav). */
+export type PermissionNavGroup = {
+  name: string;
+  modules: Array<{ key: string; label?: string }>;
+  /** Extra toggles not represented in MODULE_LEVELS rows. */
+  standalone?: Array<{ perm: string; label: string }>;
+};
+
+export const PERMISSION_NAV_GROUPS: PermissionNavGroup[] = [
+  {
+    name: "Dashboard",
+    modules: [],
+    standalone: [{ perm: "admin:access", label: "Access admin panel" }],
+  },
+  {
+    name: "Articles",
+    modules: [{ key: "articles", label: "Articles & blog categories" }],
+  },
+  {
+    name: "Courses",
+    modules: [{
+      key: "courses",
+      label: "Courses, categories, common sections, reviews & marketing pages",
+    }],
+  },
+  { name: "Live Sessions", modules: [{ key: "live_sessions" }] },
+  { name: "Orders", modules: [{ key: "orders" }] },
+  { name: "Coupons", modules: [{ key: "coupons" }] },
+  { name: "Payment Links", modules: [{ key: "payment_links" }] },
+  { name: "Memberships", modules: [{ key: "memberships" }] },
+  { name: "Media", modules: [{ key: "media" }] },
+  {
+    name: "Page Content",
+    modules: [
+      { key: "content" },
+      { key: "banners", label: "Popup Banners" },
+    ],
+  },
+  { name: "Google Reviews", modules: [{ key: "google_reviews" }] },
+  { name: "Testimonials", modules: [{ key: "testimonials" }] },
+  { name: "FAQ", modules: [{ key: "faq" }] },
+  { name: "Contact Inquiries", modules: [{ key: "contact_inquiries" }] },
+  {
+    name: "Newsletter",
+    modules: [{ key: "newsletter" }],
+    standalone: [{ perm: "newsletter:send", label: "Send campaigns" }],
+  },
+  { name: "SEO Metadata", modules: [{ key: "seo" }] },
+  { name: "Role Management", modules: [{ key: "roles" }] },
+  { name: "Admin Users", modules: [{ key: "admin_users", label: "Admin panel users" }] },
+  {
+    name: "Users (Students)",
+    modules: [
+      { key: "admin_users", label: "Student accounts" },
+      { key: "users", label: "Course & membership allotment" },
+    ],
+  },
+  { name: "Affiliate", modules: [{ key: "affiliate" }] },
+  { name: "Downloads", modules: [{ key: "downloads" }] },
+  { name: "Global Settings", modules: [{ key: "global_settings" }] },
+];
+
+const GROUPED_MODULE_KEYS = new Set(
+  PERMISSION_NAV_GROUPS.flatMap((g) => g.modules.map((m) => m.key)),
+);
+
+/** Modules not listed in PERMISSION_NAV_GROUPS (shown last). */
+export function getUngroupedPermissionModules(): ModuleConfig[] {
+  return MODULE_LEVELS.filter((m) => !GROUPED_MODULE_KEYS.has(m.key));
+}
+
+/** Get display label for a module row inside a nav group. */
+export function getPermissionModuleLabel(moduleKey: string, override?: string): string {
+  if (override) return override;
+  const config = MODULE_LEVELS.find((m) => m.key === moduleKey);
+  return config?.name ?? moduleKey;
+}
 
 /** Get the effective level for a module from a list of permissions (e.g. from API). */
 export function getLevelForModule(moduleKey: string, permissions: string[]): ModuleLevel {

@@ -4,11 +4,6 @@ import Label from "../../components/form/Label";
 import Input from "../../components/form/input/InputField";
 import Button from "../../components/ui/button/Button";
 import { adminUsersApi, type AdminUserLookupResult, type Role } from "../../api/adminUsers";
-import {
-  PermissionMatrix,
-  computeAllModulePermissions,
-  withAdminAccess,
-} from "../../components/permissions/PermissionMatrix";
 
 export interface AdminUserFormData {
   email: string;
@@ -16,7 +11,6 @@ export interface AdminUserFormData {
   name: string;
   role_id: number;
   is_active: boolean;
-  permission_overrides: string[];
   promoteExisting?: boolean;
 }
 
@@ -34,10 +28,8 @@ const emptyFormData: AdminUserFormData = {
   name: "",
   role_id: 0,
   is_active: true,
-  permission_overrides: [],
 };
 
-/** Only super_admin skips the permission grid (has all permissions implicitly). */
 const FULL_ACCESS_ROLES = ["super_admin"];
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -52,22 +44,11 @@ export default function AdminUserForm({
   const adminPanelRoles = roles;
 
   const initialRoleId = defaultValues?.role_id ?? adminPanelRoles[0]?.id ?? 0;
-  const initialRoleName = roles.find((r) => r.id === initialRoleId)?.name ?? "";
-
-  const getInitialPermissions = (): string[] => {
-    const role = roles.find((r) => r.id === initialRoleId);
-    if (mode === "edit") return withAdminAccess(defaultValues?.permission_overrides ?? []);
-    if (FULL_ACCESS_ROLES.includes(initialRoleName)) return [];
-    if (role?.permissions?.length) return withAdminAccess([...role.permissions]);
-    if (initialRoleName === "admin") return computeAllModulePermissions();
-    return withAdminAccess(defaultValues?.permission_overrides ?? []);
-  };
 
   const [formData, setFormData] = useState<AdminUserFormData>({
     ...emptyFormData,
     ...defaultValues,
     role_id: initialRoleId,
-    permission_overrides: getInitialPermissions(),
   });
 
   const [lookupState, setLookupState] = useState<"idle" | "loading" | "done">("idle");
@@ -129,21 +110,9 @@ export default function AdminUserForm({
     return () => window.clearTimeout(timer);
   }, [formData.email, mode]);
 
-  /** When role changes, pre-fill overrides from the role template. */
+  /** When role changes, permissions come from the role template only. */
   const handleRoleChange = (newRoleId: number) => {
-    const selected = roles.find((r) => r.id === newRoleId);
-    const newRoleName = selected?.name ?? "";
-    let newPerms: string[];
-    if (FULL_ACCESS_ROLES.includes(newRoleName)) {
-      newPerms = [];
-    } else if (selected?.permissions?.length) {
-      newPerms = withAdminAccess([...selected.permissions]);
-    } else if (newRoleName === "admin") {
-      newPerms = computeAllModulePermissions();
-    } else {
-      newPerms = withAdminAccess(formData.permission_overrides);
-    }
-    setFormData((prev) => ({ ...prev, role_id: newRoleId, permission_overrides: newPerms }));
+    setFormData((prev) => ({ ...prev, role_id: newRoleId }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -255,34 +224,14 @@ export default function AdminUserForm({
             </select>
             {isFullAccessRole ? (
               <p className="mt-1 text-theme-xs text-green-600 dark:text-green-400">
-                <strong>{selectedRoleName}</strong> has full access to all modules — no permission selection needed.
+                <strong>{selectedRoleName}</strong> has full access to all modules.
               </p>
             ) : (
               <p className="mt-1 text-theme-xs text-gray-500 dark:text-gray-400">
-                Permissions start from the role template. Adjust below for user-specific overrides.
+                Permissions are inherited from the selected role. Edit the role under Roles to change its permissions.
               </p>
             )}
           </div>
-
-          {/* Permissions — only shown for non-full-access roles */}
-          {!isFullAccessRole && (
-            <div>
-              <Label>
-                Permissions <span className="text-error-500">*</span>
-              </Label>
-              <p className="mb-3 text-theme-xs text-gray-500 dark:text-gray-400">
-                Check actions per module. Edit implies View; Add implies Edit &amp; View; Delete grants full access for that module.
-              </p>
-
-              <PermissionMatrix
-                value={formData.permission_overrides ?? []}
-                onChange={(permission_overrides) =>
-                  setFormData((prev) => ({ ...prev, permission_overrides }))
-                }
-                disabled={isSubmitting}
-              />
-            </div>
-          )}
 
           {/* Active toggle (edit only) */}
           {mode === "edit" && (

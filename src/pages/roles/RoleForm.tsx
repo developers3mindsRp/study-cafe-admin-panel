@@ -100,7 +100,7 @@ export default function RoleForm({
                 Permissions <span className="text-error-500">*</span>
               </Label>
               <p className="mb-3 text-theme-xs text-gray-500 dark:text-gray-400">
-                Default permissions for users assigned this role. Individual users can have extra overrides.
+                Permissions are grouped by admin sidebar module. Check actions per sub-module.
               </p>
               <PermissionMatrix
                 value={form.permissions}

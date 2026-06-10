@@ -407,6 +407,16 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
               <div className="flex items-center gap-2">
                 <input
                   type="checkbox"
+                  id="certificate_enabled"
+                  checked={form.certificate_enabled}
+                  onChange={(e) => updateField('certificate_enabled', e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
+                />
+                <Label htmlFor="certificate_enabled" className="!mb-0 cursor-pointer">Provide certificate</Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
                   id="taxable"
                   checked={form.taxable}
                   onChange={(e) => updateField('taxable', e.target.checked)}
