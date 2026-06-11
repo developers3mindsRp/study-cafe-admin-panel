@@ -149,6 +149,11 @@ export default function ArticleEdit() {
     article_type_ids: article.article_type_ids ?? [],
     court_ids: article.court_ids ?? [],
     citation: article.citation ?? null,
+    notification: {
+      noti_no: pickArticleStr(raw, "noti_no", "notiNo"),
+      noti_date: pickArticleStr(raw, "noti_date", "notiDate"),
+      type_of_tax: pickArticleStr(raw, "type_of_tax", "typeOfTax"),
+    },
   };
 
   return (

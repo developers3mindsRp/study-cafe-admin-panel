@@ -17,6 +17,8 @@ import type {
 } from "../../components/blocks/types";
 import { slugifyForSeo, shouldResyncSlugFromSource } from "../../lib/slug";
 import { generateArticlePreviewLink } from "../../api/articles";
+import DatePicker from "../../components/form/date-picker";
+import { ARTICLE_TAX_TYPE_OPTIONS } from "../../constants/articleTaxTypes";
 
 export interface CaseCitationData {
   case_citation?: string;
@@ -26,6 +28,12 @@ export interface CaseCitationData {
   assessment_year?: string;
   court?: string;
   link_to_case_law?: string;
+}
+
+export interface ArticleNotificationData {
+  noti_no?: string;
+  type_of_tax?: string;
+  noti_date?: string;
 }
 
 export interface ArticleFormData {
@@ -52,6 +60,7 @@ export interface ArticleFormData {
   article_type_ids?: number[];
   court_ids?: number[];
   citation: CaseCitationData | null;
+  notification: ArticleNotificationData | null;
 }
 
 export type ArticleSubmitAction =
@@ -136,6 +145,7 @@ const emptyFormData: ArticleFormData = {
   article_type_ids: [],
   court_ids: [],
   citation: null,
+  notification: null,
 };
 
 function isoToDatetimeLocalValue(iso: string | null | undefined): string {
@@ -626,6 +636,61 @@ export default function ArticleForm({
           />
         </div>
       </div>
+
+        {/* Notification */}
+        <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] sm:p-6">
+          <h3 className="mb-4 text-lg font-semibold text-gray-800 dark:text-white/90">
+            Notification
+          </h3>
+          <div className="space-y-4">
+            <div>
+              <Label>Notification Number</Label>
+              <Input
+                value={formData.notification?.noti_no ?? ""}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    notification: { ...(prev.notification || {}), noti_no: e.target.value },
+                  }))
+                }
+                placeholder="e.g. 12/2024"
+              />
+            </div>
+            <div>
+              <Label>Type of Tax</Label>
+              <select
+                value={formData.notification?.type_of_tax ?? ""}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    notification: { ...(prev.notification || {}), type_of_tax: e.target.value },
+                  }))
+                }
+                className="w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-800 dark:border-gray-800 dark:bg-white/[0.03] dark:text-white/90"
+              >
+                {ARTICLE_TAX_TYPE_OPTIONS.map((opt) => (
+                  <option key={opt.value || "empty"} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <DatePicker
+                id="article-notification-date"
+                label="Notification Date"
+                placeholder="Select notification date"
+                value={formData.notification?.noti_date ?? ""}
+                onChange={(_, dateStr) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    notification: { ...(prev.notification || {}), noti_date: dateStr },
+                  }))
+                }
+              />
+            </div>
+          </div>
+        </div>
 
         {/* Case Citation */}
         <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] sm:p-6">

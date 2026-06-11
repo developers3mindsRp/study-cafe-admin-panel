@@ -43,5 +43,8 @@ export function articleFormToApiPayload(formData: ArticleFormData) {
     court_ids: formData.court_ids ?? [],
     blog_access_tier: formData.blog_access_tier,
     rel_download_url: formData.rel_download_url?.trim() || null,
+    noti_no: formData.notification?.noti_no?.trim() || null,
+    noti_date: formData.notification?.noti_date?.trim() || null,
+    type_of_tax: formData.notification?.type_of_tax?.trim() || null,
   };
 }
