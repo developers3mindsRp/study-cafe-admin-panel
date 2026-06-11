@@ -633,7 +633,7 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
                   onChange={(e) => updateField('validity', e.target.checked ? 'lifetime' : '1year')}
                   className="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
                 />
-                <Label htmlFor="validity_lifetime" className="!mb-0 cursor-pointer">Lifetime Access</Label>
+                <Label htmlFor="validity_lifetime" className="!mb-0 cursor-pointer">Lifetime Access</La bel>
                 <span className="text-xs text-gray-400">(By default, access is 1 year from purchase)</span>
               </div>
             </div>

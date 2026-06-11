@@ -27,6 +27,19 @@ export const USER_CSV_IMPORT_HEADERS = [
   "bio",
 ] as const;
 
+const USER_CSV_EXPORT_EXCLUDED = new Set([
+  "linkedin",
+  "facebook",
+  "twitter",
+  "instagram",
+  "youtube",
+]);
+
+/** CSV export headers (subset of import — no social profile URLs). */
+export const USER_CSV_EXPORT_HEADERS = USER_CSV_IMPORT_HEADERS.filter(
+  (h) => !USER_CSV_EXPORT_EXCLUDED.has(h),
+);
+
 export type UserCsvField = (typeof USER_CSV_IMPORT_HEADERS)[number];
 
 /** Header aliases → canonical field name */
