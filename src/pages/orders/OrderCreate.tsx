@@ -12,6 +12,7 @@ import { usersApi } from "../../api/users";
 import AsyncSelect from "react-select/async";
 import type { CSSObjectWithLabel } from "react-select";
 import { CloseLineIcon } from "../../icons";
+import { normalizeOrderGateway, type OrderPaymentGateway } from "../../utils/orderGateway";
 
 export default function OrderCreate() {
   const navigate = useNavigate();
@@ -20,6 +21,7 @@ export default function OrderCreate() {
   const [plans, setPlans] = useState<Plan[]>([]);
 
   const [paymentId, setPaymentId] = useState("");
+  const [paymentGateway, setPaymentGateway] = useState<OrderPaymentGateway>("admin");
 
   const [formData, setFormData] = useState<CreateOrderPayload>({
     user_id: 0,
@@ -141,6 +143,10 @@ export default function OrderCreate() {
       alert(`Please select a ${formData.type}`);
       return;
     }
+    if (formData.status === "paid" && paymentGateway === "razorpay" && !paymentId.trim()) {
+      alert("Razorpay Payment ID is required when payment method is Razorpay.");
+      return;
+    }
     setLoading(true);
     try {
       const res = await createOrder({
@@ -148,7 +154,9 @@ export default function OrderCreate() {
         amount: Number(grandTotal), // Use the calculated grand total
         user_id: Number(formData.user_id),
         coupon_code: appliedCoupon?.coupon.code || couponCode || undefined,
-        payment_id: formData.status === "paid" && paymentId.trim() ? paymentId.trim() : undefined,
+        gateway: formData.status === "paid" ? paymentGateway : undefined,
+        payment_id:
+          formData.status === "paid" && paymentId.trim() ? paymentId.trim() : undefined,
       });
       alert("Order created successfully!");
       navigate(`/orders/${res.order_id}`);
@@ -250,7 +258,10 @@ export default function OrderCreate() {
                 value={formData.status}
                 onChange={(e) => {
                   handleChange("status", e.target.value);
-                  if (e.target.value !== "paid") setPaymentId("");
+                  if (e.target.value !== "paid") {
+                    setPaymentId("");
+                    setPaymentGateway("admin");
+                  }
                 }}
               >
                 <option value="pending">Pending</option>
@@ -259,17 +270,42 @@ export default function OrderCreate() {
               </select>
             </div>
             {formData.status === "paid" && (
-              <div>
-                <Label>Razorpay Payment ID</Label>
-                <Input
-                  placeholder="e.g. pay_xxxxxxxx (optional for manual orders)"
-                  value={paymentId}
-                  onChange={(e) => setPaymentId(e.target.value.trim())}
-                />
-                <p className="mt-1 text-theme-xs text-gray-500 dark:text-gray-400">
-                  Enter the Razorpay payment ID when completing a payment received on the gateway.
-                </p>
-              </div>
+              <>
+                <div>
+                  <Label>Payment method</Label>
+                  <select
+                    className="h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
+                    value={paymentGateway}
+                    onChange={(e) => {
+                      const next = e.target.value as OrderPaymentGateway;
+                      setPaymentGateway(next);
+                      if (next === "admin") setPaymentId("");
+                    }}
+                  >
+                    <option value="admin">Admin (manual / offline)</option>
+                    <option value="razorpay">Razorpay</option>
+                  </select>
+                  <p className="mt-1 text-theme-xs text-gray-500 dark:text-gray-400">
+                    Shown to the user on invoices and purchase history.
+                  </p>
+                </div>
+                {paymentGateway === "razorpay" && (
+                  <div>
+                    <Label>
+                      Razorpay Payment ID <span className="text-error-500">*</span>
+                    </Label>
+                    <Input
+                      placeholder="e.g. pay_xxxxxxxx"
+                      value={paymentId}
+                      onChange={(e) => setPaymentId(e.target.value.trim())}
+                      required
+                    />
+                    <p className="mt-1 text-theme-xs text-gray-500 dark:text-gray-400">
+                      Enter the payment ID from the Razorpay dashboard.
+                    </p>
+                  </div>
+                )}
+              </>
             )}
           </div>
 

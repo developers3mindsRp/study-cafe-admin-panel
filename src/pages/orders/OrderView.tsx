@@ -10,6 +10,7 @@ import { plansApi } from "../../api/plans";
 import { usersApi } from "../../api/users";
 import { PencilIcon, DollarLineIcon } from "../../icons";
 import RefundModal from "./RefundModal";
+import { orderGatewayLabel } from "../../utils/orderGateway";
 
 function detailStatusBadgeColor(status: string) {
   const s = status.toLowerCase();
@@ -219,7 +220,9 @@ export default function OrderView() {
               </div>
               <div className="space-y-1">
                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Payment Method</p>
-                <p className="text-sm font-semibold text-gray-900 dark:text-white uppercase">{order.gateway || "Manual"}</p>
+                <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                  {orderGatewayLabel(order.gateway)}
+                </p>
               </div>
               <div className="space-y-1 md:col-span-2">
                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">

@@ -18,6 +18,7 @@ import { usersApi } from "../../api/users";
 import AsyncSelect from "react-select/async";
 import type { CSSObjectWithLabel } from "react-select";
 import { CloseLineIcon } from "../../icons";
+import { normalizeOrderGateway, type OrderPaymentGateway } from "../../utils/orderGateway";
 
 function statusLabel(s: string) {
   const x = (s || "").toLowerCase();
@@ -83,6 +84,7 @@ export default function OrderEdit() {
   } | null>(null);
   const [couponApplying, setCouponApplying] = useState(false);
   const [paymentId, setPaymentId] = useState("");
+  const [paymentGateway, setPaymentGateway] = useState<OrderPaymentGateway>("admin");
 
   useEffect(() => {
     fetchCourses().then(setCourses).catch(console.error);
@@ -98,6 +100,7 @@ export default function OrderEdit() {
       setSelectedEntityId(data.entity_id != null ? String(data.entity_id) : "");
       setBatchIdInput(data.batch_id != null ? String(data.batch_id) : "");
       setPaymentId(data.payment_id || "");
+      setPaymentGateway(normalizeOrderGateway(data.gateway));
       setFormData({
         status: normalizeEditableStatus(data.status),
         affiliate: data.affiliate || "",
@@ -267,8 +270,13 @@ export default function OrderEdit() {
       if (!ok) return;
     }
 
-    if (markingFailedAsPaid && !paymentId.trim()) {
-      alert("Razorpay Payment ID is required when marking a failed order as paid.");
+    if (
+      formData.status === "paid" &&
+      paymentGateway === "razorpay" &&
+      markingFailedAsPaid &&
+      !paymentId.trim()
+    ) {
+      alert("Razorpay Payment ID is required when marking a failed order as paid via Razorpay.");
       return;
     }
 
@@ -284,8 +292,11 @@ export default function OrderEdit() {
         delete payload.status;
       } else {
         const trimmedPaymentId = paymentId.trim();
+        if (formData.status === "paid") {
+          payload.gateway = paymentGateway;
+        }
         if (trimmedPaymentId) payload.payment_id = trimmedPaymentId;
-        else if (markingFailedAsPaid) payload.payment_id = "";
+        else if (markingFailedAsPaid && paymentGateway === "razorpay") payload.payment_id = "";
       }
 
       if (canEditEntity && selectedEntityId) {
@@ -566,7 +577,9 @@ export default function OrderEdit() {
                   value={formData.status || ""}
                   onChange={(e) => {
                     handleChange("status", e.target.value);
-                    if (e.target.value !== "paid") setPaymentId("");
+                    if (e.target.value !== "paid") {
+                      setPaymentId("");
+                    }
                   }}
                 >
                   <option value="pending">Pending</option>
@@ -587,22 +600,42 @@ export default function OrderEdit() {
           {!statusLocked && formData.status === "paid" && (
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
               <div>
-                <Label>
-                  Razorpay Payment ID{" "}
-                  {markingFailedAsPaid && <span className="text-error-500">*</span>}
-                </Label>
-                <Input
-                  placeholder="e.g. pay_xxxxxxxx"
-                  value={paymentId}
-                  onChange={(e) => setPaymentId(e.target.value.trim())}
-                  required={markingFailedAsPaid}
-                />
+                <Label>Payment method</Label>
+                <select
+                  className="h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
+                  value={paymentGateway}
+                  onChange={(e) => {
+                    const next = e.target.value as OrderPaymentGateway;
+                    setPaymentGateway(next);
+                    if (next === "admin") setPaymentId("");
+                  }}
+                >
+                  <option value="admin">Admin (manual / offline)</option>
+                  <option value="razorpay">Razorpay</option>
+                </select>
                 <p className="mt-1 text-theme-xs text-gray-500 dark:text-gray-400">
-                  {markingFailedAsPaid
-                    ? "Required when completing a failed order that was paid on Razorpay."
-                    : "Enter the Razorpay payment ID from the dashboard, or leave blank for manual orders."}
+                  How this order was paid — shown to the user on invoices and purchase history.
                 </p>
               </div>
+              {paymentGateway === "razorpay" && (
+                <div>
+                  <Label>
+                    Razorpay Payment ID{" "}
+                    {markingFailedAsPaid && <span className="text-error-500">*</span>}
+                  </Label>
+                  <Input
+                    placeholder="e.g. pay_xxxxxxxx"
+                    value={paymentId}
+                    onChange={(e) => setPaymentId(e.target.value.trim())}
+                    required={markingFailedAsPaid}
+                  />
+                  <p className="mt-1 text-theme-xs text-gray-500 dark:text-gray-400">
+                    {markingFailedAsPaid
+                      ? "Required when completing a failed Razorpay payment."
+                      : "Optional if the order was recorded manually with an Admin payment method."}
+                  </p>
+                </div>
+              )}
             </div>
           )}
 

@@ -201,6 +201,8 @@ export interface CreateOrderPayload {
   amount: number | string;
   currency?: string;
   status: "pending" | "paid" | "failed" | "cancelled";
+  /** How payment was collected: razorpay (gateway) or admin (manual). */
+  gateway?: "razorpay" | "admin";
   buyer_name?: string;
   buyer_email?: string;
   buyer_mobile?: string;
@@ -225,6 +227,8 @@ export async function createOrder(data: CreateOrderPayload): Promise<OrderRecord
 
 export interface UpdateOrderPayload {
   status?: "pending" | "paid" | "failed";
+  /** How payment was collected when marking paid or correcting metadata. */
+  gateway?: "razorpay" | "admin";
   /** Required when marking a failed order as paid; optional otherwise. */
   payment_id?: string;
   buyer_name?: string;

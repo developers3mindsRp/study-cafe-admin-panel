@@ -1,6 +1,7 @@
 import type { OrderRecord } from "../api/orders";
 import type { ExcelColumn } from "./exportToExcel";
 import { exportNum, exportStr } from "./exportHelpers";
+import { orderGatewayLabel } from "./orderGateway";
 
 const str = exportStr;
 const num = exportNum;
@@ -24,7 +25,7 @@ export const ORDER_EXPORT_COLUMNS: ExcelColumn<OrderRecord>[] = [
   { header: "Coupon code", accessor: (r) => str(r.coupon_code) },
   { header: "Coupon discount", accessor: (r) => num(r.coupon_discount) },
   { header: "Original amount", accessor: (r) => num(r.original_amount) },
-  { header: "Gateway", accessor: (r) => str(r.gateway) },
+  { header: "Gateway", accessor: (r) => orderGatewayLabel(r.gateway) },
   { header: "Batch ID", accessor: (r) => (r.batch_id != null ? r.batch_id : "") },
   { header: "Created at", accessor: (r) => str(r.created_at) },
   { header: "Payment ID", accessor: (r) => str(r.payment_id) },
