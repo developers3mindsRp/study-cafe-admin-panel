@@ -1,0 +1,20 @@
+/** Allowed "Type of Tax" values for article notifications (legacy WP ACF list). */
+export const ARTICLE_TAX_TYPE_OPTIONS = [
+  { value: "", label: "- Select -" },
+  { value: "Custom", label: "Custom" },
+  { value: "Companies Law", label: "Companies Law" },
+  { value: "DGFT", label: "DGFT" },
+  { value: "Excise", label: "Excise" },
+  { value: "GST", label: "GST" },
+  { value: "GST - Central Tax", label: "GST - Central Tax" },
+  { value: "GST - Central Tax (Rate)", label: "GST - Central Tax (Rate)" },
+  { value: "GST - Integrated Tax", label: "GST - Integrated Tax" },
+  { value: "GST -  Integrated Tax (Rate)", label: "GST -  Integrated Tax (Rate)" },
+  { value: "GST - Union Territory Tax,", label: "GST - Union Territory Tax," },
+  { value: "GST - Union Territory Tax (Rate)", label: "GST - Union Territory Tax (Rate)" },
+  { value: "GST - Compensation Cess", label: "GST - Compensation Cess" },
+  { value: "GST - Compensation Cess (Rate)", label: "GST - Compensation Cess (Rate)" },
+  { value: "Income Tax", label: "Income Tax" },
+  { value: "RBI", label: "RBI" },
+  { value: "SEBI", label: "SEBI" },
+] as const;

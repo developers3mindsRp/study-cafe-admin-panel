@@ -10,6 +10,8 @@ type PropsType = {
   id: string;
   mode?: "single" | "multiple" | "range" | "time";
   onChange?: Hook | Hook[];
+  /** Controlled value (Y-m-d). When cleared, the picker input is cleared too. */
+  value?: string;
   defaultDate?: DateOption;
   minDate?: DateOption;
   maxDate?: DateOption;
@@ -25,6 +27,7 @@ export default function DatePicker({
   id,
   mode,
   onChange,
+  value,
   label,
   labelClassName,
   defaultDate,
@@ -40,6 +43,7 @@ export default function DatePicker({
    * on every parent render (which was clearing the selected date).
    */
   const onChangeRef = useRef<Hook | Hook[] | undefined>(onChange);
+  const instanceRef = useRef<flatpickr.Instance | null>(null);
   useEffect(() => {
     onChangeRef.current = onChange;
   }, [onChange]);
@@ -67,12 +71,29 @@ export default function DatePicker({
       },
     });
 
+    instanceRef.current = Array.isArray(flatPickr) ? flatPickr[0] : flatPickr;
+
     return () => {
+      instanceRef.current = null;
       if (!Array.isArray(flatPickr)) {
         flatPickr.destroy();
       }
     };
   }, [mode, id, defaultDate, minDate, maxDate, dateFormat]); // onChange intentionally excluded — handled via ref
+
+  useEffect(() => {
+    const fp = instanceRef.current;
+    if (!fp) return;
+    if (value === undefined) return;
+    const next = value.trim();
+    const current = fp.input.value.trim();
+    if (next === current) return;
+    if (!next) {
+      fp.clear();
+      return;
+    }
+    fp.setDate(next, false);
+  }, [value]);
 
   return (
     <div>

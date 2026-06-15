@@ -170,6 +170,33 @@ export default function ArticleView() {
             />
           </div>
         )}
+        {(article.noti_no || article.noti_date || article.type_of_tax) && (
+          <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] sm:p-6">
+            <h3 className="mb-4 text-lg font-semibold text-gray-800 dark:text-white/90">
+              Notification
+            </h3>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {article.noti_no ? (
+                <div>
+                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Notification Number</p>
+                  <p className="text-gray-800 break-words dark:text-white/90">{article.noti_no}</p>
+                </div>
+              ) : null}
+              {article.type_of_tax ? (
+                <div>
+                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Type of Tax</p>
+                  <p className="text-gray-800 break-words dark:text-white/90">{article.type_of_tax}</p>
+                </div>
+              ) : null}
+              {article.noti_date ? (
+                <div>
+                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Notification Date</p>
+                  <p className="text-gray-800 break-words dark:text-white/90">{article.noti_date}</p>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        )}
         {(article as any).citation && Object.keys((article as any).citation).length > 0 && (
           <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] sm:p-6">
             <h3 className="mb-4 text-lg font-semibold text-gray-800 dark:text-white/90">

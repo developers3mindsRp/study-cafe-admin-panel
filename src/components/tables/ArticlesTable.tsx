@@ -136,6 +136,11 @@ export const ArticlesTable = forwardRef<DataTableRef, ArticlesTableProps>(
         article_type_ids: article.article_type_ids ?? [],
         court_ids: article.court_ids ?? [],
         citation: (article.citation as ArticleFormData["citation"]) ?? null,
+        notification: {
+          noti_no: article.noti_no ?? "",
+          noti_date: article.noti_date ?? "",
+          type_of_tax: article.type_of_tax ?? "",
+        },
       };
 
       const [categories, tags, articleTypes, courts] = await Promise.all([

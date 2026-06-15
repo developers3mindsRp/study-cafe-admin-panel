@@ -57,6 +57,9 @@ export interface ArticleRecord {
   rel_download_url?: string | null;
   /** JSON payload for Case Citation metadata */
   citation?: Record<string, any> | null;
+  noti_no?: string | null;
+  noti_date?: string | null;
+  type_of_tax?: string | null;
 }
 
 export interface ArticleListParams {
