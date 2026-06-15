@@ -12,7 +12,7 @@ import { usersApi } from "../../api/users";
 import AsyncSelect from "react-select/async";
 import type { CSSObjectWithLabel } from "react-select";
 import { CloseLineIcon } from "../../icons";
-import { normalizeOrderGateway, type OrderPaymentGateway } from "../../utils/orderGateway";
+import { type OrderPaymentGateway } from "../../utils/orderGateway";
 
 export default function OrderCreate() {
   const navigate = useNavigate();
