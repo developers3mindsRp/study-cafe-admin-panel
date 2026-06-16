@@ -12,21 +12,19 @@ import {
 } from "../../constants/permissions";
 import {
   emptyUsersListFilters,
-  fetchAllUsersForExport,
+  runUsersExportWithProgress,
   usersApi,
   usersListFiltersAreActive,
   usersListFiltersFromValues,
   type UsersListFilters,
   type User,
 } from "../../api/users";
-import { exportRowsToCsv } from "../../utils/exportToCsv";
 import { ExportProgressBar } from "../../components/export/ExportProgressBar";
 import {
   formatExportProgressLabel,
   formatExportProgressTitle,
   type ExportProgress,
 } from "../../utils/exportProgress";
-import { USER_EXPORT_COLUMNS } from "../../utils/userExportColumns";
 import { DownloadIcon } from "../../icons";
 import Button from "../../components/ui/button/Button";
 import { UsersTable } from "../../components/tables";
@@ -141,20 +139,15 @@ function UserListContent() {
     if (!q) return;
     setExportProgress({ loaded: 0, total: null, phase: "fetching" });
     try {
-      const rows = await fetchAllUsersForExport({
+      const datePart = new Date().toISOString().slice(0, 10);
+      const filteredPart = filtersActive || q.search.trim() ? "-filtered" : "";
+      await runUsersExportWithProgress({
         filters: listFilters,
         search: q.search,
         sortBy: q.sortBy,
         sortOrder: q.sortOrder,
-        onProgress: setExportProgress,
-      });
-      setExportProgress({ loaded: rows.length, total: rows.length, phase: "writing" });
-      const datePart = new Date().toISOString().slice(0, 10);
-      const filteredPart = filtersActive || q.search.trim() ? "-filtered" : "";
-      exportRowsToCsv({
         filename: `users-export-${datePart}${filteredPart}`,
-        columns: USER_EXPORT_COLUMNS,
-        rows,
+        onProgress: setExportProgress,
       });
     } catch (err: unknown) {
       const msg =
@@ -178,9 +171,6 @@ function UserListContent() {
         else if (selection.category === "course") filters.courseId = selection.value;
         else if (selection.category === "state") filters.state = selection.value;
 
-        const rows = await fetchAllUsersForExport({ filters, onProgress: setExportProgress });
-        setExportProgress({ loaded: rows.length, total: rows.length, phase: "writing" });
-
         const slug = selection.label
           .toLowerCase()
           .replace(/[^a-z0-9]+/g, "-")
@@ -189,11 +179,7 @@ function UserListContent() {
         const datePart = new Date().toISOString().slice(0, 10);
         const filename = `users-export-${selection.category}-${slug || "all"}-${datePart}`;
 
-        exportRowsToCsv({
-          filename,
-          columns: USER_EXPORT_COLUMNS,
-          rows,
-        });
+        await runUsersExportWithProgress({ filters, filename, onProgress: setExportProgress });
         setExportModalOpen(false);
       } catch (err: unknown) {
         const msg =

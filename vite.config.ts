@@ -21,9 +21,9 @@ export default defineConfig({
       "/api": {
         target: "http://localhost:3000",
         changeOrigin: true,
-        /** Avoid proxy abort while gateway waits on slow DB / downstream services */
-        proxyTimeout: 120_000,
-        timeout: 120_000,
+        /** Large user CSV exports — allow long-running download through dev proxy */
+        proxyTimeout: 600_000,
+        timeout: 600_000,
       },
     },
   },

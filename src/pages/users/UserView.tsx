@@ -249,7 +249,7 @@ export default function UserView() {
                                             <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">Plan</th>
                                             <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">Status</th>
                                             <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">Starts</th>
-                                            <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">Expires</th>
+                                            <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">Expired At</th>
                                             <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">Order ID</th>
                                         </tr>
                                     </thead>

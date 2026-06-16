@@ -8,6 +8,7 @@
 import { createCrudApi, type ListQuery } from "./apiFactory";
 import type { TrashScope } from "../components/trash/TrashScopeTabs";
 import { api } from "./axios";
+import { getApiBaseUrl } from "../config/env";
 import type { DataTableFetchParams, DataTableFetchResult } from "../components/tables/data-table";
 import { fetchAllPaginatedForExport } from "../utils/fetchAllPaginatedForExport";
 import type { ExportProgressCallback } from "../utils/exportProgress";
@@ -51,10 +52,17 @@ export interface User {
   // Tax
   gst?: string | null;
 
-  // Membership
+  // Membership (from user_memberships — canonical source)
   membership?: string | null;
   plan?: string;
   membership_name?: string | null;
+  membership_plan_name?: string | null;
+  membership_status?: string | null;
+  membership_expires_at?: string | null;
+  membership_payment_id?: string | null;
+  membership_plan_purchased?: string | null;
+  membership_plan_expiry?: string | null;
+  membership_plan_price?: string | null;
 }
 
 export interface UserMembership {
@@ -302,7 +310,123 @@ export async function fetchAdminPanelUsers(): Promise<User[]> {
   }
 }
 
-/** Loads every user page matching list filters + search/sort. */
+/** Server-side export job with progress polling — fast + percentage for large datasets. */
+export type UserExportJobStatus = {
+  jobId: string;
+  status: "running" | "completed" | "failed";
+  phase: "fetching" | "writing";
+  loaded: number;
+  total: number;
+  error?: string | null;
+  /** One-time token for browser-native download (avoids loading lakhs of rows into memory). */
+  downloadToken?: string;
+};
+
+const EXPORT_POLL_MS = 500;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** Trigger same-origin file download without buffering the response in JS memory. */
+function triggerNativeFileDownload(href: string, suggestedName?: string): void {
+  const anchor = document.createElement("a");
+  anchor.href = href;
+  anchor.style.display = "none";
+  if (suggestedName) anchor.download = suggestedName;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+}
+
+export async function runUsersExportWithProgress(
+  params: Omit<BuildUsersListParamsInput, "page" | "limit"> & {
+    filename?: string;
+    onProgress?: ExportProgressCallback;
+  },
+): Promise<void> {
+  const { onProgress, filename, ...rest } = params;
+  const query = buildUsersListParams(rest);
+
+  onProgress?.({ loaded: 0, total: null, phase: "fetching" });
+
+  const { data: start } = await api.post<{ jobId: string; total: number }>(
+    "/users/export",
+    null,
+    { params: query },
+  );
+  const jobId = start.jobId;
+  const total = start.total ?? 0;
+
+  onProgress?.({ loaded: 0, total, phase: "fetching" });
+
+  let completedStatus: UserExportJobStatus | null = null;
+  for (;;) {
+    const { data: status } = await api.get<UserExportJobStatus>(
+      `/users/export/${jobId}/status`,
+    );
+
+    onProgress?.({
+      loaded: status.loaded,
+      total: status.total,
+      phase: status.phase === "writing" ? "writing" : "fetching",
+    });
+
+    if (status.status === "completed") {
+      completedStatus = status;
+      break;
+    }
+    if (status.status === "failed") {
+      throw new Error(status.error || "Export failed");
+    }
+    await sleep(EXPORT_POLL_MS);
+  }
+
+  onProgress?.({ loaded: total, total, phase: "writing" });
+
+  const downloadToken = completedStatus?.downloadToken;
+  if (!downloadToken) {
+    throw new Error("Export download token missing — please try again");
+  }
+
+  const downloadName = filename
+    ? (filename.toLowerCase().endsWith(".csv") ? filename : `${filename}.csv`)
+    : undefined;
+  const datePart = new Date().toISOString().slice(0, 10);
+  const finalName = downloadName ?? `users-export-${datePart}.csv`;
+
+  const downloadUrl = new URL(
+    `${getApiBaseUrl()}/users/export/${encodeURIComponent(jobId)}/download`,
+  );
+  downloadUrl.searchParams.set("token", downloadToken);
+  downloadUrl.searchParams.set("filename", finalName);
+
+  triggerNativeFileDownload(downloadUrl.toString(), finalName);
+}
+
+/** @deprecated Use runUsersExportWithProgress — loads all rows in browser memory. */
+export async function downloadUsersExportCsv(
+  params: Omit<BuildUsersListParamsInput, "page" | "limit">,
+  filename?: string,
+): Promise<void> {
+  const query = buildUsersListParams(params);
+  const response = await api.get<Blob>("/users/export.csv", {
+    params: query,
+    responseType: "blob",
+  });
+  const blob = response.data;
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  const datePart = new Date().toISOString().slice(0, 10);
+  anchor.download = filename?.toLowerCase().endsWith(".csv")
+    ? filename
+    : `${filename ?? `users-export-${datePart}`}.csv`;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
+/** Loads every user page matching list filters + search/sort (with progress callback). */
 export async function fetchAllUsersForExport(
   params: Omit<BuildUsersListParamsInput, "page" | "limit"> & {
     onProgress?: ExportProgressCallback;

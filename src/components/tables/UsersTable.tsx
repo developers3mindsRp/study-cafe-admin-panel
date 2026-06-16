@@ -75,14 +75,35 @@ export const UsersTable = forwardRef<DataTableRef, UsersTableProps>(
         render: (row: User) => row.state || "—",
       },
       {
-        key: "membership",
-        header: "Membership",
+        key: "membership_plan",
+        header: "Membership Plan",
         sortable: false,
-        render: (row: User) => (
-          <span className="rounded-md bg-gray-100 px-2 py-0.5 text-xs text-gray-700 dark:bg-gray-800 dark:text-gray-300">
-            {row.membership_name || "Free"}
-          </span>
-        ),
+        render: (row: User) => {
+          const planName = row.membership_plan_name || row.membership_name || "Free";
+          const expiresAt = row.membership_expires_at;
+          let expiryLabel = "";
+          if (expiresAt) {
+            const d = new Date(expiresAt);
+            if (!Number.isNaN(d.getTime())) {
+              const y = d.getFullYear();
+              const m = String(d.getMonth() + 1).padStart(2, "0");
+              const day = String(d.getDate()).padStart(2, "0");
+              expiryLabel = `${y}-${m}-${day}`;
+            }
+          }
+          return (
+            <div className="flex flex-col gap-0.5">
+              <span className="rounded-md bg-gray-100 px-2 py-0.5 text-xs text-gray-700 dark:bg-gray-800 dark:text-gray-300 w-fit">
+                {planName}
+              </span>
+              {expiryLabel ? (
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  Expired At: {expiryLabel}
+                </span>
+              ) : null}
+            </div>
+          );
+        },
       },
       {
         key: "status",

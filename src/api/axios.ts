@@ -96,6 +96,14 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
  */
 api.interceptors.response.use(
   (response) => {
+    // Binary downloads must not be JSON-unwrapped.
+    if (
+      response.config.responseType === "blob" ||
+      response.config.responseType === "arraybuffer" ||
+      (typeof Blob !== "undefined" && response.data instanceof Blob)
+    ) {
+      return response;
+    }
     // Unwrap standard envelope: { success: true, data: ..., meta?: ... }
     if (response.data && typeof response.data === "object" && response.data.success === true && "data" in response.data) {
       if ("meta" in response.data) {

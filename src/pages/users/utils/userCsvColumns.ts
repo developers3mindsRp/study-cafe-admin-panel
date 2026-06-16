@@ -27,18 +27,30 @@ export const USER_CSV_IMPORT_HEADERS = [
   "bio",
 ] as const;
 
-const USER_CSV_EXPORT_EXCLUDED = new Set([
-  "linkedin",
-  "facebook",
-  "twitter",
-  "instagram",
-  "youtube",
-]);
-
-/** CSV export headers (subset of import — no social profile URLs). */
-export const USER_CSV_EXPORT_HEADERS = USER_CSV_IMPORT_HEADERS.filter(
-  (h) => !USER_CSV_EXPORT_EXCLUDED.has(h),
-);
+/** CSV export headers (membership sourced from user_memberships on the server). */
+export const USER_CSV_EXPORT_HEADERS = [
+  "email",
+  "password",
+  "name",
+  "first_name",
+  "last_name",
+  "phone",
+  "role",
+  "status",
+  "membership_plan_name",
+  "membership_status",
+  "plan_price",
+  "payment_id",
+  "plan_purchased",
+  "plan_expiry",
+  "designation",
+  "profession",
+  "company",
+  "city",
+  "state",
+  "country",
+  "bio",
+] as const;
 
 export type UserCsvField = (typeof USER_CSV_IMPORT_HEADERS)[number];
 
@@ -56,7 +68,7 @@ export const USER_CSV_HEADER_ALIASES: Record<UserCsvField, string[]> = {
   plan_price: ["plan_price", "price", "plan price"],
   payment_id: ["payment_id", "payment id", "razorpay payment id", "razorpay_payment_id"],
   plan_purchased: ["plan_purchased", "plan purchased", "date of purchase", "purchase date"],
-  plan_expiry: ["plan_expiry", "plan expiry", "expiry date", "plan_expiry_date"],
+  plan_expiry: ["plan_expiry", "plan expiry", "expired at", "expiry date", "plan_expiry_date"],
   designation: ["designation"],
   profession: ["profession"],
   company: ["company"],
