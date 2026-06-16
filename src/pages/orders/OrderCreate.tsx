@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
@@ -14,11 +14,25 @@ import type { CSSObjectWithLabel } from "react-select";
 import { CloseLineIcon } from "../../icons";
 import { type OrderPaymentGateway } from "../../utils/orderGateway";
 
+type EntitySelectOption = { value: string; label: string };
+
+const ENTITY_SELECT_STYLES = {
+  control: (base: CSSObjectWithLabel) => ({
+    ...base,
+    minHeight: "44px",
+    borderRadius: "0.5rem",
+    borderColor: "rgb(209 213 219)",
+    boxShadow: "none",
+    "&:hover": { borderColor: "rgb(156 163 175)" },
+  }),
+};
+
 export default function OrderCreate() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [courses, setCourses] = useState<Course[]>([]);
   const [plans, setPlans] = useState<Plan[]>([]);
+  const [catalogLoading, setCatalogLoading] = useState(true);
 
   const [paymentId, setPaymentId] = useState("");
   const [paymentGateway, setPaymentGateway] = useState<OrderPaymentGateway>("admin");
@@ -37,9 +51,47 @@ export default function OrderCreate() {
   });
 
   useEffect(() => {
-    fetchCourses().then(setCourses).catch(console.error);
-    plansApi.list({ limit: 100 }).then(res => setPlans(res.data || [])).catch(console.error);
+    setCatalogLoading(true);
+    Promise.all([
+      fetchCourses().then(setCourses).catch(() => setCourses([])),
+      plansApi.list({ limit: 100 }).then((res) => setPlans(res.data || [])).catch(() => setPlans([])),
+    ]).finally(() => setCatalogLoading(false));
   }, []);
+
+  const courseOptions = useMemo<EntitySelectOption[]>(
+    () =>
+      courses.map((c) => ({
+        value: String(c.id),
+        label: c.title || c.short_title || `Course ${c.id}`,
+      })),
+    [courses],
+  );
+
+  const planOptions = useMemo<EntitySelectOption[]>(
+    () =>
+      plans.map((p) => ({
+        value: String(p.id),
+        label: p.name || `Plan ${p.id}`,
+      })),
+    [plans],
+  );
+
+  const entityOptions = formData.type === "course" ? courseOptions : planOptions;
+
+  const loadEntityOptions = useCallback(
+    async (inputValue: string) => {
+      const q = inputValue.trim().toLowerCase();
+      const source = formData.type === "course" ? courseOptions : planOptions;
+      if (!q) return source.slice(0, 50);
+      return source.filter((o) => o.label.toLowerCase().includes(q)).slice(0, 50);
+    },
+    [formData.type, courseOptions, planOptions],
+  );
+
+  const selectedEntityOption = useMemo(
+    () => entityOptions.find((o) => o.value === formData.entity_id) ?? null,
+    [entityOptions, formData.entity_id],
+  );
 
   const loadUserOptions = async (inputValue: string) => {
     if (!inputValue || inputValue.length < 2) return [];
@@ -52,27 +104,6 @@ export default function OrderCreate() {
     } catch {
       return [];
     }
-  };
-
-  const loadCourseOptions = async (inputValue: string) => {
-    const filtered = courses.filter(c => 
-      (c.title || "").toLowerCase().includes(inputValue.toLowerCase()) || 
-      (c.short_title || "").toLowerCase().includes(inputValue.toLowerCase())
-    );
-    return filtered.slice(0, 10).map(c => ({
-      value: String(c.id),
-      label: c.title
-    }));
-  };
-
-  const loadPlanOptions = async (inputValue: string) => {
-    const filtered = plans.filter(p => 
-      (p.name || "").toLowerCase().includes(inputValue.toLowerCase())
-    );
-    return filtered.slice(0, 10).map(p => ({
-      value: String(p.id),
-      label: p.name
-    }));
   };
 
   const handleChange = (field: keyof CreateOrderPayload, value: any) => {
@@ -166,7 +197,7 @@ export default function OrderCreate() {
       setLoading(false);
     }
   };
-
+ 
   return (
     <>
       <PageMeta title="Create Order | StudyCafe Admin" description="Create a manual order" />
@@ -208,6 +239,7 @@ export default function OrderCreate() {
                   handleChange("type", e.target.value);
                   handleChange("entity_id", "");
                   handleChange("amount", 0);
+                  setAppliedCoupon(null);
                 }}
               >
                 <option value="course">Course</option>
@@ -220,22 +252,26 @@ export default function OrderCreate() {
             <div>
               <Label>Select {formData.type === "course" ? "Course" : "Membership"}</Label>
               <AsyncSelect
-                key={formData.type} // Force remount when type changes
+                key={`entity-${formData.type}-${catalogLoading ? "loading" : "ready"}`}
                 cacheOptions
-                defaultOptions
-                loadOptions={formData.type === "course" ? loadCourseOptions : loadPlanOptions}
-                onChange={(option: any) => handleEntityChange(option?.value)}
-                placeholder={`Search ${formData.type}...`}
+                defaultOptions={entityOptions.slice(0, 50)}
+                loadOptions={loadEntityOptions}
+                value={selectedEntityOption}
+                isLoading={catalogLoading}
+                isDisabled={catalogLoading}
+                onChange={(option: EntitySelectOption | null) =>
+                  handleEntityChange(option?.value ?? "")
+                }
+                placeholder={
+                  catalogLoading
+                    ? `Loading ${formData.type === "course" ? "courses" : "plans"}…`
+                    : `Search ${formData.type}…`
+                }
+                noOptionsMessage={() =>
+                  catalogLoading ? "Loading…" : `No ${formData.type} found`
+                }
                 className="text-sm text-gray-800 dark:text-gray-200"
-                styles={{
-                  control: (base: CSSObjectWithLabel) => ({
-                    ...base,
-                    minHeight: "44px",
-                    borderRadius: "0.5rem",
-                    borderColor: "rgb(209 213 219)",
-                    boxShadow: "none",
-                  })
-                }}
+                styles={ENTITY_SELECT_STYLES}
               />
             </div>
             <div>
