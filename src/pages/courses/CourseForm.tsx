@@ -753,6 +753,7 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
                       <div>
                         <Label>Type</Label>
                         <select
+                        
                           value={sec.type}
                           onChange={(e) => {
                               const next = [...form.detail_sections];
