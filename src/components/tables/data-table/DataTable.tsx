@@ -12,6 +12,8 @@ import type { DataTableProps, DataTableColumn } from "./DataTable.types";
 
 export interface DataTableRef {
   refetch: () => Promise<void>;
+  /** Programmatically update the search value (e.g. from an external filter bar). Resets to page 1. */
+  setSearch: (search: string) => void;
   /** Current toolbar query (search, sort) for exports / server refetch with same view. */
   getQueryState: () => { search: string; sortBy: string; sortOrder: "ASC" | "DESC" };
 }
@@ -60,9 +62,10 @@ function DataTableInner<T extends object>({
     ref,
     () => ({
       refetch,
+      setSearch,
       getQueryState: () => ({ search, sortBy, sortOrder }),
     }),
-    [refetch, search, sortBy, sortOrder]
+    [refetch, setSearch, search, sortBy, sortOrder]
   );
 
   const handleSort = (key: string) => {

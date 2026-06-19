@@ -77,6 +77,8 @@ export function OrdersTable() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [filters, setFilters] = useState({ ...ORDERS_FILTER_INITIAL });
   const [filterBarKey, setFilterBarKey] = useState(0);
+  const [searchInput, setSearchInput] = useState("");
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [exportProgress, setExportProgress] = useState<ExportProgress | null>(null);
   const exporting = exportProgress !== null;
   const [trashScope, setTrashScope] = useState<TrashScope>("active");
@@ -84,13 +86,25 @@ export function OrdersTable() {
   const isTrash = trashScope === "trash";
 
   const hasActiveFilters = useMemo(
-    () => ordersListFiltersAreActive(filters),
-    [filters],
+    () => ordersListFiltersAreActive(filters) || searchInput.trim() !== "",
+    [filters, searchInput],
   );
+
+  const handleSearchChange = useCallback((value: string) => {
+    setSearchInput(value);
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    searchDebounceRef.current = setTimeout(() => {
+      searchDebounceRef.current = null;
+      tableRef.current?.setSearch(value);
+    }, 350);
+  }, []);
 
   const clearAllFilters = useCallback(() => {
     setFilters({ ...ORDERS_FILTER_INITIAL });
     setFilterBarKey((k) => k + 1);
+    setSearchInput("");
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    tableRef.current?.setSearch("");
   }, []);
 
   const handleExportExcel = useCallback(async () => {
@@ -484,6 +498,16 @@ export function OrdersTable() {
               }}
             />
           </div>
+          <div className="min-w-[11rem] flex-1 shrink-0 basis-[12rem]">
+            <label className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-400">Search</label>
+            <input
+              type="search"
+              value={searchInput}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              placeholder="Name, email, phone, payment ID…"
+              className="h-11 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 placeholder-gray-500 transition focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder-gray-400"
+            />
+          </div>
           <Button
             type="button"
             variant="outline"
@@ -522,7 +546,7 @@ export function OrdersTable() {
         initialSortBy="created_at"
         initialSortOrder="DESC"
         pageSizeOptions={[10, 20, 50, 100]}
-        enableSearch
+        enableSearch={isTrash}
         enableSorting
         enablePagination
         searchPlaceholder="Search name, email, phone, payment ID…"

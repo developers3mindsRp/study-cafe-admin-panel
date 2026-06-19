@@ -52,7 +52,13 @@ export function useDataTable<T = Record<string, unknown>>(
     }
   }, [fetchData]);
 
+  // Guards against out-of-order responses: only the latest request may apply its
+  // result. Without this, a slower earlier fetch (e.g. the unfiltered list) can
+  // land after a newer search fetch and leave stale rows in the table.
+  const requestIdRef = useRef(0);
+
   const load = useCallback(async () => {
+    const requestId = ++requestIdRef.current;
     setLoading(true);
     setError(null);
     try {
@@ -64,14 +70,16 @@ export function useDataTable<T = Record<string, unknown>>(
         sortOrder,
       };
       const result = await fetchData(params);
+      if (requestId !== requestIdRef.current) return;
       setData(result.data ?? []);
       setMeta(result.meta ?? null);
     } catch (err) {
+      if (requestId !== requestIdRef.current) return;
       setError(err instanceof Error ? err : new Error(String(err)));
       setData([]);
       setMeta(null);
     } finally {
-      setLoading(false);
+      if (requestId === requestIdRef.current) setLoading(false);
     }
   }, [fetchData, page, limit, search, sortBy, sortOrder]);
 
