@@ -16,12 +16,15 @@ import type { Editor } from "@tiptap/core";
 import { LinkBubbleMenu, LinkToolbarButton, LINK_EXTENSION_OPTIONS } from "../form/EditorLinkControls";
 import { ArticleBodyJSON } from "./types";
 
+/** Matches legacy [related id="123"] shortcodes — same pattern as public ArticleBody. */
+const RELATED_SHORTCODE_REGEX = /\[related\s+id=['"](\d+)['"]\]/gi;
+
 /**
  * Detect legacy migrated HTML that has no block-level elements (flat inline HTML).
  * Such content was migrated from other CMSes and stored without <p> wrappers.
  * TipTap would load it as one single paragraph — this preprocessor splits it into
- * proper paragraphs using [related id="..."] shortcodes as natural boundary markers,
- * and also splits on double <br> or <br><br> patterns.
+ * proper paragraphs using [related id="..."] shortcodes (bare or span-wrapped) as
+ * natural boundary markers, and also splits on double <br> patterns.
  */
 function addParagraphStructureIfNeeded(html: string): string {
   if (!html?.trim()) return html;
@@ -31,33 +34,43 @@ function addParagraphStructureIfNeeded(html: string): string {
     return html;
   }
 
+  const isRelatedShortcode = (text: string) =>
+    /^\s*\[related\s+id=['"]\d+['"]\]\s*$/i.test(text);
+
   // Flat inline HTML detected. Use [related id="..."] shortcodes as paragraph separators.
-  // Also split on double <br> sequences that may represent paragraph breaks.
   let processed = html
     // Normalize <br />, <BR>, etc. to <br>
-    .replace(/<br\s*\/?>/gi, '<br>')
+    .replace(/<br\s*\/?>/gi, "<br>")
     // Double <br> → paragraph separator marker
-    .replace(/<br><br>/g, '||PARA_BREAK||')
-    // Shortcode spans → paragraph separator marker  
-    .replace(/(<span[^>]*>\[related[^\]]*\]<\/span>)/gi, '||PARA_BREAK||$1||PARA_BREAK||');
+    .replace(/<br><br>/g, "||PARA_BREAK||")
+    // Span-wrapped shortcodes → normalize to bare shortcode between markers
+    .replace(
+      /<span[^>]*>(\[related\s+id=['"]\d+['"]\])<\/span>/gi,
+      "||PARA_BREAK||$1||PARA_BREAK||",
+    )
+    // Bare shortcodes (e.g. migrated articles without span wrapper)
+    .replace(
+      RELATED_SHORTCODE_REGEX,
+      "||PARA_BREAK||[related id=\"$1\"]||PARA_BREAK||",
+    );
 
-  const parts = processed.split('||PARA_BREAK||');
+  const parts = processed.split("||PARA_BREAK||");
 
   const paragraphs = parts
-    .map(part => {
+    .map((part) => {
       const trimmed = part.trim();
-      if (!trimmed) return '';
-      // Shortcode span — keep as a bare block, not wrapped in <p>
-      if (/^\s*<span[^>]*>\[related[^\]]*\]<\/span>\s*$/i.test(trimmed)) {
+      if (!trimmed) return "";
+      // Shortcode — keep as a bare block, not wrapped in <p>
+      if (isRelatedShortcode(trimmed)) {
         return trimmed;
       }
       // Remove any leading/trailing single <br>
-      const cleaned = trimmed.replace(/^<br>|<br>$/g, '').trim();
-      return cleaned ? `<p>${cleaned}</p>` : '';
+      const cleaned = trimmed.replace(/^<br>|<br>$/g, "").trim();
+      return cleaned ? `<p>${cleaned}</p>` : "";
     })
     .filter(Boolean);
 
-  return paragraphs.join('\n') || html;
+  return paragraphs.join("\n") || html;
 }
 
 interface ArticleEditorProps {
