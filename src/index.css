@@ -791,109 +791,141 @@ span.flatpickr-weekday,
   @apply opacity-100;
 }
 
-/* Tiptap Rich Text Editor — typography matches public .article-rich-text for WYSIWYG accuracy */
-.rich-text-editor-content .tiptap {
-  @apply outline-none;
+/* Tiptap Rich Text Editor — typography matches public .article-rich-text for WYSIWYG accuracy.
+   Selectors target both .tiptap (TipTap v2) and .ProseMirror (TipTap v3+) for compatibility. */
+.rich-text-editor-content .tiptap,
+.rich-text-editor-content .ProseMirror {
+  outline: none;
   font-size: 1rem;
   line-height: 1.65;
   color: #454545;
+  @apply text-gray-800 dark:text-white/90;
 }
-.rich-text-editor-content .tiptap p {
+
+.rich-text-editor-content .tiptap p,
+.rich-text-editor-content .ProseMirror p {
   margin-top: 0;
   margin-bottom: 1.25em;
 }
-.rich-text-editor-content .tiptap > *:first-child {
+
+.rich-text-editor-content .tiptap > *:first-child,
+.rich-text-editor-content .ProseMirror > *:first-child {
   margin-top: 0;
 }
-.rich-text-editor-content .tiptap h1 {
+
+.rich-text-editor-content .tiptap h1,
+.rich-text-editor-content .ProseMirror h1 {
   font-size: 1.75rem;
   font-weight: 700;
   margin-top: 1.25em;
   margin-bottom: 0.5em;
   line-height: 1.3;
 }
-.rich-text-editor-content .tiptap h2 {
+.rich-text-editor-content .tiptap h2,
+.rich-text-editor-content .ProseMirror h2 {
   font-size: 1.5rem;
   font-weight: 700;
   margin-top: 1.25em;
   margin-bottom: 0.5em;
   line-height: 1.3;
 }
-.rich-text-editor-content .tiptap h3 {
+.rich-text-editor-content .tiptap h3,
+.rich-text-editor-content .ProseMirror h3 {
   font-size: 1.25rem;
   font-weight: 700;
   margin-top: 1.25em;
   margin-bottom: 0.5em;
   line-height: 1.3;
 }
-.rich-text-editor-content .tiptap ul {
+
+.rich-text-editor-content .tiptap ul,
+.rich-text-editor-content .ProseMirror ul {
   list-style-type: disc;
   padding-left: 1.5em;
   margin: 0 0 1.25em 0;
 }
-.rich-text-editor-content .tiptap ol {
+.rich-text-editor-content .tiptap ol,
+.rich-text-editor-content .ProseMirror ol {
   list-style-type: decimal;
   padding-left: 1.5em;
   margin: 0 0 1.25em 0;
 }
-.rich-text-editor-content .tiptap li {
+.rich-text-editor-content .tiptap li,
+.rich-text-editor-content .ProseMirror li {
   margin-bottom: 0.25em;
   line-height: 1.65;
 }
-.rich-text-editor-content .tiptap blockquote {
+
+.rich-text-editor-content .tiptap blockquote,
+.rich-text-editor-content .ProseMirror blockquote {
   border-left: 4px solid #d4d4d8;
   margin: 1em 0;
   padding-left: 1em;
   color: #52525b;
   font-style: italic;
 }
-.rich-text-editor-content .tiptap p.is-editor-empty:first-child::before {
+
+.rich-text-editor-content .tiptap p.is-editor-empty:first-child::before,
+.rich-text-editor-content .ProseMirror p.is-editor-empty:first-child::before {
   @apply text-gray-400 pointer-events-none float-left h-0;
   content: attr(data-placeholder);
 }
-.rich-text-editor-content .ProseMirror {
-  @apply text-gray-800 dark:text-white/90;
-}
-.rich-text-editor-content .tiptap a {
+
+.rich-text-editor-content .tiptap a,
+.rich-text-editor-content .ProseMirror a {
   color: #09339b;
   text-decoration: underline;
   cursor: text;
 }
-.rich-text-editor-content .tiptap a:hover {
+.rich-text-editor-content .tiptap a:hover,
+.rich-text-editor-content .ProseMirror a:hover {
   opacity: 0.8;
 }
 .rich-text-editor-content .tiptap a.ProseMirror-selectednode,
-.rich-text-editor-content .tiptap a[data-selected="true"] {
+.rich-text-editor-content .tiptap a[data-selected="true"],
+.rich-text-editor-content .ProseMirror a.ProseMirror-selectednode,
+.rich-text-editor-content .ProseMirror a[data-selected="true"] {
   background-color: rgba(9, 51, 155, 0.12);
   border-radius: 2px;
   outline: 1px solid rgba(9, 51, 155, 0.35);
 }
-.rich-text-editor-content .tiptap code {
+
+.rich-text-editor-content .tiptap code,
+.rich-text-editor-content .ProseMirror code {
   @apply rounded bg-gray-100 px-1 py-0.5 text-sm dark:bg-gray-800;
 }
-.rich-text-editor-content .tiptap mark {
+.rich-text-editor-content .tiptap mark,
+.rich-text-editor-content .ProseMirror mark {
   background-color: #fef08a;
   padding: 0 0.125em;
   border-radius: 2px;
 }
 .rich-text-editor-content .tiptap sub,
-.rich-text-editor-content .tiptap sup {
+.rich-text-editor-content .tiptap sup,
+.rich-text-editor-content .ProseMirror sub,
+.rich-text-editor-content .ProseMirror sup {
   @apply text-xs;
 }
-.rich-text-editor-content .tiptap img {
+.rich-text-editor-content .tiptap img,
+.rich-text-editor-content .ProseMirror img {
   max-width: 100%;
   height: auto;
 }
-.rich-text-editor-content .tiptap [style*="text-align: left"] {
+
+.rich-text-editor-content .tiptap [style*="text-align: left"],
+.rich-text-editor-content .ProseMirror [style*="text-align: left"] {
   text-align: left;
 }
-.rich-text-editor-content .tiptap [style*="text-align: center"] {
+.rich-text-editor-content .tiptap [style*="text-align: center"],
+.rich-text-editor-content .ProseMirror [style*="text-align: center"] {
   text-align: center;
 }
-.rich-text-editor-content .tiptap [style*="text-align: right"] {
+.rich-text-editor-content .tiptap [style*="text-align: right"],
+.rich-text-editor-content .ProseMirror [style*="text-align: right"] {
   text-align: right;
 }
-.rich-text-editor-content .tiptap [style*="text-align: justify"] {
+.rich-text-editor-content .tiptap [style*="text-align: justify"],
+.rich-text-editor-content .ProseMirror [style*="text-align: justify"] {
   text-align: justify;
 }
 

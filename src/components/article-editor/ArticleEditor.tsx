@@ -16,6 +16,50 @@ import type { Editor } from "@tiptap/core";
 import { LinkBubbleMenu, LinkToolbarButton, LINK_EXTENSION_OPTIONS } from "../form/EditorLinkControls";
 import { ArticleBodyJSON } from "./types";
 
+/**
+ * Detect legacy migrated HTML that has no block-level elements (flat inline HTML).
+ * Such content was migrated from other CMSes and stored without <p> wrappers.
+ * TipTap would load it as one single paragraph — this preprocessor splits it into
+ * proper paragraphs using [related id="..."] shortcodes as natural boundary markers,
+ * and also splits on double <br> or <br><br> patterns.
+ */
+function addParagraphStructureIfNeeded(html: string): string {
+  if (!html?.trim()) return html;
+
+  // Already has block-level structure — no preprocessing needed
+  if (/<(p|h[1-6]|ul|ol|blockquote|pre|table|div|hr)\b/i.test(html)) {
+    return html;
+  }
+
+  // Flat inline HTML detected. Use [related id="..."] shortcodes as paragraph separators.
+  // Also split on double <br> sequences that may represent paragraph breaks.
+  let processed = html
+    // Normalize <br />, <BR>, etc. to <br>
+    .replace(/<br\s*\/?>/gi, '<br>')
+    // Double <br> → paragraph separator marker
+    .replace(/<br><br>/g, '||PARA_BREAK||')
+    // Shortcode spans → paragraph separator marker  
+    .replace(/(<span[^>]*>\[related[^\]]*\]<\/span>)/gi, '||PARA_BREAK||$1||PARA_BREAK||');
+
+  const parts = processed.split('||PARA_BREAK||');
+
+  const paragraphs = parts
+    .map(part => {
+      const trimmed = part.trim();
+      if (!trimmed) return '';
+      // Shortcode span — keep as a bare block, not wrapped in <p>
+      if (/^\s*<span[^>]*>\[related[^\]]*\]<\/span>\s*$/i.test(trimmed)) {
+        return trimmed;
+      }
+      // Remove any leading/trailing single <br>
+      const cleaned = trimmed.replace(/^<br>|<br>$/g, '').trim();
+      return cleaned ? `<p>${cleaned}</p>` : '';
+    })
+    .filter(Boolean);
+
+  return paragraphs.join('\n') || html;
+}
+
 interface ArticleEditorProps {
   value?: string;
   onChange?: (html: string) => void;
@@ -359,7 +403,7 @@ export default function ArticleEditor({
     },
     editorProps: {
       attributes: {
-        class: "px-4 py-3 min-h-[200px] focus:outline-none",
+        class: "tiptap px-4 py-3 min-h-[200px] focus:outline-none",
       },
     },
   });
@@ -394,9 +438,18 @@ export default function ArticleEditor({
         // Not JSON
       }
 
-      // Load as HTML
-      editor.commands.setContent(trimmed, { emitUpdate: false });
+      // Load as HTML — preprocess legacy flat HTML to restore paragraph structure
+      const processedHtml = addParagraphStructureIfNeeded(trimmed);
+      editor.commands.setContent(processedHtml, { emitUpdate: false });
       setInitialSyncDone(true);
+
+      // If content was restructured, push the clean HTML back to the parent so
+      // subsequent renders don't diff against the old flat HTML and undo the fix.
+      if (processedHtml !== trimmed) {
+        setTimeout(() => {
+          onChange?.(editor.getHTML());
+        }, 0);
+      }
       return;
     }
 
