@@ -1,6 +1,6 @@
 import { api } from "./axios";
 import type { TrashScope } from "../components/trash/TrashScopeTabs";
-import type { CourseAccessScope } from "../components/orders/CourseAccessTabs";
+import { courseAccessFilterToApiParam, type CourseAccessFilter } from "../components/orders/CourseAccessTabs";
 import { fetchAllPaginatedForExport } from "../utils/fetchAllPaginatedForExport";
 import type { ExportProgressCallback } from "../utils/exportProgress";
 
@@ -72,7 +72,7 @@ export type BuildOrdersListParamsInput = {
   limit?: number;
   offset?: number;
   trashScope?: TrashScope;
-  courseAccessScope?: CourseAccessScope;
+  courseAccessScope?: CourseAccessFilter;
 };
 
 /** One query shape for list, export, and API — keeps filtered export in sync with the grid. */
@@ -95,7 +95,8 @@ export function buildOrdersListParams(input: BuildOrdersListParamsInput) {
   if (max) params.amountMax = max;
   if (filters.status) params.status = filters.status;
   if (trashScope === "trash") params.trashed = "1";
-  if (courseAccessScope) params.course_access = courseAccessScope;
+  const courseAccess = courseAccessFilterToApiParam(courseAccessScope);
+  if (courseAccess) params.course_access = courseAccess;
 
   return params;
 }

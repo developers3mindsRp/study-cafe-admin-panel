@@ -1,12 +1,28 @@
 export type CourseAccessScope = "active" | "expired";
 
+/** `all` = no course-access filter (default). */
+export type CourseAccessFilter = "all" | CourseAccessScope;
+
 interface CourseAccessTabsProps {
-  value: CourseAccessScope;
-  onChange: (scope: CourseAccessScope) => void;
+  value: CourseAccessFilter;
+  onChange: (scope: CourseAccessFilter) => void;
+}
+
+export function courseAccessFilterToApiParam(
+  filter: CourseAccessFilter | undefined,
+): CourseAccessScope | undefined {
+  if (filter === "active" || filter === "expired") return filter;
+  return undefined;
 }
 
 export function CourseAccessTabs({ value, onChange }: CourseAccessTabsProps) {
-  const tabClass = (scope: CourseAccessScope) =>
+  const tabs: { key: CourseAccessFilter; label: string }[] = [
+    { key: "all", label: "All" },
+    { key: "active", label: "Active" },
+    { key: "expired", label: "Expired" },
+  ];
+
+  const tabClass = (scope: CourseAccessFilter) =>
     `rounded-lg px-4 py-2 text-sm font-medium transition ${
       value === scope
         ? "bg-brand-500 text-white shadow-theme-xs"
@@ -16,12 +32,11 @@ export function CourseAccessTabs({ value, onChange }: CourseAccessTabsProps) {
   return (
     <div className="flex flex-wrap items-center gap-2">
       <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Course access:</span>
-      <button type="button" className={tabClass("active")} onClick={() => onChange("active")}>
-        Active
-      </button>
-      <button type="button" className={tabClass("expired")} onClick={() => onChange("expired")}>
-        Expired
-      </button>
+      {tabs.map(({ key, label }) => (
+        <button key={key} type="button" className={tabClass(key)} onClick={() => onChange(key)}>
+          {label}
+        </button>
+      ))}
     </div>
   );
 }
