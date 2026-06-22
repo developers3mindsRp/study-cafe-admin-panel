@@ -11,6 +11,7 @@ import {
   type SeoEligiblePage,
 } from "../../api/seo";
 import { normalizeAdminSeoPath } from "../../lib/slug";
+import { isModuleManagedSeoPath } from "../../lib/seoPaths";
 
 function sortSeoPages(a: SeoEligiblePage, b: SeoEligiblePage): number {
   const pa = normalizeAdminSeoPath(a.path);
@@ -64,6 +65,13 @@ export default function SEOMetadataEdit() {
           fetchSeoEligiblePages(),
         ]);
         if (cancelled) return;
+        if (isModuleManagedSeoPath(entry.pageSlug)) {
+          setError(
+            "This entry belongs to an article or course. Edit SEO from Articles or Courses instead.",
+          );
+          setDefaultValues(null);
+          return;
+        }
         setEligiblePages([...routes].sort(sortSeoPages));
         setDefaultValues({
           pageName: entry.pageName,

@@ -175,6 +175,15 @@ export default function SEOMetadataList() {
           </div>
         }
       />
+      <p className="text-sm text-gray-500 dark:text-gray-400">
+        Manage SEO for static site pages only. Article and course SEO is edited from
+        {" "}
+        <Link to="/articles" className="text-brand-600 hover:underline dark:text-brand-400">Articles</Link>
+        {" "}
+        and
+        {" "}
+        <Link to="/courses" className="text-brand-600 hover:underline dark:text-brand-400">Courses</Link>.
+      </p>
       <div className="space-y-6">
         <DataTable<SEOMetadata>
           ref={dataTableRef}
