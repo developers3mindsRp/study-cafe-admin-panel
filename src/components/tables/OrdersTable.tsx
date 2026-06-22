@@ -20,7 +20,7 @@ import {
   type OrdersListFilters,
 } from "../../api/orders";
 import { TrashScopeTabs, type TrashScope } from "../trash/TrashScopeTabs";
-import { CourseAccessTabs, type CourseAccessScope } from "../orders/CourseAccessTabs";
+import { CourseAccessTabs, type CourseAccessFilter, courseAccessFilterToApiParam } from "../orders/CourseAccessTabs";
 import { exportRowsToExcel } from "../../utils/exportToExcel";
 import { ExportProgressBar } from "../export/ExportProgressBar";
 import {
@@ -82,7 +82,8 @@ export function OrdersTable() {
   const [exportProgress, setExportProgress] = useState<ExportProgress | null>(null);
   const exporting = exportProgress !== null;
   const [trashScope, setTrashScope] = useState<TrashScope>("active");
-  const [courseAccessScope, setCourseAccessScope] = useState<CourseAccessScope>("active");
+  const [courseAccessScope, setCourseAccessScope] = useState<CourseAccessFilter>("all");
+  const courseAccessApi = courseAccessFilterToApiParam(courseAccessScope);
   const isTrash = trashScope === "trash";
 
   const hasActiveFilters = useMemo(
@@ -553,9 +554,11 @@ export function OrdersTable() {
         emptyMessage={
           isTrash
             ? "Trash is empty."
-            : courseAccessScope === "expired"
+            : courseAccessApi === "expired"
               ? "No expired course orders."
-              : "No orders found."
+              : courseAccessApi === "active"
+                ? "No active course orders."
+                : "No orders found."
         }
       />
 
