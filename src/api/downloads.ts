@@ -144,6 +144,30 @@ export const downloadFilesApi = {
 };
 
 /**
+ * Fetch a single file's public metadata by ID.
+ * Uses the public /api/downloads/files/:id route (no file_url in response).
+ * Returns null if not found or on any error.
+ */
+export async function getPublicFileById(id: string | number): Promise<DownloadFile | null> {
+  try {
+    const { data } = await api.get<{ data: DownloadFile }>(`/api/downloads/files/${id}`);
+    return (data as any)?.data ?? (data as any) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Batch-fetch public metadata for multiple file IDs in parallel.
+ * Missing/invalid IDs are silently skipped.
+ */
+export async function getPublicFilesByIds(ids: (string | number)[]): Promise<DownloadFile[]> {
+  if (!ids.length) return [];
+  const results = await Promise.all(ids.map((id) => getPublicFileById(id)));
+  return results.filter((f): f is DownloadFile => f !== null);
+}
+
+/**
  * Lightweight search used by the file picker — returns up to `limit` files
  * matching the given search term. No DataTable params required.
  */

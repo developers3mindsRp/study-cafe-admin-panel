@@ -1,210 +1,173 @@
-import { useState, useEffect, useRef, useCallback } from "react";
-import { searchFiles, type DownloadFile } from "../../../api/downloads";
+import { useState } from "react";
+import type { MediaAsset } from "../../../api/mediaAssets";
+import { inferMediaKind } from "../../../utils/media.utils";
+import { getImageUrl } from "../../../utils/image.utils";
+import { MediaPickerModal } from "./MediaPickerModal";
+
+/** Subset stored in curriculum JSON — self-contained, no backend lookup needed. */
+export interface CurriculumFile {
+  id: number;
+  url: string;
+  label: string | null;
+  mime_type: string | null;
+  /** True for files that were saved as raw IDs before the media picker existed. */
+  _legacy?: boolean;
+}
 
 interface Props {
-  /** Currently selected file IDs (strings or numbers both work) */
-  value: (string | number)[];
-  onChange: (ids: string[]) => void;
+  value: CurriculumFile[];
+  onChange: (files: CurriculumFile[]) => void;
+}
+
+function fileExtFromUrl(url: string) {
+  return url.split("?")[0].split(".").pop()?.toLowerCase() ?? "";
+}
+
+function DocThumb({ url }: { url: string }) {
+  const ext = fileExtFromUrl(url);
+  const map: Record<string, string> = {
+    pdf: "text-red-600 bg-red-50",
+    doc: "text-blue-600 bg-blue-50",
+    docx: "text-blue-600 bg-blue-50",
+    xls: "text-green-600 bg-green-50",
+    xlsx: "text-green-600 bg-green-50",
+    ppt: "text-orange-600 bg-orange-50",
+    pptx: "text-orange-600 bg-orange-50",
+  };
+  const cls = map[ext] ?? "text-gray-500 bg-gray-50";
+  return (
+    <div className={`flex h-full w-full items-center justify-center rounded ${cls}`}>
+      <span className="text-xs font-bold uppercase">{ext || "file"}</span>
+    </div>
+  );
 }
 
 /**
- * Searchable multi-select for download files.
- * Lets you pick files by title — no copy-paste required.
+ * Media-library–backed file picker for curriculum days.
+ * Stores full MediaAsset metadata (url + label) — no backend ID lookup required.
  */
 export function FilePickerMultiSelect({ value, onChange }: Props) {
-  const [query, setQuery] = useState("");
-  const [open, setOpen] = useState(false);
-  const [results, setResults] = useState<DownloadFile[]>([]);
-  const [loading, setLoading] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
 
-  // Normalise value to string array for comparison
-  const selectedIds = value.map(String);
-  const selectedSet = new Set(selectedIds);
+  const selectedIdSet = new Set(value.map((f) => f.id));
 
-  // ── close on outside click ────────────────────────────────────────────────
-  useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false);
-        setQuery("");
-      }
+  function handleConfirm(assets: MediaAsset[]) {
+    // Merge newly picked assets with existing, avoiding duplicates
+    const existingById = new Map(value.map((f) => [f.id, f]));
+    for (const a of assets) {
+      existingById.set(a.id, { id: a.id, url: a.url, label: a.label, mime_type: a.mime_type });
     }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, []);
-
-  // ── debounced search ──────────────────────────────────────────────────────
-  const doSearch = useCallback(async (q: string) => {
-    setLoading(true);
-    try {
-      const files = await searchFiles(q, 25);
-      setResults(files);
-    } catch {
-      setResults([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!open) return;
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => doSearch(query), 300);
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
-  }, [query, open, doSearch]);
-
-  // Load initial results when dropdown opens
-  useEffect(() => {
-    if (open) doSearch("");
-  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // ── toggle a file ─────────────────────────────────────────────────────────
-  function toggle(id: number) {
-    const idStr = String(id);
-    const next = new Set(selectedSet);
-    if (next.has(idStr)) next.delete(idStr);
-    else next.add(idStr);
-    onChange([...next]);
+    onChange([...existingById.values()]);
+    setModalOpen(false);
   }
 
-  function remove(id: string) {
-    onChange(selectedIds.filter((s) => s !== id));
+  function remove(id: number) {
+    onChange(value.filter((f) => f.id !== id));
   }
-
-  // ── label for the trigger button ──────────────────────────────────────────
-  const selectedCount = selectedIds.length;
 
   return (
-    <div ref={containerRef} className="relative w-full">
-      {/* ── Selected tags ── */}
-      {selectedCount > 0 && (
-        <div className="mb-2 flex flex-wrap gap-1.5">
-          {selectedIds.map((id) => {
-            const match = results.find((f) => String(f.id) === id);
+    <div className="space-y-2">
+      {/* ── Selected file cards ── */}
+      {value.length > 0 && (
+        <div className="space-y-2">
+          {value.map((file, idx) => {
+            const isLegacy = !!file._legacy || !file.url;
+
+            if (isLegacy) {
+              return (
+                <div
+                  key={`legacy-${file.id}`}
+                  className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-900"
+                >
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-100 text-xs font-semibold text-gray-500 dark:bg-gray-800">
+                    {idx + 1}
+                  </span>
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800">
+                    <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                    </svg>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-gray-800 dark:text-gray-100">
+                      {file.label ?? `File #${file.id}`}
+                    </p>
+                    <p className="text-[11px] text-gray-400 dark:text-gray-500">ID: {file.id}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => remove(file.id)}
+                    className="ml-auto shrink-0 rounded-md p-1 text-gray-400 transition hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-500/10"
+                    aria-label="Remove file"
+                  >
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              );
+            }
+
+            const kind = inferMediaKind({ url: file.url, mime_type: file.mime_type });
+            const name = file.label || file.url.split("/").pop() || `File #${file.id}`;
+
             return (
-              <span
-                key={id}
-                className="inline-flex items-center gap-1 rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-medium text-brand-700 dark:bg-brand-500/10 dark:text-brand-300"
+              <div
+                key={file.id}
+                className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-900"
               >
-                <span className="font-mono">#{id}</span>
-                {match && <span className="max-w-[140px] truncate">{match.title}</span>}
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-100 text-xs font-semibold text-gray-500 dark:bg-gray-800">
+                  {idx + 1}
+                </span>
+                <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
+                  {kind === "image" ? (
+                    <img src={getImageUrl(file.url)} alt={name} className="h-full w-full object-cover" />
+                  ) : (
+                    <DocThumb url={file.url} />
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-gray-800 dark:text-gray-100" title={name}>
+                    {name}
+                  </p>
+                  <p className="truncate text-[11px] text-gray-400 dark:text-gray-500" title={file.url}>
+                    {file.url.replace(/^https?:\/\/[^/]+/, "")}
+                  </p>
+                </div>
                 <button
                   type="button"
-                  onClick={() => remove(id)}
-                  className="ml-0.5 text-brand-400 hover:text-brand-600 dark:hover:text-brand-200"
-                  aria-label={`Remove file ${id}`}
+                  onClick={() => remove(file.id)}
+                  className="ml-auto shrink-0 rounded-md p-1 text-gray-400 transition hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-500/10"
+                  aria-label="Remove file"
                 >
-                  <svg viewBox="0 0 14 14" width="10" height="10" fill="currentColor">
-                    <path d="M8.414 7l3.293-3.293a1 1 0 00-1.414-1.414L7 5.586 3.707 2.293a1 1 0 00-1.414 1.414L5.586 7 2.293 10.293a1 1 0 001.414 1.414L7 8.414l3.293 3.293a1 1 0 001.414-1.414L8.414 7z" />
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
-              </span>
+              </div>
             );
           })}
         </div>
       )}
 
-      {/* ── Trigger button ── */}
+      {/* ── Open media picker ── */}
       <button
         type="button"
-        onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center justify-between rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-left transition hover:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-300 dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+        onClick={() => setModalOpen(true)}
+        className="inline-flex items-center gap-1.5 rounded-lg border border-dashed border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-600 transition hover:border-brand-400 hover:text-brand-600 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-400 dark:hover:border-brand-500 dark:hover:text-brand-400"
       >
-        <span className={selectedCount > 0 ? "text-gray-700 dark:text-gray-200" : "text-gray-400"}>
-          {selectedCount === 0
-            ? "Search and select files…"
-            : `${selectedCount} file${selectedCount !== 1 ? "s" : ""} selected`}
-        </span>
-        <svg
-          className={`w-4 h-4 shrink-0 text-gray-400 transition-transform ${open ? "rotate-180" : ""}`}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
         </svg>
+        {value.length > 0 ? "Add More Files" : "Select from Media Library"}
       </button>
 
-      {/* ── Dropdown ── */}
-      {open && (
-        <div className="absolute z-50 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-xl dark:border-gray-600 dark:bg-gray-800">
-          {/* Search input */}
-          <div className="p-2 border-b border-gray-100 dark:border-gray-700">
-            <div className="relative">
-              <svg
-                className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                viewBox="0 0 24 24"
-              >
-                <circle cx="11" cy="11" r="8" />
-                <path strokeLinecap="round" d="M21 21l-4.35-4.35" />
-              </svg>
-              <input
-                autoFocus
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search files by title…"
-                className="w-full rounded-md border border-gray-200 pl-7 pr-2 py-1.5 text-xs outline-none focus:border-brand-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
-              />
-              {loading && (
-                <svg
-                  className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-brand-400 animate-spin"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                </svg>
-              )}
-            </div>
-          </div>
-
-          {/* Results list */}
-          <ul className="max-h-56 overflow-y-auto py-1">
-            {!loading && results.length === 0 && (
-              <li className="px-3 py-3 text-xs text-gray-400 italic text-center">
-                {query ? "No files match your search" : "No published files found"}
-              </li>
-            )}
-            {results.map((file) => {
-              const checked = selectedSet.has(String(file.id));
-              return (
-                <li
-                  key={file.id}
-                  className="flex cursor-pointer items-start gap-2.5 px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700"
-                  onClick={() => toggle(file.id)}
-                >
-                  <input
-                    type="checkbox"
-                    readOnly
-                    checked={checked}
-                    className="mt-0.5 shrink-0 rounded border-gray-300 text-brand-500 focus:ring-brand-500 dark:border-gray-600"
-                  />
-                  <div className="min-w-0">
-                    <p className={`truncate text-sm ${checked ? "font-medium text-brand-600 dark:text-brand-400" : "text-gray-700 dark:text-gray-300"}`}>
-                      {file.title}
-                    </p>
-                    <p className="font-mono text-xs text-gray-400 dark:text-gray-500">ID: {file.id}</p>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-
-          {/* Footer hint */}
-          <div className="border-t border-gray-100 px-3 py-1.5 dark:border-gray-700">
-            <p className="text-[11px] text-gray-400">
-              {selectedCount > 0 ? `${selectedCount} selected · ` : ""}Click a file to add/remove
-            </p>
-          </div>
-        </div>
+      {/* ── Modal ── */}
+      {modalOpen && (
+        <MediaPickerModal
+          selectedIds={selectedIdSet}
+          onConfirm={handleConfirm}
+          onClose={() => setModalOpen(false)}
+        />
       )}
     </div>
   );

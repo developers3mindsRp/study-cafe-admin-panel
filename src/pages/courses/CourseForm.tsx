@@ -9,6 +9,7 @@ import ArticleEditor from "../../components/article-editor/ArticleEditor";
 import { ArrayEditor } from "./components/ArrayEditor";
 import IncludesInfoEditor, { type IncludesInfoItem } from "./components/IncludesInfoEditor";
 import CourseIncludesEditor, { type CourseIncludeItem } from "./components/CourseIncludesEditor";
+import { FilePickerMultiSelect, type CurriculumFile } from "./components/FilePickerMultiSelect";
 import { COURSE_PREVIEW_STATE_KEY, COURSE_RESTORE_STATE_KEY } from "./CoursePreview";
 import { fetchCourseCats, generateCoursePreviewLink, type Course, type CourseCat } from "../../api/courses";
 import { usersApi, fetchAdminPanelUsers, type User } from "../../api/users";
@@ -179,6 +180,19 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
       brief_description: initial?.brief_description ?? "",
       description: initial?.description ?? "",
       curriculum: safeJsonParse(initial?.curriculum, []).map((day: any) => {
+        // Convert each file entry to a CurriculumFile:
+        // - New format: already an object with id + url → keep as-is
+        // - Legacy format: plain string/number ID → wrap in a _legacy placeholder card
+        const normalizedFiles: CurriculumFile[] = Array.isArray(day.files)
+          ? day.files
+              .map((f: any): CurriculumFile | null => {
+                if (f && typeof f === "object" && f.id && f.url) return f;
+                const id = Number(f);
+                if (!Number.isFinite(id) || id <= 0) return null;
+                return { id, url: "", label: `File ID: ${id}`, mime_type: null, _legacy: true };
+              })
+              .filter((f: CurriculumFile | null): f is CurriculumFile => f !== null)
+          : [];
         if (!Array.isArray(day.sections) || day.sections.length === 0) {
           return {
             title: day.title || "",
@@ -188,10 +202,10 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
               videoId: day.video || "",
               duration: day.minutes || "",
             }],
-            files: Array.isArray(day.files) ? day.files : [],
+            files: normalizedFiles,
           };
         }
-        return day;
+        return { ...day, files: normalizedFiles };
       }),
       learn_outcomes: safeJsonParse(initial?.learn_outcomes, []),
       requirements: initial?.requirements ?? "",
@@ -1015,12 +1029,11 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
                     </div>
 
                     <div>
-                      <Label>File IDs (comma-separated)</Label>
-                      <Input value={Array.isArray(day.files) ? day.files.join(', ') : (day.files || '')} onChange={e => {
-                        const val = e.target.value;
-                        const filesArr = val ? val.split(',').map((f: string) => f.trim()).filter(Boolean) : [];
-                        updateDay(dayIndex, { files: filesArr });
-                      }} placeholder="e.g. 96620, 96621" />
+                      <Label>Files</Label>
+                      <FilePickerMultiSelect
+                        value={Array.isArray(day.files) ? day.files : []}
+                        onChange={(files) => updateDay(dayIndex, { files })}
+                      />
                     </div>
                   </div>
                 );
