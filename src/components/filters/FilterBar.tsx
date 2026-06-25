@@ -268,6 +268,36 @@ function DateSplitField({
   );
 }
 
+function DateField({
+  field,
+  value,
+  onChange,
+  resetKey = 0,
+}: {
+  field: Extract<FilterFieldDef, { type: "date" }>;
+  value: string;
+  onChange: (v: string) => void;
+  resetKey?: number;
+}) {
+  return (
+    <div className="flex min-w-[11rem] flex-col gap-1.5">
+      <label htmlFor={`filter-${field.id}`} className={labelClass}>
+        {field.label}
+      </label>
+      <DatePicker
+        key={`filter-date-${field.id}-${resetKey}`}
+        id={`filter-date-${field.id}`}
+        mode="single"
+        placeholder={field.placeholder ?? "Select date"}
+        defaultDate={value || undefined}
+        onChange={(dates) => {
+          onChange(dates[0] ? localDateString(dates[0]) : "");
+        }}
+      />
+    </div>
+  );
+}
+
 function NumberRangeField({
   field,
   values,
@@ -393,6 +423,16 @@ export function FilterBar({
                 field={field}
                 values={values}
                 onChange={onChange}
+                resetKey={resetKey}
+              />
+            );
+          case "date":
+            return (
+              <DateField
+                key={field.id}
+                field={field}
+                value={values[field.id] ?? ""}
+                onChange={(v) => onChange(field.id, v)}
                 resetKey={resetKey}
               />
             );
