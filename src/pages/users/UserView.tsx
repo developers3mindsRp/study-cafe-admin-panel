@@ -4,10 +4,90 @@ import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import Label from "../../components/form/Label";
 import { usersApi, fetchUserMemberships, type User, type UserMembership } from "../../api/users";
-import { fetchUserEnrollments, type UserEnrollmentRecord } from "../../api/courses";
+import { fetchUserEnrollments, type UserEnrollmentRecord, type UserEnrollmentsResponse } from "../../api/courses";
 import Badge from "../../components/ui/badge/Badge";
 import Button from "../../components/ui/button/Button";
 import { PencilIcon } from "../../icons";
+
+const EMPTY_ENROLLMENTS: UserEnrollmentsResponse = {
+    active_count: 0,
+    expired_count: 0,
+    total_count: 0,
+    active_courses: [],
+    expired_courses: [],
+};
+
+function CourseTable({ courses, dimmed = false }: { courses: UserEnrollmentRecord[]; dimmed?: boolean }) {
+    const fmt = (d: string | null | undefined) =>
+        d
+            ? new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })
+            : "—";
+
+    return (
+        <div className={`overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700 ${dimmed ? "opacity-75" : ""}`}>
+            <table className="w-full text-sm">
+                <thead className="bg-gray-50 dark:bg-white/[0.03]">
+                    <tr>
+                        <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">#</th>
+                        <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">Course</th>
+                        <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">Status</th>
+                        <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">Batch</th>
+                        <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">Purchased On</th>
+                        <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">Expiry</th>
+                        <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">Order</th>
+                    </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                    {courses.map((enrollment, idx) => {
+                        const isExpired = enrollment.access_status === "expired";
+                        const isAdminGranted = enrollment.is_admin_granted;
+                        const rowKey = enrollment.order_id
+                            ? `order-${enrollment.order_id}`
+                            : enrollment.enrollment_id != null
+                            ? `enroll-${enrollment.enrollment_id}`
+                            : `course-${enrollment.course_id ?? idx}-${idx}`;
+
+                        return (
+                            <tr key={rowKey} className="hover:bg-gray-50 dark:hover:bg-white/[0.02]">
+                                <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{idx + 1}</td>
+                                <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">
+                                    {enrollment.course_title ?? (
+                                        <span className="italic text-gray-400">Unknown</span>
+                                    )}
+                                </td>
+                                <td className="px-4 py-3">
+                                    {isAdminGranted ? (
+                                        <Badge size="sm" color="warning">Admin Granted</Badge>
+                                    ) : isExpired ? (
+                                        <Badge size="sm" color="error">Expired</Badge>
+                                    ) : (
+                                        <Badge size="sm" color="success">Active</Badge>
+                                    )}
+                                </td>
+                                <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
+                                    {enrollment.batch_name ?? <span className="italic text-gray-400">—</span>}
+                                </td>
+                                <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
+                                    {fmt(enrollment.enrolled_at)}
+                                </td>
+                                <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
+                                    {enrollment.access_expires_at
+                                        ? fmt(enrollment.access_expires_at)
+                                        : enrollment.access_status === "active"
+                                        ? <span className="text-success-600 dark:text-success-400 font-medium">Lifetime</span>
+                                        : "—"}
+                                </td>
+                                <td className="px-4 py-3 font-mono text-xs text-gray-500 dark:text-gray-400">
+                                    {enrollment.order_id ?? <span className="italic">—</span>}
+                                </td>
+                            </tr>
+                        );
+                    })}
+                </tbody>
+            </table>
+        </div>
+    );
+}
 
 export default function UserView() {
     const navigate = useNavigate();
@@ -15,7 +95,7 @@ export default function UserView() {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [enrollments, setEnrollments] = useState<UserEnrollmentRecord[]>([]);
+    const [enrollmentsData, setEnrollmentsData] = useState<UserEnrollmentsResponse>(EMPTY_ENROLLMENTS);
     const [enrollmentsLoading, setEnrollmentsLoading] = useState(false);
     const [memberships, setMemberships] = useState<UserMembership[]>([]);
     const [membershipsLoading, setMembershipsLoading] = useState(false);
@@ -44,7 +124,7 @@ export default function UserView() {
         try {
             setEnrollmentsLoading(true);
             const data = await fetchUserEnrollments(Number(userId));
-            setEnrollments(data);
+            setEnrollmentsData(data);
         } catch {
             // silently fail — not critical
         } finally {
@@ -300,66 +380,48 @@ export default function UserView() {
 
                     <hr className="border-gray-200 dark:border-gray-700" />
 
-                    {/* Enrolled Courses */}
+                    {/* Course History */}
                     <div>
-                        <h4 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                            Enrolled Courses
-                        </h4>
+                        <div className="mb-4 flex items-center justify-between">
+                            <h4 className="text-sm font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                Course History
+                            </h4>
+                            {!enrollmentsLoading && enrollmentsData.total_count > 0 && (
+                                <span className="text-sm text-gray-500 dark:text-gray-400">
+                                    {enrollmentsData.total_count} total record{enrollmentsData.total_count !== 1 ? "s" : ""}
+                                </span>
+                            )}
+                        </div>
+
                         {enrollmentsLoading ? (
-                            <p className="text-sm text-gray-400">Loading enrollments...</p>
-                        ) : enrollments.length === 0 ? (
+                            <p className="text-sm text-gray-400">Loading course history...</p>
+                        ) : enrollmentsData.total_count === 0 ? (
                             <p className="text-sm text-gray-400 italic">No courses enrolled yet.</p>
                         ) : (
-                            <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
-                                <table className="w-full text-sm">
-                                    <thead className="bg-gray-50 dark:bg-white/[0.03]">
-                                        <tr>
-                                            <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">#</th>
-                                            <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">Course</th>
-                                            <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">Batch</th>
-                                            <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">Enrolled On</th>
-                                            <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">Access</th>
-                                            <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">Order</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                                        {enrollments.map((enrollment, idx) => (
-                                            <tr
-                                                key={
-                                                    enrollment.enrollment_id != null
-                                                        ? String(enrollment.enrollment_id)
-                                                        : `course-${enrollment.course_id ?? idx}`
-                                                }
-                                                className="hover:bg-gray-50 dark:hover:bg-white/[0.02]"
-                                            >
-                                                <td className="px-4 py-3 text-gray-500 dark:text-gray-400">{idx + 1}</td>
-                                                <td className="px-4 py-3 text-gray-900 dark:text-white font-medium">
-                                                    {enrollment.course_title ?? <span className="italic text-gray-400">Unknown</span>}
-                                                </td>
-                                                <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
-                                                    {enrollment.batch_name ?? <span className="italic text-gray-400">—</span>}
-                                                </td>
-                                                <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
-                                                    {enrollment.enrolled_at
-                                                        ? new Date(enrollment.enrolled_at).toLocaleDateString("en-IN", {
-                                                            day: "2-digit",
-                                                            month: "short",
-                                                            year: "numeric",
-                                                        })
-                                                        : "—"}
-                                                </td>
-                                                <td className="px-4 py-3">
-                                                    <Badge size="sm" color="success">
-                                                        {(enrollment.purchase_status ?? "paid").replace(/-/g, " ")}
-                                                    </Badge>
-                                                </td>
-                                                <td className="px-4 py-3 text-gray-500 dark:text-gray-400 font-mono text-xs">
-                                                    {enrollment.order_id ?? <span className="italic">—</span>}
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                            <div className="space-y-6">
+                                {/* Active Courses */}
+                                {enrollmentsData.active_count > 0 && (
+                                    <div>
+                                        <div className="mb-3 flex items-center gap-2">
+                                            <span className="inline-flex items-center rounded-full bg-success-50 px-3 py-1 text-sm font-semibold text-success-700 dark:bg-success-500/10 dark:text-success-400">
+                                                Active Courses ({enrollmentsData.active_count})
+                                            </span>
+                                        </div>
+                                        <CourseTable courses={enrollmentsData.active_courses} />
+                                    </div>
+                                )}
+
+                                {/* Expired Courses */}
+                                {enrollmentsData.expired_count > 0 && (
+                                    <div>
+                                        <div className="mb-3 flex items-center gap-2">
+                                            <span className="inline-flex items-center rounded-full bg-error-50 px-3 py-1 text-sm font-semibold text-error-700 dark:bg-error-500/10 dark:text-error-400">
+                                                Expired Courses ({enrollmentsData.expired_count})
+                                            </span>
+                                        </div>
+                                        <CourseTable courses={enrollmentsData.expired_courses} dimmed />
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>

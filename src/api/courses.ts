@@ -338,17 +338,50 @@ export interface UserEnrollmentRecord {
   enrolled_at: string | null;
   /** Order row id from order-service (paid purchases only). */
   order_id?: string | null;
-  /** e.g. completed — aligned with GET /orders/my-purchases rows */
+  /** e.g. completed, pending, admin-granted */
   purchase_status?: string | null;
+  /** Mirror of frontend accessStatus: 'active' | 'expired' */
+  access_status?: "active" | "expired" | null;
+  /** ISO datetime when access expires; null = lifetime. */
+  access_expires_at?: string | null;
+  /** Legacy WP workflow status: 'publish' = active, 'draft' = expired, null = native order. */
+  wp_post_status?: string | null;
   from_purchase?: boolean;
+  is_admin_granted?: boolean;
 }
 
-export async function fetchUserEnrollments(userId: number): Promise<UserEnrollmentRecord[]> {
+export interface UserEnrollmentsResponse {
+  active_count: number;
+  expired_count: number;
+  total_count: number;
+  active_courses: UserEnrollmentRecord[];
+  expired_courses: UserEnrollmentRecord[];
+}
+
+export async function fetchUserEnrollments(userId: number): Promise<UserEnrollmentsResponse> {
+  const empty: UserEnrollmentsResponse = {
+    active_count: 0,
+    expired_count: 0,
+    total_count: 0,
+    active_courses: [],
+    expired_courses: [],
+  };
   try {
-    const res = await api.get<UserEnrollmentRecord[]>(`/admin/users/${userId}/enrollments`);
-    return Array.isArray(res.data) ? res.data : [];
+    const res = await api.get<UserEnrollmentsResponse>(`/admin/users/${userId}/enrollments`);
+    const d = res.data as any;
+    // Gracefully handle legacy flat-array responses from older deployments.
+    if (Array.isArray(d)) {
+      return { ...empty, total_count: d.length, active_courses: d, expired_courses: [] };
+    }
+    return {
+      active_count: d.active_count ?? 0,
+      expired_count: d.expired_count ?? 0,
+      total_count: d.total_count ?? 0,
+      active_courses: Array.isArray(d.active_courses) ? d.active_courses : [],
+      expired_courses: Array.isArray(d.expired_courses) ? d.expired_courses : [],
+    };
   } catch {
-    return [];
+    return empty;
   }
 }
 
