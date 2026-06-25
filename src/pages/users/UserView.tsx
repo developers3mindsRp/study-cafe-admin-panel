@@ -33,8 +33,8 @@ function CourseTable({ courses, dimmed = false }: { courses: UserEnrollmentRecor
                         <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">Status</th>
                         <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">Batch</th>
                         <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">Purchased On</th>
-                        <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">Expiry</th>
-                        <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">Order</th>
+                        {/* <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">Expiry</th> */}
+                        <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-400">Order ID</th>
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -70,13 +70,15 @@ function CourseTable({ courses, dimmed = false }: { courses: UserEnrollmentRecor
                                 <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
                                     {fmt(enrollment.enrolled_at)}
                                 </td>
-                                <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
+                                {/* <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
                                     {enrollment.access_expires_at
                                         ? fmt(enrollment.access_expires_at)
                                         : enrollment.access_status === "active"
                                         ? <span className="text-success-600 dark:text-success-400 font-medium">Lifetime</span>
-                                        : "—"}
-                                </td>
+                                        : enrollment.wp_post_status === "draft"
+                                        ? <span className="text-error-500 dark:text-error-400 italic text-xs">Access Revoked</span>
+                                        : <span className="italic text-gray-400">—</span>}
+                                </td> */}
                                 <td className="px-4 py-3 font-mono text-xs text-gray-500 dark:text-gray-400">
                                     {enrollment.order_id ?? <span className="italic">—</span>}
                                 </td>
