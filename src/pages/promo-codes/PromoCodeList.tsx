@@ -12,6 +12,12 @@ import { fetchCouponUsageSummary, type CouponUsageSummaryItem } from "../../api/
 import { FilterBar, useFilterState } from "../../components/filters";
 import type { FilterFieldDef } from "../../components/filters";
 import type { DataTableFetchParams, DataTableFetchResult } from "../../components/tables/data-table/DataTable.types";
+import {
+  formatCouponExpireDate,
+  formatCouponStartDate,
+  formatPublishedDate,
+  publishedDateInRange,
+} from "../../utils/couponDates";
 
 const couponFilterFields: FilterFieldDef[] = [
   {
@@ -46,16 +52,11 @@ const couponFilterFields: FilterFieldDef[] = [
     ],
   },
   {
-    type: "date",
-    id: "start_date",
-    label: "Start Date",
-    placeholder: "Select start date",
-  },
-  {
-    type: "date",
-    id: "expiry_date",
-    label: "Expiry Date",
-    placeholder: "Select expiry date",
+    type: "date-range",
+    id: "published",
+    label: "Published",
+    fromId: "publishedFrom",
+    toId: "publishedTo",
   },
 ];
 
@@ -65,23 +66,6 @@ function getErrorMessage(error: unknown): string | undefined {
     return (error as { response?: { data?: { message?: string } } }).response?.data?.message;
   }
   return undefined;
-}
-
-function toLocalDateStr(dateStr: string): string {
-  const d = new Date(dateStr);
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
-
-function formatDate(dateStr?: string | null) {
-  if (!dateStr) return "—";
-  return new Date(dateStr).toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
 }
 
 function toMeta(total: number, page: number, limit: number): DataTableFetchResult<Coupon>["meta"] {
@@ -170,15 +154,13 @@ export default function PromoCodeList() {
         data = data.filter((c) => c.discount_on === values.discount_on);
       }
 
-      if (values.start_date) {
-        data = data.filter(
-          (c) => c.start_date && toLocalDateStr(c.start_date) === values.start_date
-        );
-      }
-
-      if (values.expiry_date) {
-        data = data.filter(
-          (c) => c.expire_date && toLocalDateStr(c.expire_date) === values.expiry_date
+      if (values.publishedFrom || values.publishedTo) {
+        data = data.filter((c) =>
+          publishedDateInRange(
+            c.created_at,
+            values.publishedFrom ?? "",
+            values.publishedTo ?? "",
+          ),
         );
       }
 
@@ -247,8 +229,18 @@ export default function PromoCodeList() {
       sortable: false,
       render: (row: CouponRow) => (
         <div className="text-gray-500 text-theme-sm dark:text-gray-400">
-          {formatDate(row.start_date)} → {formatDate(row.expire_date)}
+          {formatCouponStartDate(row.start_date)} → {formatCouponExpireDate(row.expire_date)}
         </div>
+      ),
+    },
+    {
+      key: "created_at",
+      header: "Published",
+      sortable: true,
+      render: (row: CouponRow) => (
+        <span className="text-gray-500 text-theme-sm dark:text-gray-400">
+          {formatPublishedDate(row.created_at)}
+        </span>
       ),
     },
     {

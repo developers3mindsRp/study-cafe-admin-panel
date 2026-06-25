@@ -13,6 +13,7 @@ import {
   PERM_ADMIN_USERS_DELETE,
 } from "../../constants/permissions";
 import { fetchUsersPaginated, type User, type UsersListFilters } from "../../api/users";
+import { formatJoinedDate } from "../../utils/couponDates";
 import type { TrashScope } from "../trash/TrashScopeTabs";
 import type { DataTableFetchParams, DataTableFetchResult } from "./data-table/DataTable.types";
 
@@ -35,7 +36,6 @@ export const UsersTable = forwardRef<DataTableRef, UsersTableProps>(
 
     const fetchData = useCallback(
       (params: DataTableFetchParams): Promise<DataTableFetchResult<User>> => {
-        console.log('[UsersTable] fetchData called, filters:', filters, 'params:', params);
         return fetchUsersPaginated({ ...params, filters, trashScope });
       },
       [filters, trashScope],
@@ -124,14 +124,7 @@ export const UsersTable = forwardRef<DataTableRef, UsersTableProps>(
         key: "created_at",
         header: "Joined",
         sortable: true,
-        render: (row: User) => {
-          if (!row.created_at) return "—";
-          const d = new Date(row.created_at);
-          const y = d.getFullYear();
-          const m = String(d.getMonth() + 1).padStart(2, "0");
-          const day = String(d.getDate()).padStart(2, "0");
-          return `${y}-${m}-${day}`;
-        },
+        render: (row: User) => formatJoinedDate(row.created_at),
       },
       {
         key: "actions",

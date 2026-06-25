@@ -19,13 +19,18 @@ export interface FilterBarProps {
   resetKey?: number;
 }
 
-const selectClass =
-  "min-w-[160px] rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 transition focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white/90";
-
 const labelClass = "text-xs font-medium text-gray-600 dark:text-gray-400";
 
-const inputClass =
-  "min-w-[140px] rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 transition focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white/90";
+/** Shared height, border, and padding for every filter control. */
+const filterControlClass =
+  "h-11 w-full min-w-0 rounded-lg border border-gray-200 bg-white px-3 text-sm leading-normal text-gray-800 shadow-theme-xs transition placeholder:text-gray-500 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white/90 dark:placeholder:text-gray-400";
+
+const selectClass = `${filterControlClass} appearance-none pr-8`;
+
+const inputClass = filterControlClass;
+
+/** Uniform filter field column — label + control stack. */
+const filterFieldClass = "flex min-w-[160px] shrink-0 flex-col gap-1.5";
 
 /** Formats a Date using local calendar date (YYYY-MM-DD), avoiding UTC timezone shift. */
 function localDateString(d: Date): string {
@@ -47,7 +52,7 @@ function SelectField({
   onChange: (v: string) => void;
 }) {
   return (
-    <div className="flex min-w-[160px] flex-col gap-1.5">
+    <div className={filterFieldClass}>
       <label htmlFor={`filter-${field.id}`} className={labelClass}>
         {field.label}
       </label>
@@ -92,7 +97,7 @@ function AsyncSelectField({
   }, [field]);
 
   return (
-    <div className="flex min-w-[180px] flex-col gap-1.5">
+    <div className={`${filterFieldClass} min-w-[180px]`}>
       <label htmlFor={`filter-${field.id}`} className={labelClass}>
         {field.label}
       </label>
@@ -127,12 +132,15 @@ function DateRangeField({
   const toId = field.toId ?? `${field.id}_to`;
 
   return (
-    <div className="flex min-w-[13rem] flex-col gap-1.5">
-      <span className={labelClass}>{field.label}</span>
+    <div className={`${filterFieldClass} min-w-[13rem]`}>
+      <label htmlFor={`filter-daterange-${field.id}`} className={labelClass}>
+        {field.label}
+      </label>
       <DatePicker
         key={`filter-daterange-${field.id}-${resetKey}`}
         id={`filter-daterange-${field.id}`}
         mode="range"
+        variant="filter"
         placeholder="Select date range"
         onChange={(dates) => {
           if (dates.length === 2) {
@@ -159,7 +167,7 @@ function TextField({
   onChange: (v: string) => void;
 }) {
   return (
-    <div className="flex min-w-[160px] flex-col gap-1.5">
+    <div className={filterFieldClass}>
       <label htmlFor={`filter-${field.id}`} className={labelClass}>
         {field.label}
       </label>
@@ -204,7 +212,7 @@ function MonthSelectField({
   };
 
   return (
-    <div key={resetKey} className="flex min-w-[160px] flex-col gap-1.5">
+    <div key={resetKey} className={filterFieldClass}>
       <label htmlFor={`filter-${field.id}`} className={labelClass}>
         {field.label}
       </label>
@@ -238,12 +246,13 @@ function DateSplitField({
 
   return (
     <div className="flex flex-wrap items-end gap-3">
-      <div className="flex min-w-[11rem] flex-col gap-1.5">
+      <div className={`${filterFieldClass} min-w-[11rem]`}>
         <span className={labelClass}>{field.label} — {fromLabel}</span>
         <DatePicker
           key={`filter-split-from-${field.id}-${resetKey}`}
           id={`filter-split-from-${field.id}`}
           mode="single"
+          variant="filter"
           placeholder={`${fromLabel} date`}
           defaultDate={values[fromId] || undefined}
           onChange={(dates) => {
@@ -251,12 +260,13 @@ function DateSplitField({
           }}
         />
       </div>
-      <div className="flex min-w-[11rem] flex-col gap-1.5">
+      <div className={`${filterFieldClass} min-w-[11rem]`}>
         <span className={labelClass}>{field.label} — {toLabel}</span>
         <DatePicker
           key={`filter-split-to-${field.id}-${resetKey}`}
           id={`filter-split-to-${field.id}`}
           mode="single"
+          variant="filter"
           placeholder={`${toLabel} date`}
           defaultDate={values[toId] || undefined}
           onChange={(dates) => {
@@ -280,7 +290,7 @@ function DateField({
   resetKey?: number;
 }) {
   return (
-    <div className="flex min-w-[11rem] flex-col gap-1.5">
+    <div className={filterFieldClass}>
       <label htmlFor={`filter-${field.id}`} className={labelClass}>
         {field.label}
       </label>
@@ -288,6 +298,7 @@ function DateField({
         key={`filter-date-${field.id}-${resetKey}`}
         id={`filter-date-${field.id}`}
         mode="single"
+        variant="filter"
         placeholder={field.placeholder ?? "Select date"}
         defaultDate={value || undefined}
         onChange={(dates) => {
@@ -311,9 +322,9 @@ function NumberRangeField({
   const maxId = field.maxId ?? `${field.id}_max`;
 
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className={`${filterFieldClass} min-w-0`}>
       <span className={labelClass}>{field.label}</span>
-      <div className="flex items-center gap-2">
+      <div className="flex h-11 items-center gap-2">
         <input
           id={`filter-${minId}`}
           type="number"

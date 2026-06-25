@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import flatpickr from "flatpickr";
 import "flatpickr/dist/flatpickr.css";
+import { twMerge } from "tailwind-merge";
 import Label from "./Label";
 import { CalenderIcon } from "../../icons";
 import Hook = flatpickr.Options.Hook;
@@ -21,6 +22,10 @@ type PropsType = {
   placeholder?: string;
   dateFormat?: string;
   required?: boolean;
+  /** Extra classes on the input (merged with variant defaults). */
+  inputClassName?: string;
+  /** `filter` matches FilterBar select height, border, and padding. */
+  variant?: "form" | "filter";
 };
 
 export default function DatePicker({
@@ -36,6 +41,8 @@ export default function DatePicker({
   placeholder,
   dateFormat = "Y-m-d",
   required = false,
+  inputClassName,
+  variant = "form",
 }: PropsType) {
   /**
    * Keep onChange in a ref so flatpickr always calls the latest version
@@ -95,24 +102,32 @@ export default function DatePicker({
     fp.setDate(next, false);
   }, [value]);
 
+  const isFilter = variant === "filter";
+  const resolvedInputClass = twMerge(
+    isFilter
+      ? "h-11 w-full min-w-0 rounded-lg border border-gray-200 bg-white px-3 pr-9 text-sm leading-normal text-gray-800 shadow-theme-xs placeholder:text-gray-500 transition focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white/90 dark:placeholder:text-gray-400"
+      : "h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-brand-500/20 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:border-gray-700 dark:focus:border-brand-800",
+    inputClassName,
+  );
+
   return (
-    <div>
+    <div className={label ? undefined : "w-full"}>
       {label && (
         <Label htmlFor={id} className={labelClassName}>
           {label}
         </Label>
       )}
 
-      <div className="relative">
+      <div className="relative w-full">
         <input
           required={required}
           id={id}
           placeholder={placeholder}
-          className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3  dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30  bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-brand-500/20 dark:border-gray-700  dark:focus:border-brand-800"
+          className={resolvedInputClass}
         />
 
-        <span className="absolute text-gray-500 -translate-y-1/2 pointer-events-none right-3 top-1/2 dark:text-gray-400">
-          <CalenderIcon className="size-6" />
+        <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400">
+          <CalenderIcon className={isFilter ? "size-5" : "size-6"} />
         </span>
       </div>
     </div>
