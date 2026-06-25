@@ -99,14 +99,19 @@ export default function UserEdit() {
 
                 if (id) {
                     const numericId = Number(id);
-                    const [user, coursesData, enrollments, memberships] = await Promise.all([
+                    const [user, coursesData, enrollmentsRes, memberships] = await Promise.all([
                         usersApi.get(id),
                         fetchCourses(),
                         fetchUserEnrollments(numericId),
                         fetchUserMemberships(id),
                     ]);
                     setCourses(coursesData);
-                    await hydrateFromEnrollments(enrollments);
+                    // Flatten active + expired into a single array for the course assignment hydrator.
+                    const allEnrollments = [
+                        ...enrollmentsRes.active_courses,
+                        ...enrollmentsRes.expired_courses,
+                    ];
+                    await hydrateFromEnrollments(allEnrollments);
 
                     // Resolve active membership from user_memberships (canonical source)
                     const now = new Date();
