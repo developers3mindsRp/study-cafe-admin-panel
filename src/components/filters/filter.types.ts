@@ -65,6 +65,12 @@ export type FilterFieldDef =
       toId?: string;
       /** label shown above the "to" picker; defaults to "To" */
       toLabel?: string;
+    }
+  | {
+      type: "date";
+      id: string;
+      label: string;
+      placeholder?: string;
     };
 
 export type FilterValues = Record<string, string>;

@@ -46,18 +46,16 @@ const couponFilterFields: FilterFieldDef[] = [
     ],
   },
   {
-    type: "date-range",
-    id: "start",
+    type: "date",
+    id: "start_date",
     label: "Start Date",
-    fromId: "start_from",
-    toId: "start_to",
+    placeholder: "Select start date",
   },
   {
-    type: "date-range",
-    id: "expiry",
+    type: "date",
+    id: "expiry_date",
     label: "Expiry Date",
-    fromId: "expiry_from",
-    toId: "expiry_to",
+    placeholder: "Select expiry date",
   },
 ];
 
@@ -67,6 +65,14 @@ function getErrorMessage(error: unknown): string | undefined {
     return (error as { response?: { data?: { message?: string } } }).response?.data?.message;
   }
   return undefined;
+}
+
+function toLocalDateStr(dateStr: string): string {
+  const d = new Date(dateStr);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
 
 function formatDate(dateStr?: string | null) {
@@ -91,6 +97,12 @@ export default function PromoCodeList() {
   const { isOpen: isDeleteModalOpen, openModal: openDeleteModal, closeModal: closeDeleteModal } = useModal();
   const dataTableRef = useRef<DataTableRef>(null);
   const { values, set, reset, hasActive } = useFilterState();
+  const [resetKey, setResetKey] = useState(0);
+
+  const handleReset = useCallback(() => {
+    reset();
+    setResetKey((k) => k + 1);
+  }, [reset]);
 
   const handleDeleteClick = useCallback(
     (item: Coupon) => {
@@ -158,26 +170,16 @@ export default function PromoCodeList() {
         data = data.filter((c) => c.discount_on === values.discount_on);
       }
 
-      if (values.start_from) {
-        const from = new Date(values.start_from).getTime();
-        data = data.filter((c) => c.start_date && new Date(c.start_date).getTime() >= from);
+      if (values.start_date) {
+        data = data.filter(
+          (c) => c.start_date && toLocalDateStr(c.start_date) === values.start_date
+        );
       }
 
-      if (values.start_to) {
-        const to = new Date(values.start_to);
-        to.setHours(23, 59, 59, 999);
-        data = data.filter((c) => c.start_date && new Date(c.start_date).getTime() <= to.getTime());
-      }
-
-      if (values.expiry_from) {
-        const from = new Date(values.expiry_from).getTime();
-        data = data.filter((c) => c.expire_date && new Date(c.expire_date).getTime() >= from);
-      }
-
-      if (values.expiry_to) {
-        const to = new Date(values.expiry_to);
-        to.setHours(23, 59, 59, 999);
-        data = data.filter((c) => c.expire_date && new Date(c.expire_date).getTime() <= to.getTime());
+      if (values.expiry_date) {
+        data = data.filter(
+          (c) => c.expire_date && toLocalDateStr(c.expire_date) === values.expiry_date
+        );
       }
 
       // Sorting
@@ -345,8 +347,9 @@ export default function PromoCodeList() {
           fields={couponFilterFields}
           values={values}
           onChange={set}
-          onReset={reset}
+          onReset={handleReset}
           hasActive={hasActive}
+          resetKey={resetKey}
         />
         <DataTable<CouponRow>
           key={filterKey}
