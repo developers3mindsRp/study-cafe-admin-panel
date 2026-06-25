@@ -37,6 +37,8 @@ import { fetchCourses, type Course } from "../../api/courses";
 import DatePicker from "../form/date-picker";
 import AmountRangeDropdown from "../form/AmountRangeDropdown";
 import Button from "../ui/button/Button";
+import { localDateString } from "../../utils/localDateString";
+import { isExportAuthError } from "../../lib/exportAuth";
 
 const ORDERS_FILTER_INITIAL: OrdersListFilters = {
   dateFrom: "",
@@ -131,6 +133,7 @@ export function OrdersTable() {
         rows,
       });
     } catch (err: unknown) {
+      if (isExportAuthError(err)) return;
       const msg =
         err && typeof err === "object" && "response" in err
           ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
@@ -146,6 +149,15 @@ export function OrdersTable() {
   useEffect(() => {
     fetchCourses().then(setCourses).catch(console.error);
   }, []);
+
+  const filtersMountedRef = useRef(false);
+  useEffect(() => {
+    if (!filtersMountedRef.current) {
+      filtersMountedRef.current = true;
+      return;
+    }
+    tableRef.current?.refetch();
+  }, [filters]);
 
   const fetchOrdersForTable = useCallback(async (
     params: DataTableFetchParams
@@ -165,12 +177,13 @@ export function OrdersTable() {
         courseAccessScope: isTrash ? undefined : courseAccessScope,
       }),
     );
-    
-    const total = result.total ?? result.orders.length;
+
+    const orders = Array.isArray(result.orders) ? result.orders : [];
+    const total = result.total ?? orders.length;
     const totalPages = Math.max(1, Math.ceil(total / limit));
     
     return {
-      data: result.orders,
+      data: orders,
       meta: {
         total,
         page,
@@ -490,8 +503,8 @@ export function OrdersTable() {
                   const [start, end] = dates;
                   setFilters(f => ({
                     ...f,
-                    dateFrom: start ? start.toISOString().split('T')[0] : "",
-                    dateTo: end ? end.toISOString().split('T')[0] : "",
+                    dateFrom: start ? localDateString(start) : "",
+                    dateTo: end ? localDateString(end) : "",
                   }));
                 } else if (dates.length === 0) {
                   setFilters(f => ({ ...f, dateFrom: "", dateTo: "" }));

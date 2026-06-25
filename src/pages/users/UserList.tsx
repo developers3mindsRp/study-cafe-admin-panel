@@ -12,6 +12,7 @@ import {
 } from "../../constants/permissions";
 import {
   emptyUsersListFilters,
+  restoreUser,
   runUsersExportWithProgress,
   usersApi,
   usersListFiltersAreActive,
@@ -40,7 +41,7 @@ import {
 import { UserImportModal } from "./components/UserImportModal";
 import { USER_MEMBERSHIP_FILTER_OPTIONS } from "./constants/userMembershipOptions";
 import { TrashScopeTabs, type TrashScope } from "../../components/trash/TrashScopeTabs";
-import { restoreUser } from "../../api/users";
+import { isExportAuthError } from "../../lib/exportAuth";
 
 const userFilterFields: FilterFieldDef[] = [
   {
@@ -96,13 +97,11 @@ const userFilterFields: FilterFieldDef[] = [
     ],
   },
   {
-    type: "date-split",
+    type: "date-range",
     id: "joined",
     label: "Joined",
     fromId: "joinedFrom",
-    fromLabel: "From",
     toId: "joinedTo",
-    toLabel: "To",
   },
 ];
 
@@ -126,6 +125,7 @@ function UserListContent() {
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const { values, set, reset, hasActive } = useFilterState();
+  const [filterResetKey, setFilterResetKey] = useState(0);
   const [exportProgress, setExportProgress] = useState<ExportProgress | null>(null);
   const exporting = exportProgress !== null;
   const [trashScope, setTrashScope] = useState<TrashScope>("active");
@@ -133,6 +133,11 @@ function UserListContent() {
   const listFilters = useMemo(() => usersListFiltersFromValues(values), [values]);
   const isTrash = trashScope === "trash";
   const filtersActive = useMemo(() => usersListFiltersAreActive(listFilters), [listFilters]);
+
+  const handleFilterReset = useCallback(() => {
+    reset();
+    setFilterResetKey((k) => k + 1);
+  }, [reset]);
 
   const handleExportCsv = useCallback(async () => {
     const q = tableRef.current?.getQueryState();
@@ -150,6 +155,7 @@ function UserListContent() {
         onProgress: setExportProgress,
       });
     } catch (err: unknown) {
+      if (isExportAuthError(err)) return;
       const msg =
         err && typeof err === "object" && "response" in err
           ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
@@ -182,6 +188,7 @@ function UserListContent() {
         await runUsersExportWithProgress({ filters, filename, onProgress: setExportProgress });
         setExportModalOpen(false);
       } catch (err: unknown) {
+        if (isExportAuthError(err)) return;
         const msg =
           err && typeof err === "object" && "response" in err
             ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
@@ -313,8 +320,9 @@ function UserListContent() {
           fields={userFilterFields}
           values={values}
           onChange={set}
-          onReset={reset}
+          onReset={handleFilterReset}
           hasActive={hasActive}
+          resetKey={filterResetKey}
           actions={
             <Button
               type="button"

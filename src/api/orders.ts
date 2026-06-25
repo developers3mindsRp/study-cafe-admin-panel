@@ -3,6 +3,7 @@ import type { TrashScope } from "../components/trash/TrashScopeTabs";
 import { courseAccessFilterToApiParam, type CourseAccessFilter } from "../components/orders/CourseAccessTabs";
 import { fetchAllPaginatedForExport } from "../utils/fetchAllPaginatedForExport";
 import type { ExportProgressCallback } from "../utils/exportProgress";
+import { requireAuthForExport } from "../lib/exportAuth";
 
 /** Refund is only valid once payment succeeded (matches order-service refund rules). */
 export function orderStatusAllowsRefund(status: string | null | undefined): boolean {
@@ -133,36 +134,48 @@ export async function fetchOrders(params?: {
   /** Filter by course access window: active | expired */
   course_access?: string;
 }): Promise<FetchOrdersResult> {
-  const res = await api.get<any>("/admin/orders", { params: params ?? {} });
+  const res = await api.get<unknown>("/admin/orders", { params: params ?? {} });
+  const body = res.data;
 
-  if (res.data && typeof res.data === "object" && "data" in res.data && !("meta" in res.data)) {
-    return {
-      orders: res.data.data,
-      total: res.data.total ?? (Array.isArray(res.data.data) ? res.data.data.length : 0),
-      limit: res.data.limit ?? params?.limit ?? 100,
-      offset: (res.data.page != null ? (res.data.page - 1) * (res.data.limit || 20) : 0),
-    };
-  }
+  const orders: OrderRecord[] = Array.isArray(body)
+    ? body
+    : body && typeof body === "object" && Array.isArray((body as { data?: unknown }).data)
+      ? ((body as { data: OrderRecord[] }).data)
+      : [];
 
-  if (res.data && typeof res.data === "object" && "data" in res.data && "meta" in res.data) {
-    return {
-      orders: res.data.data,
-      total: res.data.meta.total,
-      limit: res.data.meta.limit,
-      offset: (res.data.meta.page - 1) * res.data.meta.limit,
-    };
-  }
+  const record = body && typeof body === "object" && !Array.isArray(body) ? (body as Record<string, unknown>) : null;
+  const meta =
+    record?.meta && typeof record.meta === "object" ? (record.meta as Record<string, unknown>) : null;
 
-  if (Array.isArray(res.data)) {
-    return {
-      orders: res.data,
-      total: res.data.length,
-      limit: params?.limit ?? 100,
-      offset: params?.offset ?? 0
-    };
-  }
+  const total =
+    typeof record?.total === "number"
+      ? record.total
+      : typeof meta?.total === "number"
+        ? meta.total
+        : orders.length;
 
-  return res.data;
+  const limit =
+    typeof record?.limit === "number"
+      ? record.limit
+      : typeof meta?.limit === "number"
+        ? meta.limit
+        : params?.limit ?? 100;
+
+  const page =
+    typeof record?.page === "number"
+      ? record.page
+      : typeof meta?.page === "number"
+        ? meta.page
+        : params?.offset != null && limit > 0
+          ? Math.floor(params.offset / limit) + 1
+          : 1;
+
+  return {
+    orders,
+    total,
+    limit,
+    offset: (page - 1) * limit,
+  };
 }
 
 const ORDERS_EXPORT_PAGE_SIZE = 500;
@@ -173,6 +186,7 @@ export async function fetchAllOrdersForExport(
     onProgress?: ExportProgressCallback;
   },
 ): Promise<OrderRecord[]> {
+  await requireAuthForExport();
   const { onProgress, ...rest } = params;
   const query = buildOrdersListParams(rest);
   return fetchAllPaginatedForExport({

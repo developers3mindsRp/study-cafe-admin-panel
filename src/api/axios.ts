@@ -1,12 +1,7 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from "axios";
 import { accessTokenExpiryMs } from "../lib/accessTokenExpiry";
-import {
-  clearStoredAuth,
-  getStoredAuth,
-  getStoredRefreshToken,
-  getStoredToken,
-  updateStoredAccessToken,
-} from "../lib/authStorage";
+import { getStoredAuth, getStoredRefreshToken, getStoredToken, updateStoredAccessToken } from "../lib/authStorage";
+import { redirectToSignIn } from "../lib/signInRedirect";
 
 /** Refresh access JWT this many ms before it expires so idle tabs stay signed in. */
 const ACCESS_TOKEN_REFRESH_BUFFER_MS = 5 * 60 * 1000;
@@ -140,12 +135,12 @@ api.interceptors.response.use(
         }
         return api(originalRequest);
       }
-      clearStoredAuth();
-      const redirect = encodeURIComponent(window.location.pathname + window.location.search);
-      window.location.href = `/signin?redirect=${redirect}`;
+      redirectToSignIn();
     }
     return Promise.reject(error);
   }
 );
+
+export { redirectToSignIn } from "../lib/signInRedirect";
 
 export default api;

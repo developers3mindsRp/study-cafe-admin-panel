@@ -8,7 +8,7 @@
 import { createCrudApi, type ListQuery } from "./apiFactory";
 import type { TrashScope } from "../components/trash/TrashScopeTabs";
 import { api } from "./axios";
-import { getApiBaseUrl } from "../config/env";
+import { requireAuthForExport } from "../lib/exportAuth";
 import type { DataTableFetchParams, DataTableFetchResult } from "../components/tables/data-table";
 import { fetchAllPaginatedForExport } from "../utils/fetchAllPaginatedForExport";
 import type { ExportProgressCallback } from "../utils/exportProgress";
@@ -328,15 +328,17 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-/** Trigger same-origin file download without buffering the response in JS memory. */
-function triggerNativeFileDownload(href: string, suggestedName?: string): void {
+/** Trigger file download from a Blob (authenticated export). */
+function triggerBlobDownload(blob: Blob, filename: string): void {
+  const objectUrl = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
-  anchor.href = href;
+  anchor.href = objectUrl;
   anchor.style.display = "none";
-  if (suggestedName) anchor.download = suggestedName;
+  anchor.download = filename;
   document.body.appendChild(anchor);
   anchor.click();
   anchor.remove();
+  URL.revokeObjectURL(objectUrl);
 }
 
 export async function runUsersExportWithProgress(
@@ -345,6 +347,8 @@ export async function runUsersExportWithProgress(
     onProgress?: ExportProgressCallback;
   },
 ): Promise<void> {
+  await requireAuthForExport();
+
   const { onProgress, filename, ...rest } = params;
   const query = buildUsersListParams(rest);
 
@@ -395,13 +399,14 @@ export async function runUsersExportWithProgress(
   const datePart = new Date().toISOString().slice(0, 10);
   const finalName = downloadName ?? `users-export-${datePart}.csv`;
 
-  const downloadUrl = new URL(
-    `${getApiBaseUrl()}/users/export/${encodeURIComponent(jobId)}/download`,
+  const response = await api.get<Blob>(
+    `/users/export/${encodeURIComponent(jobId)}/download`,
+    {
+      params: { token: downloadToken, filename: finalName },
+      responseType: "blob",
+    },
   );
-  downloadUrl.searchParams.set("token", downloadToken);
-  downloadUrl.searchParams.set("filename", finalName);
-
-  triggerNativeFileDownload(downloadUrl.toString(), finalName);
+  triggerBlobDownload(response.data, finalName);
 }
 
 /** @deprecated Use runUsersExportWithProgress — loads all rows in browser memory. */
@@ -409,6 +414,7 @@ export async function downloadUsersExportCsv(
   params: Omit<BuildUsersListParamsInput, "page" | "limit">,
   filename?: string,
 ): Promise<void> {
+  await requireAuthForExport();
   const query = buildUsersListParams(params);
   const response = await api.get<Blob>("/users/export.csv", {
     params: query,
@@ -432,6 +438,7 @@ export async function fetchAllUsersForExport(
     onProgress?: ExportProgressCallback;
   },
 ): Promise<User[]> {
+  await requireAuthForExport();
   const { onProgress, ...rest } = params;
   const query = buildUsersListParams(rest);
   return fetchAllPaginatedForExport({
