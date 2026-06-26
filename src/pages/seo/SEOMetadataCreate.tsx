@@ -4,47 +4,42 @@ import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import BackLink from "../../components/common/BackLink";
 import SEOMetadataForm, { type SEOMetadataFormData } from "./SEOMetadataForm";
+import { fetchSiteSeoRoutes } from "../../api/siteSeoRoutes";
 import {
+  buildSeoSitePagePickerOptions,
   createSeoMetadata,
-  fetchSeoEligiblePages,
   fetchSeoMetadata,
   type SeoEligiblePage,
 } from "../../api/seo";
-import { normalizeAdminSeoPath } from "../../lib/slug";
-
-function sortSeoPages(a: SeoEligiblePage, b: SeoEligiblePage): number {
-  const pa = normalizeAdminSeoPath(a.path);
-  const pb = normalizeAdminSeoPath(b.path);
-  if (pa === "/") return -1;
-  if (pb === "/") return 1;
-  return pa.localeCompare(pb);
-}
 
 export default function SEOMetadataCreate() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [pageOptions, setPageOptions] = useState<SeoEligiblePage[]>([]);
   const [pagesLoading, setPagesLoading] = useState(true);
+  const [sitePageCount, setSitePageCount] = useState<number | null>(null);
+  const [pagesLoadError, setPagesLoadError] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       setPagesLoading(true);
+      setPagesLoadError(false);
       try {
-        const [routes, existing] = await Promise.all([
-          fetchSeoEligiblePages(),
+        const [siteRoutes, existingSeo] = await Promise.all([
+          fetchSiteSeoRoutes(),
           fetchSeoMetadata(),
         ]);
         if (cancelled) return;
-        const used = new Set(
-          existing.map((e) => normalizeAdminSeoPath(e.pageSlug)),
-        );
-        const open = routes
-          .filter((r) => !used.has(normalizeAdminSeoPath(r.path)))
-          .sort(sortSeoPages);
-        setPageOptions(open);
+        setPageOptions(buildSeoSitePagePickerOptions(siteRoutes, existingSeo));
+        setSitePageCount(siteRoutes.length);
       } catch (err) {
         console.error("Failed to load SEO page list", err);
+        if (!cancelled) {
+          setPagesLoadError(true);
+          setSitePageCount(null);
+          setPageOptions([]);
+        }
         alert("Failed to load the site page list for SEO metadata.");
       } finally {
         if (!cancelled) setPagesLoading(false);
@@ -100,6 +95,8 @@ export default function SEOMetadataCreate() {
         mode="create"
         loading={loading}
         pagesLoading={pagesLoading}
+        pagesLoadError={pagesLoadError}
+        sitePageCount={sitePageCount}
         pageOptions={pageOptions}
         onSubmit={handleSubmit}
       />

@@ -4,22 +4,15 @@ import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import BackLink from "../../components/common/BackLink";
 import SEOMetadataForm, { type SEOMetadataFormData } from "./SEOMetadataForm";
+import { fetchSiteSeoRoutes } from "../../api/siteSeoRoutes";
 import {
-  fetchSeoEligiblePages,
   fetchSeoMetadataById,
+  sortSeoEligiblePages,
   updateSeoMetadata,
   type SeoEligiblePage,
 } from "../../api/seo";
 import { normalizeAdminSeoPath } from "../../lib/slug";
 import { isModuleManagedSeoPath } from "../../lib/seoPaths";
-
-function sortSeoPages(a: SeoEligiblePage, b: SeoEligiblePage): number {
-  const pa = normalizeAdminSeoPath(a.path);
-  const pb = normalizeAdminSeoPath(b.path);
-  if (pa === "/") return -1;
-  if (pb === "/") return 1;
-  return pa.localeCompare(pb);
-}
 
 /** Ensure the edited row's path appears even if absent from eligible API (legacy rows). */
 function mergeEditPageOptions(
@@ -28,9 +21,9 @@ function mergeEditPageOptions(
     Pick<SEOMetadataFormData, "pageSlug" | "pageName">
     | null,
 ): SeoEligiblePage[] {
-  if (!current) return [...eligible].sort(sortSeoPages);
+  if (!current) return [...eligible].sort(sortSeoEligiblePages);
   const p = normalizeAdminSeoPath(current.pageSlug);
-  if (!p) return [...eligible].sort(sortSeoPages);
+  if (!p) return [...eligible].sort(sortSeoEligiblePages);
   const has = eligible.some((o) => normalizeAdminSeoPath(o.path) === p);
   const next = has
     ? [...eligible]
@@ -38,7 +31,7 @@ function mergeEditPageOptions(
       ...eligible,
       { path: p, label: (current.pageName || p).trim() || p },
     ];
-  return next.sort(sortSeoPages);
+  return next.sort(sortSeoEligiblePages);
 }
 
 export default function SEOMetadataEdit() {
@@ -60,9 +53,9 @@ export default function SEOMetadataEdit() {
     (async () => {
       setLoading(true);
       try {
-        const [entry, routes] = await Promise.all([
+        const [entry, siteRoutes] = await Promise.all([
           fetchSeoMetadataById(metadataId),
-          fetchSeoEligiblePages(),
+          fetchSiteSeoRoutes(),
         ]);
         if (cancelled) return;
         if (isModuleManagedSeoPath(entry.pageSlug)) {
@@ -72,7 +65,11 @@ export default function SEOMetadataEdit() {
           setDefaultValues(null);
           return;
         }
-        setEligiblePages([...routes].sort(sortSeoPages));
+        const routes: SeoEligiblePage[] = siteRoutes.map((r) => ({
+          path: r.path,
+          label: r.label,
+        }));
+        setEligiblePages([...routes].sort(sortSeoEligiblePages));
         setDefaultValues({
           pageName: entry.pageName,
           pageSlug: entry.pageSlug,

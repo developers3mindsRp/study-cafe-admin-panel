@@ -26,6 +26,10 @@ interface SEOMetadataFormProps {
   onSubmit: (data: SEOMetadataFormData) => void;
   pageOptions: SeoEligiblePage[];
   pagesLoading?: boolean;
+  /** Total configured site pages (Site pages URLs), for empty-state messaging on create. */
+  sitePageCount?: number | null;
+  /** When true, the site page list failed to load. */
+  pagesLoadError?: boolean;
   /** When true (e.g. edit), path is fixed — only meta fields update. */
   disablePageSelect?: boolean;
 }
@@ -43,6 +47,8 @@ export default function SEOMetadataForm({
   onSubmit,
   pageOptions,
   pagesLoading = false,
+  sitePageCount = null,
+  pagesLoadError = false,
   disablePageSelect = false,
 }: SEOMetadataFormProps) {
   const [formData, setFormData] = useState<SEOMetadataFormData>({
@@ -53,6 +59,17 @@ export default function SEOMetadataForm({
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     const slug = normalizeAdminSeoPath(formData.pageSlug);
+    if (mode === "create") {
+      const selected = pageOptions.find(
+        (o) => normalizeAdminSeoPath(o.path) === slug,
+      );
+      if (selected?.hasSeo) {
+        alert(
+          "SEO metadata already exists for this path. Edit it from the SEO Metadata list.",
+        );
+        return;
+      }
+    }
     onSubmit({
       ...formData,
       pageSlug: slug,
@@ -108,6 +125,16 @@ export default function SEOMetadataForm({
   const selectClass =
     "w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-800 dark:border-gray-800 dark:bg-white/[0.03] dark:text-white/90 disabled:cursor-not-allowed disabled:opacity-70";
 
+  const creatablePageOptions =
+    mode === "create"
+      ? pageOptions.filter((o) => !o.hasSeo)
+      : pageOptions;
+  const hasValidCreateSelection =
+    mode !== "create"
+    || creatablePageOptions.some(
+      (o) => normalizeAdminSeoPath(o.path) === slugNorm,
+    );
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] sm:p-6">
@@ -151,34 +178,56 @@ export default function SEOMetadataForm({
                       {`${formData.pageName || formData.pageSlug} (${normalizeAdminSeoPath(formData.pageSlug)})`}
                     </option>
                   ) : null}
-                  {pageOptions.map((o) => (
-                    <option
-                      key={normalizeAdminSeoPath(o.path)}
-                      value={normalizeAdminSeoPath(o.path)}
-                    >
-                      {o.label}
-                      {" "}
-                      (
-                      {normalizeAdminSeoPath(o.path)}
-                      )
-                    </option>
-                  ))}
+                  {pageOptions.map((o) => {
+                    const path = normalizeAdminSeoPath(o.path);
+                    const optionDisabled =
+                      mode === "create" && Boolean(o.hasSeo);
+                    return (
+                      <option
+                        key={path}
+                        value={path}
+                        disabled={optionDisabled}
+                      >
+                        {o.label}
+                        {" "}
+                        (
+                        {path}
+                        )
+                      </option>
+                    );
+                  })}
                 </select>
                 {mode === "create" &&
-                pageOptions.length === 0 &&
-                !pagesLoading ? (
+                !pagesLoading &&
+                !pagesLoadError &&
+                sitePageCount === 0 ? (
                   <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                    Every known site page already has SEO metadata. Remove or edit
-                    an existing entry to add SEO for another path.
+                    No site pages are configured yet. Add paths under{" "}
+                    <Link
+                      className="text-brand-600 hover:underline dark:text-brand-400"
+                      to="/seo-metadata/site-pages"
+                    >
+                      Site pages (URLs)
+                    </Link>
+                    {" "}
+                    before creating SEO metadata.
+                  </p>
+                ) : null}
+                {mode === "create" && pagesLoadError ? (
+                  <p className="mt-1 text-xs text-error-500">
+                    Could not load the site page list. Refresh the page or check your connection.
                   </p>
                 ) : null}
                 <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  One SEO record per path. The list comes from{' '}
+                  The list comes from{" "}
                   <Link className="text-brand-600 hover:underline dark:text-brand-400" to="/seo-metadata/site-pages">
                     Site pages (URLs)
-                  </Link>{' '}
-                  (add paths there before they appear here). Paths already configured for SEO are omitted.
-                  Courses and articles use their own SEO fields.
+                  </Link>
+                  . Pages that already have SEO are disabled — edit them from the{" "}
+                  <Link className="text-brand-600 hover:underline dark:text-brand-400" to="/seo-metadata">
+                    SEO Metadata list
+                  </Link>
+                  . Courses and articles use their own SEO fields.
                 </p>
               </>
             )}
@@ -203,8 +252,8 @@ export default function SEOMetadataForm({
             loading ||
             pagesLoading ||
             (mode === "create"
-              ? pageOptions.length === 0
-                || normalizeAdminSeoPath(formData.pageSlug) === ""
+              ? creatablePageOptions.length === 0
+                || !hasValidCreateSelection
               : false)
           }
           className="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-medium text-white transition bg-brand-500 shadow-theme-xs hover:bg-brand-600 disabled:opacity-50 disabled:cursor-not-allowed"

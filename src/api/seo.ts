@@ -1,8 +1,49 @@
 import { api } from "./axios";
+import { normalizeAdminSeoPath } from "../lib/slug";
+import type { SiteSeoRoute } from "./siteSeoRoutes";
 
 export interface SeoEligiblePage {
   path: string;
   label: string;
+  /** Create mode: path already has seo_metadata — option is disabled. */
+  hasSeo?: boolean;
+}
+
+/** Sort site pages for dropdowns: home first, then path A–Z. */
+export function sortSeoEligiblePages(
+  a: SeoEligiblePage,
+  b: SeoEligiblePage,
+): number {
+  const normalize = (p: string) => {
+    const t = (p ?? "").trim();
+    if (t === "") return "";
+    if (t === "/") return "/";
+    return t.startsWith("/") ? t : `/${t}`;
+  };
+  const pa = normalize(a.path);
+  const pb = normalize(b.path);
+  if (pa === "/") return -1;
+  if (pb === "/") return 1;
+  return pa.localeCompare(pb);
+}
+
+/**
+ * All site pages (URLs) for the picker. Marks paths that already have SEO metadata.
+ */
+export function buildSeoSitePagePickerOptions(
+  siteRoutes: SiteSeoRoute[],
+  existingSeo: SEOMetadata[] = [],
+): SeoEligiblePage[] {
+  const assigned = new Set(
+    existingSeo.map((e) => normalizeAdminSeoPath(e.pageSlug)),
+  );
+  return siteRoutes
+    .map((r) => ({
+      path: r.path,
+      label: r.label,
+      hasSeo: assigned.has(normalizeAdminSeoPath(r.path)),
+    }))
+    .sort(sortSeoEligiblePages);
 }
 
 export interface SEOMetadata {
