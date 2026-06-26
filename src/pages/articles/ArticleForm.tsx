@@ -410,7 +410,7 @@ export default function ArticleForm({
               />
             </div>
             <div>
-              <Label>Description</Label>
+              <Label>Short Description</Label>
               <TextArea
                 value={formData.meta.description ?? ""}
                 onChange={(value) =>
