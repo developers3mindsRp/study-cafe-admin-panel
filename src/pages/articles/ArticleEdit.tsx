@@ -136,6 +136,11 @@ export default function ArticleEdit() {
       caption: pickArticleStr(raw, "thumbnail_caption", "thumbnailCaption"),
     },
     body: typeof articleContent === "string" ? articleContent : "",
+    sections: (article.sections ?? []).map((s) => ({
+      id: s.id,
+      title: s.title ?? "",
+      content: s.content ?? "",
+    })),
     author: { name: article.author_name ?? "", role: "", imageUrl: "", bio: "" },
     tagsCommaRaw: "",
     shareEnabled: true,

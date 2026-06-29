@@ -46,5 +46,10 @@ export function articleFormToApiPayload(formData: ArticleFormData) {
     noti_no: formData.notification?.noti_no?.trim() || null,
     noti_date: formData.notification?.noti_date?.trim() || null,
     type_of_tax: formData.notification?.type_of_tax?.trim() || null,
+    // Ordered sections drive the public Table of Contents + composed body.
+    // sort_order follows the editor order; blank rows are dropped.
+    sections: (formData.sections ?? [])
+      .map((s, i) => ({ title: s.title ?? "", content: s.content ?? "", sort_order: i }))
+      .filter((s) => Boolean(s.title.trim() || s.content.trim())),
   };
 }

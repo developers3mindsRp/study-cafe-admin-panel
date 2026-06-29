@@ -116,6 +116,11 @@ export const ArticlesTable = forwardRef<DataTableRef, ArticlesTableProps>(
           caption: "",
         },
         body: typeof articleContent === "string" ? articleContent : "",
+        sections: (article.sections ?? []).map((s) => ({
+          id: s.id,
+          title: s.title ?? "",
+          content: s.content ?? "",
+        })),
         author: { name: "", role: "", imageUrl: "", bio: "" },
         tagsCommaRaw: "",
         shareEnabled: true,

@@ -60,6 +60,8 @@ export interface ArticleRecord {
   noti_no?: string | null;
   noti_date?: string | null;
   type_of_tax?: string | null;
+  /** Ordered article sections; titles drive the public Table of Contents. */
+  sections?: { id?: number; title: string; content: string; sort_order?: number }[];
 }
 
 export interface ArticleListParams {

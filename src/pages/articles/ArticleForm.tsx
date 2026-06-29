@@ -19,6 +19,14 @@ import { slugifyForSeo, shouldResyncSlugFromSource } from "../../lib/slug";
 import { generateArticlePreviewLink } from "../../api/articles";
 import DatePicker from "../../components/form/date-picker";
 import { ARTICLE_TAX_TYPE_OPTIONS } from "../../constants/articleTaxTypes";
+import ArticleSectionsEditor from "./components/ArticleSectionsEditor";
+
+/** One article section: a title (TOC entry) + rich HTML content. */
+export interface ArticleSection {
+  id?: number;
+  title: string;
+  content: string;
+}
 
 export interface CaseCitationData {
   case_citation?: string;
@@ -41,6 +49,8 @@ export interface ArticleFormData {
   featuredImage: FeaturedImage;
   /** Article body (TipTap JSON string). Single-document editor for articles. */
   body: string;
+  /** Ordered sections; titles drive the public Table of Contents. */
+  sections: ArticleSection[];
   author: AuthorBio;
   /** Comma-separated tag labels as typed (parsed on save only). */
   tagsCommaRaw: string;
@@ -133,6 +143,7 @@ const emptyFormData: ArticleFormData = {
   meta: emptyMeta,
   featuredImage: emptyFeaturedImage,
   body: "",
+  sections: [],
   author: emptyAuthor,
   tagsCommaRaw: "",
   shareEnabled: true,
@@ -536,6 +547,12 @@ export default function ArticleForm({
             minHeight="400px"
           />
         </div>
+
+        {/* Sections — repeatable; titles drive the Table of Contents */}
+        <ArticleSectionsEditor
+          value={formData.sections}
+          onChange={(sections) => setFormData((prev) => ({ ...prev, sections }))}
+        />
       {/* Tags + Share (Fixed Bottom) */}
       <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] sm:p-6">
         <h3 className="mb-4 text-lg font-semibold text-gray-800 dark:text-white/90">
