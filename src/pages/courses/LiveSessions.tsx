@@ -22,13 +22,9 @@ import {
 import { DataTablePagination } from "../../components/tables/data-table/DataTablePagination";
 import type { DataTableMeta } from "../../components/tables/data-table/DataTable.types";
 import { CourseSearchSelect } from "../../components/courses/CourseSearchSelect";
+import { formatDate as fmtDate } from "../../utils/formatDate";
 
 /* ─── helpers ─────────────────────────────────────────────────────── */
-
-function fmtDate(d: string | null) {
-    if (!d) return "—";
-    return new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
-}
 
 function fmtDisplayDate(val: string) {
     if (!val) return "";

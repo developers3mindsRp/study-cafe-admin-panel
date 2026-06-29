@@ -4,6 +4,7 @@ import { fetchWithdrawalRequests, type WithdrawalRequest } from "../../api/affil
 import type { DataTableFetchParams, DataTableFetchResult } from "./data-table/DataTable.types";
 import Badge from "../ui/badge/Badge";
 import { PencilIcon } from "../../icons";
+import { formatDate } from "../../utils/formatDate";
 
 function statusColor(s: string) {
   if (s === "approved") return "success";
@@ -101,7 +102,7 @@ export function WithdrawalRequestsTable({ onUpdateStatus, filterStatus = "" }: W
       sortable: false,
       render: (row: WithdrawalRequest) => (
         <span className="text-theme-sm text-gray-800 dark:text-white/90">
-          {new Date(row.created_at).toLocaleDateString()}
+          {formatDate(row.created_at)}
         </span>
       ),
     },

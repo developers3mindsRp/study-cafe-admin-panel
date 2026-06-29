@@ -39,6 +39,7 @@ import AmountRangeDropdown from "../form/AmountRangeDropdown";
 import Button from "../ui/button/Button";
 import { localDateString } from "../../utils/localDateString";
 import { isExportAuthError } from "../../lib/exportAuth";
+import { formatDateTime } from "../../utils/formatDate";
 
 const ORDERS_FILTER_INITIAL: OrdersListFilters = {
   dateFrom: "",
@@ -364,7 +365,7 @@ export function OrdersTable() {
       header: "Date",
       sortable: true,
       render: (row: OrderRecord) =>
-        row.created_at ? new Date(row.created_at).toLocaleString() : "—",
+        formatDateTime(row.created_at),
     },
     {
       key: "actions",

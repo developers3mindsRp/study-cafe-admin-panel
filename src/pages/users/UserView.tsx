@@ -8,6 +8,7 @@ import { fetchUserEnrollments, type UserEnrollmentRecord, type UserEnrollmentsRe
 import Badge from "../../components/ui/badge/Badge";
 import Button from "../../components/ui/button/Button";
 import { PencilIcon } from "../../icons";
+import { formatDate } from "../../utils/formatDate";
 
 const EMPTY_ENROLLMENTS: UserEnrollmentsResponse = {
     active_count: 0,
@@ -18,10 +19,7 @@ const EMPTY_ENROLLMENTS: UserEnrollmentsResponse = {
 };
 
 function CourseTable({ courses, dimmed = false }: { courses: UserEnrollmentRecord[]; dimmed?: boolean }) {
-    const fmt = (d: string | null | undefined) =>
-        d
-            ? new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })
-            : "—";
+    const fmt = (d: string | null | undefined) => formatDate(d);
 
     return (
         <div className={`overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700 ${dimmed ? "opacity-75" : ""}`}>
@@ -350,18 +348,10 @@ export default function UserView() {
                                                         </Badge>
                                                     </td>
                                                     <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
-                                                        {new Date(m.starts_at).toLocaleDateString("en-IN", {
-                                                            day: "2-digit",
-                                                            month: "short",
-                                                            year: "numeric",
-                                                        })}
+                                                        {formatDate(m.starts_at)}
                                                     </td>
                                                     <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
-                                                        {new Date(m.expires_at).toLocaleDateString("en-IN", {
-                                                            day: "2-digit",
-                                                            month: "short",
-                                                            year: "numeric",
-                                                        })}
+                                                        {formatDate(m.expires_at)}
                                                     </td>
                                                     <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
                                                         {m.order_id ?? <span className="italic">—</span>}

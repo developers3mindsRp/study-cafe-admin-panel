@@ -1,3 +1,4 @@
+import { formatDate } from "../../utils/formatDate";
 import { useState, useRef, useCallback } from "react";
 import { Link } from "react-router";
 import PageMeta from "../../components/common/PageMeta";
@@ -104,7 +105,7 @@ export default function SEOMetadataList() {
       header: "Created At",
       sortable: true,
       render: (row: SEOMetadata) =>
-        row.created_at ? new Date(row.created_at).toLocaleDateString() : "—",
+        row.created_at ? formatDate(row.created_at) : "—",
     },
     {
       key: "actions",

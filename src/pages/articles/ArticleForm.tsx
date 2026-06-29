@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, type FormEvent } from "react";
+import { formatDateTime } from "../../utils/formatDate";
 import { Link, useLocation, useBlocker, useBeforeUnload } from "react-router";
 import { RESTORE_STATE_KEY } from "./ArticlePreview";
 import Label from "../../components/form/Label";
@@ -957,7 +958,7 @@ export default function ArticleForm({
               <p className="mt-2 text-xs text-gray-600 dark:text-gray-300">
                 Goes live{" "}
                 <span className="font-medium">
-                  {new Date(formData.scheduled_publish_at_local).toLocaleString()}
+                  {formatDateTime(formData.scheduled_publish_at_local)}
                 </span>
               </p>
             ) : null}

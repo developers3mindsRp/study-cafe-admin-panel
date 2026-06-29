@@ -11,6 +11,7 @@ import { PencilIcon, CopyIcon, TrashBinIcon } from "../../icons";
 import { RequirePermission } from "../auth/RequirePermission";
 import { PERM_COURSES_CREATE, PERM_COURSES_DELETE } from "../../constants/permissions";
 import { fetchCourses, type Course } from "../../api/courses";
+import { formatDateTime } from "../../utils/formatDate";
 import type { TrashScope } from "../trash/TrashScopeTabs";
 import type { DataTableFetchParams, DataTableFetchResult } from "./data-table/DataTable.types";
 import type { CourseSortFilter, PriceRangeFilter, PublicationFilter } from "../../pages/courses/filterTypes";
@@ -195,7 +196,7 @@ export function CoursesTable({
             {row.updated_at && (
               <span className="mt-1 block text-theme-xs text-gray-500 dark:text-gray-400">
                 {row.is_published ? "Published at" : "Updated at"}:{" "}
-                {new Date(row.updated_at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}
+                {formatDateTime(row.updated_at)}
               </span>
             )}
           </div>

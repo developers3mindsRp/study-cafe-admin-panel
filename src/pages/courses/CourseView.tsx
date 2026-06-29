@@ -12,6 +12,7 @@ import {
   type RecordingRecord,
 } from "../../api/courses";
 import { getImageUrl } from "../../utils/image.utils";
+import { formatDate, formatDateTime } from "../../utils/formatDate";
 
 const safeJsonParse = (str: string | null | undefined, fallback: any = []) => {
   if (!str) return fallback;
@@ -148,8 +149,8 @@ function BatchAccordionItem({ batch, onRecordingUpdated }: { batch: BatchRecord,
 
         {batch.start_date && (
           <span className="text-xs text-gray-400 ml-auto">
-            {new Date(batch.start_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
-            {batch.end_date && ` → ${new Date(batch.end_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}`}
+            {formatDate(batch.start_date)}
+            {batch.end_date && ` → ${formatDate(batch.end_date)}`}
           </span>
         )}
         <svg
@@ -176,7 +177,7 @@ function BatchAccordionItem({ batch, onRecordingUpdated }: { batch: BatchRecord,
                 </span>
                 {session.scheduled_at && (
                   <span className="text-xs text-gray-400 ml-2">
-                    📅 {new Date(session.scheduled_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
+                    📅 {formatDateTime(session.scheduled_at)}
                   </span>
                 )}
                 {session.meet_link && (
@@ -326,7 +327,7 @@ export default function CourseView() {
             <Field label="Taxable">{course.taxable ? "Yes" : "No"}</Field>
             <Field label="Hide from Public">{course.hide_from_public ? "Yes" : "No"}</Field>
             <Field label="Completion certificate">{course.certificate_enabled !== false ? "Provided" : "Not provided"}</Field>
-            {course.created_at && <Field label="Created">{new Date(course.created_at).toLocaleDateString()}</Field>}
+            {course.created_at && <Field label="Created">{formatDate(course.created_at)}</Field>}
             <div className="sm:col-span-2 lg:col-span-3">
               <Field label="Categories">
                 {course.categories && course.categories.length > 0 ? (

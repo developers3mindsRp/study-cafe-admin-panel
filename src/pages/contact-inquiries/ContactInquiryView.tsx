@@ -3,18 +3,7 @@ import { useParams, Link } from "react-router";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import { fetchContactInquiries, type ContactInquiry } from "../../api/contactInquiries";
-
-function formatDate(dateString: string) {
-  const date = new Date(dateString);
-  if (Number.isNaN(date.getTime())) return "-";
-  return date.toLocaleString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
+import { formatDateTimeLong as formatDate } from "../../utils/formatDate";
 
 function statusBadgeClasses(status?: string) {
   const value = (status || "").toLowerCase();

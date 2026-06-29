@@ -1,3 +1,4 @@
+import { formatDate } from "../../utils/formatDate";
 import { useState, useRef, useCallback } from "react";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
@@ -133,7 +134,7 @@ export default function SubscribersList() {
       sortable: true,
       render: (row: NewsletterSubscriber) => (
         <span className="text-gray-500 text-theme-sm dark:text-gray-400">
-          {row.created_at ? new Date(row.created_at).toLocaleDateString() : "—"}
+          {row.created_at ? formatDate(row.created_at) : "—"}
         </span>
       ),
     },

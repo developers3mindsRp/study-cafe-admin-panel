@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { DataTable } from "./data-table";
 import { fetchAffiliateHistory, type AffiliateRecord } from "../../api/affiliate";
 import type { DataTableFetchParams, DataTableFetchResult } from "./data-table/DataTable.types";
+import { formatDate } from "../../utils/formatDate";
 
 function toMeta(total: number, page: number, limit: number): DataTableFetchResult<AffiliateRecord>["meta"] {
   const totalPages = Math.max(1, Math.ceil(total / limit));
@@ -59,7 +60,7 @@ const columns = [
     sortable: false,
     render: (row: AffiliateRecord) => (
       <span className="text-theme-sm text-gray-800 dark:text-white/90">
-        {new Date(row.created_at).toLocaleDateString()}
+        {formatDate(row.created_at)}
       </span>
     ),
   },

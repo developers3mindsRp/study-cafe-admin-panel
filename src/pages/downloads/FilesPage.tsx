@@ -18,21 +18,9 @@ import { FilterBar, useFilterState } from "../../components/filters";
 import type { FilterFieldDef } from "../../components/filters";
 import { getWebsiteUrl } from "../../config/env";
 import { WebsiteViewLink } from "../../components/common/WebsiteLink";
+import { formatDate } from "../../utils/formatDate";
 
 const WEBSITE_URL = getWebsiteUrl();
-
-function formatDate(dateStr: string | null | undefined): string {
-  if (!dateStr) return "—";
-  try {
-    return new Date(dateStr).toLocaleDateString("en-IN", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
-  } catch {
-    return dateStr;
-  }
-}
 
 function CopyUrlButton({ url }: { url: string }) {
   const [copied, setCopied] = useState(false);
