@@ -11,6 +11,7 @@ import { usersApi } from "../../api/users";
 import { PencilIcon, DollarLineIcon } from "../../icons";
 import RefundModal from "./RefundModal";
 import { orderGatewayLabel } from "../../utils/orderGateway";
+import { formatDateTimeLong } from "../../utils/formatDate";
 
 function detailStatusBadgeColor(status: string) {
   const s = status.toLowerCase();
@@ -213,9 +214,7 @@ export default function OrderView() {
               <div className="space-y-1">
                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Date Created</p>
                 <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                  {order.created_at ? new Date(order.created_at).toLocaleString('en-IN', {
-                    day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
-                  }) : "—"}
+                  {formatDateTimeLong(order.created_at)}
                 </p>
               </div>
               <div className="space-y-1">

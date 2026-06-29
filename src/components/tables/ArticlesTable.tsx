@@ -13,6 +13,7 @@ import {
   PERM_ARTICLES_DELETE,
 } from "../../constants/permissions";
 import { decodeSlugForDisplay } from "../../lib/slug";
+import { formatDateTime, formatDate } from "../../utils/formatDate";
 import {
   articlesApi,
   fetchArticleCategories,
@@ -257,13 +258,13 @@ export const ArticlesTable = forwardRef<DataTableRef, ArticlesTableProps>(
 
           if (isScheduled && row.scheduled_publish_at) {
             dateLabel = "Scheduled for";
-            dateValue = new Date(row.scheduled_publish_at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" });
+            dateValue = formatDateTime(row.scheduled_publish_at);
           } else if (isPublished && (row.published_at || row.updated_at)) {
             dateLabel = "Published at";
-            dateValue = new Date((row.published_at || row.updated_at)!).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" });
+            dateValue = formatDateTime(row.published_at || row.updated_at);
           } else if (isDraft && row.updated_at) {
             dateLabel = "Updated at";
-            dateValue = new Date(row.updated_at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" });
+            dateValue = formatDateTime(row.updated_at);
           }
 
           return (
@@ -300,9 +301,7 @@ export const ArticlesTable = forwardRef<DataTableRef, ArticlesTableProps>(
         header: "Created At",
         sortable: true,
         render: (row: ArticleRecord) =>
-          row.created_at
-            ? new Date(row.created_at).toLocaleDateString()
-            : "—",
+          formatDate(row.created_at),
       },
       {
         key: "actions",

@@ -4,6 +4,7 @@ import Label from "../../../components/form/Label";
 import Input from "../../../components/form/input/InputField";
 import { CsvEmailUpload } from "./CsvEmailUpload";
 import { plansApi, bulkGrantMembershipByEmails, type Plan, type BulkMembershipResult } from "../../../api/plans";
+import { formatDate as _formatDate } from "../../../utils/formatDate";
 
 interface MembershipAllotmentModalProps {
   isOpen: boolean;
@@ -24,9 +25,7 @@ const STATUS_LABEL: Record<BulkMembershipResult["status"], string> = {
   error: "Error",
 };
 
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
-}
+function formatDate(iso: string) { return _formatDate(iso); }
 
 function toDatetimeLocal(d: Date): string {
   const pad = (n: number) => String(n).padStart(2, "0");

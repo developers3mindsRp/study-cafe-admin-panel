@@ -1,12 +1,5 @@
-const IST = "Asia/Kolkata";
-
-/** Calendar day YYYY-MM-DD in Asia/Kolkata (for timestamps like created_at). */
-export function istCalendarYmd(iso?: string | null): string {
-  if (!iso) return "";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleDateString("en-CA", { timeZone: IST });
-}
+import { istCalendarYmd } from "./formatDate";
+export { istCalendarYmd };
 
 /**
  * Coupon start date from API (YYYY-MM-DD in UTC date prefix).

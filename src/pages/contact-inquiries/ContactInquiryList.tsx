@@ -8,6 +8,7 @@ import { fetchContactInquiries, type ContactInquiry } from "../../api/contactInq
 import type { DataTableFetchParams, DataTableFetchResult } from "../../components/tables/data-table/DataTable.types";
 import { FilterBar, useFilterState } from "../../components/filters";
 import type { FilterFieldDef } from "../../components/filters";
+import { formatDateTimeLong as formatDate } from "../../utils/formatDate";
 
 const contactFilterFields: FilterFieldDef[] = [
   {
@@ -41,18 +42,6 @@ const contactFilterFields: FilterFieldDef[] = [
     toId: "submitted_to",
   },
 ];
-
-function formatDate(dateString: string) {
-  const date = new Date(dateString);
-  if (Number.isNaN(date.getTime())) return "-";
-  return date.toLocaleString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
 
 function statusBadgeClasses(status?: string) {
   const value = (status || "").toLowerCase();
