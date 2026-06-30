@@ -32,8 +32,6 @@ export const USER_CSV_EXPORT_HEADERS = [
   "email",
   "password",
   "name",
-  "first_name",
-  "last_name",
   "phone",
   "role",
   "status",
