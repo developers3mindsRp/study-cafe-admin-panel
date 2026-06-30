@@ -5,8 +5,13 @@ export interface PaymentGatewayKeys {
   name: string;
   gateway_name: string;
   key_id: string;
+  /** Never returned by API — use has_key_secret instead */
   key_secret?: string;
+  /** Never returned by API — use has_webhook_secret instead */
   webhook_secret?: string;
+  has_key_secret?: boolean;
+  has_webhook_secret?: boolean;
+  key_id_locked?: boolean;
   is_active: number;
   created_at?: string;
   updated_at?: string;

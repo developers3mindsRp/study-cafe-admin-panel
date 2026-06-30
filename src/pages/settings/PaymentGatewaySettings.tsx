@@ -19,6 +19,7 @@ export default function PaymentGatewaySettings() {
   const canEdit = hasPermission("global_settings:edit");
 
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [items, setItems] = useState<PaymentGatewayKeys[]>([]);
 
@@ -40,10 +41,13 @@ export default function PaymentGatewaySettings() {
   const loadData = async () => {
     try {
       setLoading(true);
+      setLoadError(null);
       const data = await fetchPaymentGatewayKeys();
-      setItems(data);
+      setItems(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error("Failed to load payment gateway configurations", err);
+      setItems([]);
+      setLoadError("Failed to load payment gateway configurations. Please refresh or sign in again.");
     } finally {
       setLoading(false);
     }
@@ -73,8 +77,8 @@ export default function PaymentGatewaySettings() {
     setName(item.name);
     setGatewayName(item.gateway_name);
     setKeyId(item.key_id);
-    setKeySecret(""); // Leave blank so we only update if provided
-    setWebhookSecret(item.webhook_secret || "");
+    setKeySecret("");
+    setWebhookSecret("");
     setIsActive(item.is_active === 1);
     setShowKeySecret(false);
     setShowWebhookSecret(false);
@@ -175,6 +179,12 @@ export default function PaymentGatewaySettings() {
           </p>
         )}
 
+        {loadError && (
+          <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/40 dark:bg-red-500/10 dark:text-red-300">
+            {loadError}
+          </p>
+        )}
+
         <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] sm:p-6">
           <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center mb-6">
             <div>
@@ -221,9 +231,14 @@ export default function PaymentGatewaySettings() {
                       </td>
                       <td className="py-3.5 px-4 font-mono text-xs text-gray-500 dark:text-gray-400">
                         {item.key_id}
+                        {item.key_id_locked ? (
+                          <span className="ml-2 text-[10px] uppercase tracking-wide text-amber-600 dark:text-amber-400">
+                            locked
+                          </span>
+                        ) : null}
                       </td>
                       <td className="py-3.5 px-4 font-mono text-xs text-gray-400">
-                        {item.webhook_secret ? "••••••••••••" : <span className="text-gray-300 dark:text-gray-600">None</span>}
+                        {item.has_webhook_secret ? "••••••••••••" : <span className="text-gray-300 dark:text-gray-600">None</span>}
                       </td>
                       <td className="py-3.5 px-4">
                         {item.is_active === 1 ? (
@@ -362,7 +377,7 @@ export default function PaymentGatewaySettings() {
             <Input
               id="rp-webhook"
               type={showWebhookSecret ? "text" : "password"}
-              placeholder="Enter webhook secret (optional)"
+              placeholder={editingItem ? "•••••••••••• (Leave blank to keep current)" : "Enter webhook secret (optional)"}
               value={webhookSecret}
               onChange={(e) => setWebhookSecret(e.target.value)}
             />
