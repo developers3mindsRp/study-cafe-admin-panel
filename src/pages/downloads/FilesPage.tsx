@@ -315,7 +315,7 @@ export default function FilesPage() {
       sortable: false,
       render: (row: DownloadFile) => {
         const websiteUrl = row.status === "publish" && row.slug
-          ? `${WEBSITE_URL}/downloads/file/${row.slug}`
+          ? `${WEBSITE_URL}/file/${row.slug}`
           : null;
         return (
           <div className="flex items-center justify-end gap-1">
