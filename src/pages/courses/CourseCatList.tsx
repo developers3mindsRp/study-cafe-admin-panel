@@ -5,6 +5,8 @@ import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import { ConfirmDeleteModal } from "../../components/ui/modal/ConfirmDeleteModal";
 import { DataTable, type DataTableRef } from "../../components/tables/data-table/DataTable";
 import { PencilIcon, TrashBinIcon } from "../../icons";
+import { RequirePermission } from "../../components/auth/RequirePermission";
+import { PERM_COURSE_CATEGORIES_EDIT, PERM_COURSE_CATEGORIES_DELETE } from "../../constants/permissions";
 import { useModal } from "../../hooks/useModal";
 import { fetchCourseCats, deleteCourseCat, type CourseCat } from "../../api/courses";
 import { withClientPagination } from "../../utils/dataTableUtils";
@@ -84,23 +86,27 @@ export default function CourseCatList() {
           {row.slug && (
             <WebsiteViewLink href={`${WEBSITE_URL}/courses?category=${row.slug}`} />
           )}
-          <Link
-            to={`/courses/categories/${row.id}/edit`}
-            className="inline-flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-2 text-sm text-gray-600 transition hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
-            title="Edit"
-          >
-            <PencilIcon className="size-4 shrink-0 fill-current" />
-            Edit
-          </Link>
-          <button
-            type="button"
-            onClick={() => handleDeleteClick(row)}
-            className="inline-flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-2 text-sm text-gray-600 transition hover:bg-error-50 hover:text-error-500 dark:text-gray-400 dark:hover:bg-error-500/10 dark:hover:text-error-400"
-            title="Delete"
-          >
-            <TrashBinIcon className="size-4 shrink-0 fill-current" />
-            Delete
-          </button>
+          <RequirePermission permissions={[PERM_COURSE_CATEGORIES_EDIT]} fallback={null}>
+            <Link
+              to={`/courses/categories/${row.id}/edit`}
+              className="inline-flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-2 text-sm text-gray-600 transition hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
+              title="Edit"
+            >
+              <PencilIcon className="size-4 shrink-0 fill-current" />
+              Edit
+            </Link>
+          </RequirePermission>
+          <RequirePermission permissions={[PERM_COURSE_CATEGORIES_DELETE]} fallback={null}>
+            <button
+              type="button"
+              onClick={() => handleDeleteClick(row)}
+              className="inline-flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-2 text-sm text-gray-600 transition hover:bg-error-50 hover:text-error-500 dark:text-gray-400 dark:hover:bg-error-500/10 dark:hover:text-error-400"
+              title="Delete"
+            >
+              <TrashBinIcon className="size-4 shrink-0 fill-current" />
+              Delete
+            </button>
+          </RequirePermission>
         </div>
       ),
     },
