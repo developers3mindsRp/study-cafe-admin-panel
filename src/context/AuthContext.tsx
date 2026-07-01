@@ -59,6 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setStoredAuth(payload);
       setToken(token);
       setUser(user);
+      setIsInitialized(true);
     } finally {
       setIsLoading(false);
     }
@@ -78,11 +79,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const hasPermission = useCallback(
     (permission: string): boolean => {
+      if (!isInitialized) return false;
       if (!user) return false;
       if (user.role === "super_admin") return true;
       return user.permissions?.includes(permission) ?? false;
     },
-    [user]
+    [user, isInitialized]
   );
 
   const hasAnyPermission = useCallback(

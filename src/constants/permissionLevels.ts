@@ -106,6 +106,17 @@ export const MODULE_LEVELS: ModuleConfig[] = [
     ],
   },
   {
+    key: "students",
+    name: "Students",
+    levels: [
+      { value: "none", label: "None", permissions: [] },
+      { value: "view", label: "View only", permissions: ["students:list", "students:view"] },
+      { value: "edit", label: "Edit (includes view)", permissions: ["students:list", "students:view", "students:edit"] },
+      { value: "create", label: "Create (includes view, edit)", permissions: ["students:list", "students:view", "students:edit", "students:create"] },
+      { value: "delete", label: "Delete / Full", permissions: ["students:list", "students:view", "students:edit", "students:create", "students:delete"] },
+    ],
+  },
+  {
     key: "roles",
     name: "Roles & Permissions",
     levels: [
@@ -330,7 +341,7 @@ export const PERMISSION_NAV_GROUPS: PermissionNavGroup[] = [
   {
     name: "Users (Students)",
     modules: [
-      { key: "admin_users", label: "Student accounts" },
+      { key: "students", label: "Student accounts" },
       { key: "users", label: "Course & membership allotment" },
     ],
   },

@@ -5,8 +5,8 @@ import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import { ConfirmDeleteModal } from "../../components/ui/modal/ConfirmDeleteModal";
 import { RequirePermission } from "../../components/auth/RequirePermission";
 import {
-  PERM_ADMIN_USERS_LIST,
-  PERM_ADMIN_USERS_CREATE,
+  PERM_STUDENTS_LIST,
+  PERM_STUDENTS_CREATE,
   PERM_USERS_COURSE_ALLOTMENT,
   PERM_USERS_MEMBERSHIP_ALLOTMENT,
 } from "../../constants/permissions";
@@ -107,7 +107,7 @@ const userFilterFields: FilterFieldDef[] = [
 
 export default function UserList() {
   return (
-    <RequirePermission permissions={[PERM_ADMIN_USERS_LIST]}>
+    <RequirePermission permissions={[PERM_STUDENTS_LIST]}>
       <UserListContent />
     </RequirePermission>
   );
@@ -290,7 +290,7 @@ function UserListContent() {
         Allot Course
       </button>
     </RequirePermission>
-    <RequirePermission permissions={[PERM_ADMIN_USERS_CREATE]} fallback={null}>
+    <RequirePermission permissions={[PERM_STUDENTS_CREATE]} fallback={null}>
       <button
         type="button"
         onClick={() => setIsImportModalOpen(true)}
@@ -299,7 +299,7 @@ function UserListContent() {
         Import Users
       </button>
     </RequirePermission>
-    <RequirePermission permissions={[PERM_ADMIN_USERS_CREATE]} fallback={null}>
+    <RequirePermission permissions={[PERM_STUDENTS_CREATE]} fallback={null}>
       <Link
         to="/users/create"
         className="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-medium text-white transition bg-brand-500 shadow-theme-xs hover:bg-brand-600"

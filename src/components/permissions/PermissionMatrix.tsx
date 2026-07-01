@@ -188,11 +188,11 @@ export function PermissionMatrix({ value, onChange, disabled = false }: Permissi
   const ungrouped = getUngroupedPermissionModules();
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+    <div className="max-h-[70vh] overflow-auto rounded-lg border border-gray-200 dark:border-gray-700">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800">
-            <th className="py-2.5 pl-4 pr-2 text-left text-theme-xs font-semibold text-gray-600 dark:text-gray-300">
+          <tr className="border-b border-gray-200 dark:border-gray-700">
+            <th className="sticky top-0 z-10 bg-gray-50 py-2.5 pl-4 pr-2 text-left text-theme-xs font-semibold text-gray-600 dark:bg-gray-800 dark:text-gray-300">
               <div className="flex items-center gap-2">
                 <input
                   type="checkbox"
@@ -210,12 +210,12 @@ export function PermissionMatrix({ value, onChange, disabled = false }: Permissi
             {ACTION_COLUMNS.map((col) => (
               <th
                 key={col.key}
-                className="px-3 py-2.5 text-center text-theme-xs font-semibold text-gray-600 dark:text-gray-300"
+                className="sticky top-0 z-10 bg-gray-50 px-3 py-2.5 text-center text-theme-xs font-semibold text-gray-600 dark:bg-gray-800 dark:text-gray-300"
               >
                 {col.label}
               </th>
             ))}
-            <th className="px-3 py-2.5 text-center text-theme-xs font-semibold text-gray-600 dark:text-gray-300">
+            <th className="sticky top-0 z-10 bg-gray-50 px-3 py-2.5 text-center text-theme-xs font-semibold text-gray-600 dark:bg-gray-800 dark:text-gray-300">
               All
             </th>
           </tr>

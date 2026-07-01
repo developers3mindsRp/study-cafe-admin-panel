@@ -9,8 +9,8 @@ import Badge from "../ui/badge/Badge";
 import { EyeIcon, PencilIcon, TrashBinIcon } from "../../icons";
 import { RequirePermission } from "../auth/RequirePermission";
 import {
-  PERM_ADMIN_USERS_EDIT,
-  PERM_ADMIN_USERS_DELETE,
+  PERM_STUDENTS_EDIT,
+  PERM_STUDENTS_DELETE,
 } from "../../constants/permissions";
 import { fetchUsersPaginated, type User, type UsersListFilters } from "../../api/users";
 import { formatJoinedDate } from "../../utils/couponDates";
@@ -142,7 +142,7 @@ export const UsersTable = forwardRef<DataTableRef, UsersTableProps>(
                 >
                   <EyeIcon className="size-4 shrink-0 fill-current" />
                 </Link>
-                <RequirePermission permissions={[PERM_ADMIN_USERS_EDIT]} fallback={null}>
+                <RequirePermission permissions={[PERM_STUDENTS_EDIT]} fallback={null}>
                   <Link
                     to={`/users/${row.id}/edit`}
                     className="inline-flex items-center justify-center rounded-lg p-2 text-gray-500 transition hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
@@ -151,7 +151,7 @@ export const UsersTable = forwardRef<DataTableRef, UsersTableProps>(
                     <PencilIcon className="size-4 shrink-0 fill-current" />
                   </Link>
                 </RequirePermission>
-                <RequirePermission permissions={[PERM_ADMIN_USERS_DELETE]} fallback={null}>
+                <RequirePermission permissions={[PERM_STUDENTS_DELETE]} fallback={null}>
                   <button
                     type="button"
                     onClick={() => onDeleteClick?.(row)}
@@ -163,7 +163,7 @@ export const UsersTable = forwardRef<DataTableRef, UsersTableProps>(
                 </RequirePermission>
               </>
             ) : (
-              <RequirePermission permissions={[PERM_ADMIN_USERS_DELETE]} fallback={null}>
+              <RequirePermission permissions={[PERM_STUDENTS_DELETE]} fallback={null}>
                 <button
                   type="button"
                   onClick={() => onRestoreClick?.(row)}

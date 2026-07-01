@@ -427,16 +427,16 @@ const router = createBrowserRouter(
           </Route>
 
           {/* Students / Users (Non-Admin) */}
-          <Route path="/users" element={<RequirePermissionRoute permissions={["admin_users:list"]} />}>
+          <Route path="/users" element={<RequirePermissionRoute permissions={["students:list"]} />}>
             <Route index element={<UserList />} />
           </Route>
-          <Route path="/users/create" element={<RequirePermissionRoute permissions={["admin_users:create"]} />}>
+          <Route path="/users/create" element={<RequirePermissionRoute permissions={["students:create"]} />}>
             <Route index element={<UserCreate />} />
           </Route>
-          <Route path="/users/:id" element={<RequirePermissionRoute permissions={["admin_users:view"]} />}>
+          <Route path="/users/:id" element={<RequirePermissionRoute permissions={["students:view"]} />}>
             <Route index element={<UserView />} />
           </Route>
-          <Route path="/users/:id/edit" element={<RequirePermissionRoute permissions={["admin_users:edit"]} />}>
+          <Route path="/users/:id/edit" element={<RequirePermissionRoute permissions={["students:edit"]} />}>
             <Route index element={<UserEdit />} />
           </Route>
           

@@ -147,6 +147,13 @@ export const PERM_ADMIN_USERS_CREATE = "admin_users:create";
 export const PERM_ADMIN_USERS_EDIT = "admin_users:edit";
 export const PERM_ADMIN_USERS_DELETE = "admin_users:delete";
 
+// Students (CRUD for student/user accounts) — separate from admin panel users
+export const PERM_STUDENTS_LIST = "students:list";
+export const PERM_STUDENTS_VIEW = "students:view";
+export const PERM_STUDENTS_CREATE = "students:create";
+export const PERM_STUDENTS_EDIT = "students:edit";
+export const PERM_STUDENTS_DELETE = "students:delete";
+
 // Roles (dynamic role templates)
 export const PERM_ROLES_LIST = "roles:list";
 export const PERM_ROLES_VIEW = "roles:view";
@@ -250,6 +257,11 @@ export const ALL_PERMISSIONS = [
   PERM_ADMIN_USERS_CREATE,
   PERM_ADMIN_USERS_EDIT,
   PERM_ADMIN_USERS_DELETE,
+  PERM_STUDENTS_LIST,
+  PERM_STUDENTS_VIEW,
+  PERM_STUDENTS_CREATE,
+  PERM_STUDENTS_EDIT,
+  PERM_STUDENTS_DELETE,
   PERM_ROLES_LIST,
   PERM_ROLES_VIEW,
   PERM_ROLES_CREATE,

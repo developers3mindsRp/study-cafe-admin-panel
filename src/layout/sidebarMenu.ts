@@ -228,10 +228,10 @@ export const mainNavItemsConfig: NavItemConfig[] = [
     iconKey: "user",
     name: "Users (Students)",
     subItems: [
-      { name: "List", path: "/users", requiredPermission: ["admin_users:list"] },
-      { name: "Create", path: "/users/create", requiredPermission: ["admin_users:create"] },
+      { name: "List", path: "/users", requiredPermission: ["students:list"] },
+      { name: "Create", path: "/users/create", requiredPermission: ["students:create"] },
     ],
-    requiredPermission: ["admin_users:list"],
+    requiredPermission: ["students:list"],
   },
   {
     iconKey: "dollar",
