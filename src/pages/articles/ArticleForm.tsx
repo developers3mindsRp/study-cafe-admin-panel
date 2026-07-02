@@ -313,6 +313,11 @@ export default function ArticleForm({
   };
 
   const runSubmit = (action: ArticleSubmitAction) => {
+    // Guard against double-submit. The Save buttons are disabled while `loading`,
+    // but the Enter-key form-submit path is not — without this an in-flight save
+    // could be fired again and create a duplicate article.
+    if (loading) return;
+
     if (!formData.meta.title?.trim()) {
       alert("Please enter a title.");
       return;
