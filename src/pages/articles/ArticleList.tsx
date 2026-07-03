@@ -9,6 +9,7 @@ import { AccessDenied } from "../../components/auth/AccessDenied";
 import { PERM_ARTICLES_LIST, PERM_ARTICLES_CREATE } from "../../constants/permissions";
 import {
   articlesApi,
+  deleteArticlePermanently,
   fetchAllArticlesForExport,
   fetchArticleCategories,
   restoreArticle,
@@ -49,6 +50,12 @@ const articleFilterFields: FilterFieldDef[] = [
     },
   },
   {
+    type: "text",
+    id: "author",
+    label: "Author",
+    placeholder: "Filter by author name or email…",
+  },
+  {
     type: "select",
     id: "blog_access_tier",
     label: "Access Tier",
@@ -83,8 +90,11 @@ function ArticleListContent() {
   const [deleteTarget, setDeleteTarget] = useState<ArticleRecord | null>(null);
   const [restoreTarget, setRestoreTarget] = useState<ArticleRecord | null>(null);
   const [restoreLoading, setRestoreLoading] = useState(false);
+  const [permanentDeleteTarget, setPermanentDeleteTarget] = useState<ArticleRecord | null>(null);
+  const [permanentDeleteLoading, setPermanentDeleteLoading] = useState(false);
   const { isOpen: isDeleteModalOpen, openModal: openDeleteModal, closeModal: closeDeleteModal } = useModal();
   const { isOpen: isRestoreModalOpen, openModal: openRestoreModal, closeModal: closeRestoreModal } = useModal();
+  const { isOpen: isPermanentDeleteModalOpen, openModal: openPermanentDeleteModal, closeModal: closePermanentDeleteModal } = useModal();
   const { isOpen: isExportModalOpen, openModal: openExportModal, closeModal: closeExportModal } = useModal();
   const { values, set, reset, hasActive } = useFilterState();
   const [exporting, setExporting] = useState(false);
@@ -161,6 +171,33 @@ function ArticleListContent() {
     }
   };
 
+  const handlePermanentDeleteClick = (article: ArticleRecord) => {
+    setPermanentDeleteTarget(article);
+    openPermanentDeleteModal();
+  };
+
+  const handlePermanentDeleteCancel = () => {
+    setPermanentDeleteTarget(null);
+    closePermanentDeleteModal();
+  };
+
+  const handlePermanentDeleteConfirm = async () => {
+    if (!permanentDeleteTarget) return;
+    setPermanentDeleteLoading(true);
+    try {
+      await deleteArticlePermanently(permanentDeleteTarget.id);
+      setPermanentDeleteTarget(null);
+      closePermanentDeleteModal();
+      setStatusBarKey((k) => k + 1);
+      await tableRef.current?.refetch();
+    } catch (err) {
+      console.error("Failed to permanently delete article", err);
+      alert("Failed to permanently delete article");
+    } finally {
+      setPermanentDeleteLoading(false);
+    }
+  };
+
   const handleExportConfirm = useCallback(async () => {
     setExporting(true);
     try {
@@ -169,6 +206,7 @@ function ArticleListContent() {
         status: values.status || undefined,
         category_id: values.category_id || undefined,
         blog_access_tier: values.blog_access_tier || undefined,
+        author: values.author || undefined,
         date_from: values.date_from || undefined,
         date_to: values.date_to || undefined,
         search: q?.search ?? "",
@@ -252,10 +290,12 @@ function ArticleListContent() {
           ref={tableRef}
           onDeleteClick={handleDeleteClick}
           onRestoreClick={handleRestoreClick}
+          onPermanentDeleteClick={handlePermanentDeleteClick}
           trashScope={trashScope}
           filterStatus={values.status ?? ""}
           filterCategoryId={values.category_id ?? ""}
           filterAccessTier={values.blog_access_tier ?? ""}
+          filterAuthor={values.author ?? ""}
           filterDateFrom={values.date_from ?? ""}
           filterDateTo={values.date_to ?? ""}
         />
@@ -288,6 +328,21 @@ function ArticleListContent() {
         loadingLabel="Restoring…"
         confirmVariant="brand"
         isLoading={restoreLoading}
+      />
+
+      <ConfirmDeleteModal
+        isOpen={isPermanentDeleteModalOpen}
+        onClose={handlePermanentDeleteCancel}
+        onConfirm={handlePermanentDeleteConfirm}
+        title="Delete Permanently"
+        message={
+          permanentDeleteTarget
+            ? `Permanently delete "${permanentDeleteTarget.title}"? This will remove the article and its comments forever and cannot be undone.`
+            : undefined
+        }
+        confirmLabel="Delete Permanently"
+        loadingLabel="Deleting…"
+        isLoading={permanentDeleteLoading}
       />
 
       <ArticleExportModal
