@@ -142,7 +142,6 @@ export default function ArticleEdit() {
       content: s.content ?? "",
     })),
     author: { name: article.author_name ?? "", role: "", imageUrl: "", bio: "" },
-    tagsCommaRaw: "",
     shareEnabled: true,
     status: statusToForm(article.status),
     scheduled_publish_at: article.scheduled_publish_at ?? null,

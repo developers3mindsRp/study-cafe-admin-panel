@@ -14,7 +14,7 @@ export default function PaymentLinkCreate() {
   const handleSubmit = async (form: PaymentLinkFormValues) => {
     try {
       setLoading(true);
-      await createPaymentLink({
+      const payload: Parameters<typeof createPaymentLink>[0] = {
         title: form.title,
         slug: form.slug || undefined,
         description: form.description || null,
@@ -23,8 +23,10 @@ export default function PaymentLinkCreate() {
         expiry: form.expiry,
         total_seats: Number(form.total_seats),
         random_value: form.random_value?.trim() || null,
+        random_boost_accumulator: Number(String(form.random_boost_accumulator ?? "").trim()) || 0,
         status: form.status,
-      });
+      };
+      await createPaymentLink(payload);
       navigate("/payment-links");
     } catch (err: unknown) {
       console.error(err);

@@ -3,18 +3,18 @@ import { toast } from "react-toastify";
 import { useEditor, EditorContent } from "@tiptap/react";
 import { uploadMedia } from "../../api/uploads";
 import MediaPickerModal from "../media/MediaPickerModal";
-import StarterKit from "@tiptap/starter-kit";
-import Placeholder from "@tiptap/extension-placeholder";
-import Underline from "@tiptap/extension-underline";
-import Link from "@tiptap/extension-link";
-import Highlight from "@tiptap/extension-highlight";
-import Subscript from "@tiptap/extension-subscript";
-import Superscript from "@tiptap/extension-superscript";
-import TextAlign from "@tiptap/extension-text-align";
-import ImageResize from "tiptap-extension-resize-image";
 import type { Editor } from "@tiptap/core";
-import { LinkBubbleMenu, LinkToolbarButton, LINK_EXTENSION_OPTIONS } from "../form/EditorLinkControls";
+import { LinkBubbleMenu, LinkToolbarButton } from "../form/EditorLinkControls";
 import { ArticleBodyJSON } from "./types";
+import { createArticleEditorExtensions } from "./articleEditorExtensions";
+import {
+  compactEmbedsToMarkersInHtml,
+  canonicalizeEmbedHtml,
+  extractEmbedHtmlFromPaste,
+  extractEmbedHtmlFromPlainText,
+  prepareArticleContentForStorage,
+  tsvToTableHtml,
+} from "./embedHtml";
 
 /** Matches legacy [related id="123"] shortcodes — same pattern as public ArticleBody. */
 const RELATED_SHORTCODE_REGEX = /\[related\s+id=['"](\d+)['"]\]/gi;
@@ -125,6 +125,33 @@ function Toolbar({ editor }: { editor: Editor | null }) {
       setImageUploading(false);
     }
   };
+
+  const insertEmbedCode = () => {
+    const raw = window.prompt(
+      "Paste embed code (iframe, YouTube, Twitter, etc.):",
+      "",
+    );
+    if (!raw?.trim()) return;
+    const html = extractEmbedHtmlFromPlainText(raw) ?? extractEmbedHtmlFromPaste(raw);
+    if (!html || !/^<(?:iframe|blockquote)\b/i.test(html)) {
+      toast.error("Could not read embed code. Paste a full <iframe> or Twitter/Instagram blockquote.");
+      return;
+    }
+    const canonical = canonicalizeEmbedHtml(html);
+    editor
+      .chain()
+      .focus()
+      .insertContent({ type: "articleHtmlEmbed", attrs: { html: canonical } })
+      .run();
+  };
+
+  // const insertTable = () => {
+  //   editor
+  //     .chain()
+  //     .focus()
+  //     .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
+  //     .run();
+  // };
 
   return (
     <>
@@ -366,6 +393,24 @@ function Toolbar({ editor }: { editor: Editor | null }) {
       ))}
       <span className="mx-0.5 w-px self-stretch bg-gray-200 dark:bg-gray-700" />
 
+      {/* <button
+        type="button"
+        onClick={insertTable}
+        className="rounded px-2 py-1 text-xs font-medium text-gray-600 transition hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-white/10"
+        title="Insert table"
+      >
+        Table
+      </button> */}
+      <button
+        type="button"
+        onClick={insertEmbedCode}
+        className="rounded px-2 py-1 text-xs font-medium text-gray-600 transition hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-white/10"
+        title="Paste iframe / embed code"
+      >
+        Embed
+      </button>
+      <span className="mx-0.5 w-px self-stretch bg-gray-200 dark:bg-gray-700" />
+
       {/* Blockquote */}
       <button
         type="button"
@@ -394,32 +439,55 @@ export default function ArticleEditor({
   className = "",
 }: ArticleEditorProps) {
   const [initialSyncDone, setInitialSyncDone] = useState(false);
+  const editorRef = useRef<Editor | null>(null);
 
   const editor = useEditor({
-    extensions: [
-      StarterKit,
-      Placeholder.configure({ placeholder }),
-      Underline,
-      Link.configure(LINK_EXTENSION_OPTIONS),
-      Highlight.configure({ multicolor: false }),
-      Subscript,
-      Superscript,
-      TextAlign.configure({ types: ["heading", "paragraph", "image"] }),
-      ImageResize,
-    ],
-    content: "", // Will be set in useEffect to handle JSON/HTML conversion properly
+    extensions: createArticleEditorExtensions(placeholder),
+    content: "",
     editable,
     immediatelyRender: false,
     onUpdate: ({ editor: e }) => {
-      // Always output HTML for backend compatibility instead of TipTap JSON
-      onChange?.(e.getHTML());
+      onChange?.(prepareArticleContentForStorage(e.getHTML()));
     },
     editorProps: {
       attributes: {
         class: "tiptap px-4 py-3 min-h-[200px] focus:outline-none",
       },
+      handlePaste: (_view, event) => {
+        const ed = editorRef.current;
+        if (!ed) return false;
+        const html = event.clipboardData?.getData("text/html") || "";
+        const text = event.clipboardData?.getData("text/plain") || "";
+
+        const embedHtml =
+          (html && extractEmbedHtmlFromPaste(html)) ||
+          extractEmbedHtmlFromPlainText(text);
+        if (embedHtml) {
+          const canonical = canonicalizeEmbedHtml(embedHtml);
+          ed
+            .chain()
+            .focus()
+            .insertContent({ type: "articleHtmlEmbed", attrs: { html: canonical } })
+            .run();
+          return true;
+        }
+
+        if (!html && text.includes("\t") && text.includes("\n")) {
+          const tableHtml = tsvToTableHtml(text);
+          if (tableHtml) {
+            ed.chain().focus().insertContent(tableHtml).run();
+            return true;
+          }
+        }
+
+        return false;
+      },
     },
   });
+
+  useEffect(() => {
+    editorRef.current = editor;
+  }, [editor]);
 
   // Sync value when it changes externally
   useEffect(() => {
@@ -441,7 +509,7 @@ export default function ArticleEditor({
             editor.commands.setContent(parsed, { emitUpdate: false });
             // Let the parent know we've converted to HTML so they can save it
             setTimeout(() => {
-              onChange?.(editor.getHTML());
+              onChange?.(prepareArticleContentForStorage(editor.getHTML()));
             }, 0);
             setInitialSyncDone(true);
             return;
@@ -451,16 +519,19 @@ export default function ArticleEditor({
         // Not JSON
       }
 
-      // Load as HTML — preprocess legacy flat HTML to restore paragraph structure
-      const processedHtml = addParagraphStructureIfNeeded(trimmed);
+      // Load as HTML — compact legacy expanded embeds into markers, then restore paragraphs
+      const withEmbeds = compactEmbedsToMarkersInHtml(trimmed);
+      const processedHtml = addParagraphStructureIfNeeded(withEmbeds);
       editor.commands.setContent(processedHtml, { emitUpdate: false });
       setInitialSyncDone(true);
 
-      // If content was restructured, push the clean HTML back to the parent so
-      // subsequent renders don't diff against the old flat HTML and undo the fix.
-      if (processedHtml !== trimmed) {
+      if (withEmbeds !== trimmed) {
         setTimeout(() => {
-          onChange?.(editor.getHTML());
+          onChange?.(prepareArticleContentForStorage(editor.getHTML()));
+        }, 0);
+      } else if (processedHtml !== trimmed) {
+        setTimeout(() => {
+          onChange?.(prepareArticleContentForStorage(editor.getHTML()));
         }, 0);
       }
       return;
@@ -472,7 +543,7 @@ export default function ArticleEditor({
       // but if the parent pushes an entirely new HTML string, we should respect it
       const currentHtml = editor.getHTML();
       if (trimmed !== currentHtml && trimmed !== "<p></p>" && !trimmed.startsWith("{")) {
-        editor.commands.setContent(trimmed, { emitUpdate: false });
+        editor.commands.setContent(compactEmbedsToMarkersInHtml(trimmed), { emitUpdate: false });
       }
     }
   }, [value, editor, initialSyncDone, onChange]);

@@ -53,8 +53,6 @@ export interface ArticleFormData {
   /** Ordered sections; titles drive the public Table of Contents. */
   sections: ArticleSection[];
   author: AuthorBio;
-  /** Comma-separated tag labels as typed (parsed on save only). */
-  tagsCommaRaw: string;
   shareEnabled: boolean;
   status: "Draft" | "Published" | "Archived" | "Scheduled";
   /** ISO time from API when editing (hydrates datetime-local). */
@@ -146,7 +144,6 @@ const emptyFormData: ArticleFormData = {
   body: "",
   sections: [],
   author: emptyAuthor,
-  tagsCommaRaw: "",
   shareEnabled: true,
   status: "Draft",
   scheduled_publish_at_local: "",
@@ -202,21 +199,14 @@ function sidebarBadgeClass(status: ArticleFormData["status"]): string {
   }
 }
 
-/** Preview/back-navigation state historically used `tags: string[]`. */
+/** Preview/back-navigation state may include legacy `tags: string[]` — ignored. */
 type ArticleFormSeed = Partial<ArticleFormData> & { tags?: string[] };
 
 function buildArticleFormState(seed: ArticleFormSeed): ArticleFormData {
-  const { tags: legacyTags, ...rest } = seed;
-  const tagsCommaRaw =
-    typeof seed.tagsCommaRaw === "string"
-      ? seed.tagsCommaRaw
-      : Array.isArray(legacyTags) && legacyTags.length > 0
-        ? legacyTags.join(", ")
-        : "";
+  const { tags: _legacyTags, ...rest } = seed;
   return {
     ...emptyFormData,
     ...rest,
-    tagsCommaRaw,
     blog_access_tier: seed.blog_access_tier === "premium" ? "premium" : "free",
     // Hydrate the datetime-local input from the ISO string when not already set
     scheduled_publish_at_local:
@@ -559,22 +549,12 @@ export default function ArticleForm({
           value={formData.sections}
           onChange={(sections) => setFormData((prev) => ({ ...prev, sections }))}
         />
-      {/* Tags + Share (Fixed Bottom) */}
+      {/* Share & access */}
       <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] sm:p-6">
         <h3 className="mb-4 text-lg font-semibold text-gray-800 dark:text-white/90">
-          Tags &amp; Share
+          Share &amp; Access
         </h3>
         <div className="space-y-4">
-          <div>
-            <Label>Tags (comma-separated, optional)</Label>
-            <Input
-              value={formData.tagsCommaRaw}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, tagsCommaRaw: e.target.value }))
-              }
-              placeholder="GST, Tax, Finance"
-            />
-          </div>
           <div className="flex items-center gap-2">
             <input
               type="checkbox"
@@ -907,9 +887,25 @@ export default function ArticleForm({
         {/* Taxonomies (Categories, Tags, Article Types, Courts) — chip-style multi-select */}
         {taxonomyOptions && (
           <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] sm:p-6">
-            <h3 className="mb-4 text-lg font-semibold text-gray-800 dark:text-white/90">
-              Categories &amp; Tags
-            </h3>
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+              <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">
+                Categories &amp; Tags
+              </h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Manage{" "}
+                <Link to="/article-masters/tags" className="text-brand-500 hover:text-brand-600">
+                  tags
+                </Link>
+                {", "}
+                <Link to="/article-masters/article-types" className="text-brand-500 hover:text-brand-600">
+                  article types
+                </Link>
+                {", and "}
+                <Link to="/article-masters/courts" className="text-brand-500 hover:text-brand-600">
+                  courts
+                </Link>
+              </p>
+            </div>
             <div className="grid gap-6 sm:grid-cols-2">
               {taxonomyOptions.categories.length > 0 && (
                 <ChipMultiSelect
@@ -920,33 +916,27 @@ export default function ArticleForm({
                   placeholder="Search categories…"
                 />
               )}
-              {taxonomyOptions.tags.length > 0 && (
-                <ChipMultiSelect
-                  label="Tags"
-                  options={taxonomyOptions.tags}
-                  value={formData.tag_ids ?? []}
-                  onChange={(v) => setFormData((prev) => ({ ...prev, tag_ids: v }))}
-                  placeholder="Search tags…"
-                />
-              )}
-              {taxonomyOptions.articleTypes.length > 0 && (
-                <ChipMultiSelect
-                  label="Article types"
-                  options={taxonomyOptions.articleTypes}
-                  value={formData.article_type_ids ?? []}
-                  onChange={(v) => setFormData((prev) => ({ ...prev, article_type_ids: v }))}
-                  placeholder="Search article types…"
-                />
-              )}
-              {taxonomyOptions.courts.length > 0 && (
-                <ChipMultiSelect
-                  label="Courts"
-                  options={taxonomyOptions.courts}
-                  value={formData.court_ids ?? []}
-                  onChange={(v) => setFormData((prev) => ({ ...prev, court_ids: v }))}
-                  placeholder="Search courts…"
-                />
-              )}
+              <ChipMultiSelect
+                label="Tags"
+                options={taxonomyOptions.tags}
+                value={formData.tag_ids ?? []}
+                onChange={(v) => setFormData((prev) => ({ ...prev, tag_ids: v }))}
+                placeholder="Search tags…"
+              />
+              <ChipMultiSelect
+                label="Article types"
+                options={taxonomyOptions.articleTypes}
+                value={formData.article_type_ids ?? []}
+                onChange={(v) => setFormData((prev) => ({ ...prev, article_type_ids: v }))}
+                placeholder="Search article types…"
+              />
+              <ChipMultiSelect
+                label="Courts"
+                options={taxonomyOptions.courts}
+                value={formData.court_ids ?? []}
+                onChange={(v) => setFormData((prev) => ({ ...prev, court_ids: v }))}
+                placeholder="Search courts…"
+              />
             </div>
           </div>
         )}

@@ -929,6 +929,69 @@ span.flatpickr-weekday,
   text-align: justify;
 }
 
+/* Tables (paste from Word, Excel, Google Docs) */
+.rich-text-editor-content .tiptap table,
+.rich-text-editor-content .ProseMirror table,
+.rich-text-editor-content .article-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+  font-size: 0.875rem;
+}
+.rich-text-editor-content .tiptap th,
+.rich-text-editor-content .tiptap td,
+.rich-text-editor-content .ProseMirror th,
+.rich-text-editor-content .ProseMirror td {
+  border: 1px solid #d1d5db;
+  padding: 0.5rem 0.75rem;
+  vertical-align: top;
+}
+.rich-text-editor-content .tiptap th,
+.rich-text-editor-content .ProseMirror th {
+  background: #f3f4f6;
+  font-weight: 600;
+}
+.dark .rich-text-editor-content .tiptap th,
+.dark .rich-text-editor-content .ProseMirror th {
+  background: rgba(255, 255, 255, 0.06);
+}
+.dark .rich-text-editor-content .tiptap th,
+.dark .rich-text-editor-content .tiptap td,
+.dark .rich-text-editor-content .ProseMirror th,
+.dark .rich-text-editor-content .ProseMirror td {
+  border-color: #374151;
+}
+
+/* Embeds (iframe / oembed preview in editor) */
+.rich-text-editor-content .article-html-embed--editor {
+  margin: 1rem 0;
+  border: 1px dashed #93c5fd;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  background: #f8fafc;
+}
+.rich-text-editor-content .article-html-embed__label {
+  padding: 0.25rem 0.75rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #1d4ed8;
+  background: #eff6ff;
+  border-bottom: 1px solid #bfdbfe;
+}
+.rich-text-editor-content .article-html-embed__preview {
+  padding: 0.5rem;
+  overflow: auto;
+  max-width: 100%;
+}
+.rich-text-editor-content .article-html-embed__preview iframe {
+  display: block;
+  max-width: 100%;
+  min-height: 200px;
+  border: 0;
+}
+
 /* Article content preview — mirrors public site .article-rich-text for accurate admin-side preview */
 .article-content-preview {
   font-size: 1rem;
@@ -973,11 +1036,27 @@ span.flatpickr-weekday,
   padding-left: 1.5em;
 }
 .article-content-preview li { margin-bottom: 0.25em; }
-.article-content-preview blockquote {
+.article-content-preview blockquote:not(.twitter-tweet):not(.instagram-media):not(.tiktok-embed) {
   border-left: 4px solid #d4d4d8;
   margin: 1em 0;
   padding-left: 1em;
   color: #52525b;
   font-style: italic;
+}
+.article-content-preview .twitter-tweet,
+.article-content-preview .instagram-media,
+.article-content-preview .tiktok-embed {
+  margin: 1.25em auto;
+  max-width: 100%;
+  font-style: normal;
+  border-left: none;
+  padding-left: 0;
+}
+.article-content-preview iframe {
+  display: block;
+  max-width: 100%;
+  margin: 1.25em auto;
+  border: 0;
+  min-height: 200px;
 }
 .article-content-preview img { max-width: 100%; height: auto; }

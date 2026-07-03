@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
@@ -30,11 +30,45 @@ export default function PaymentLinkEdit() {
     })();
   }, [id, navigate]);
 
+  const loadedAccumulator = useMemo(
+    () => String(data?.random_boost_accumulator ?? 0),
+    [data?.random_boost_accumulator],
+  );
+  const loadedTotalSeats = useMemo(
+    () => String(data?.total_seats ?? ""),
+    [data?.total_seats],
+  );
+  const loadedRandomValue = useMemo(
+    () => data?.random_value ?? "",
+    [data?.random_value],
+  );
+
+  const defaultValues = useMemo<PaymentLinkFormValues | undefined>(() => {
+    if (!data) return undefined;
+    return {
+      title: data.title,
+      slug: data.slug,
+      description: data.description ?? "",
+      amount: String(data.amount ?? ""),
+      sale_price: String(data.sale_price ?? ""),
+      expiry:
+        typeof data.expiry === "string"
+          ? data.expiry
+          : data.expiry
+            ? new Date(data.expiry).toISOString()
+            : "",
+      total_seats: String(data.total_seats ?? ""),
+      random_value: data.random_value ?? "",
+      random_boost_accumulator: loadedAccumulator,
+      status: (data.status === "publish" ? "publish" : "draft") as PaymentLinkFormValues["status"],
+    };
+  }, [data, loadedAccumulator]);
+
   const handleSubmit = async (form: PaymentLinkFormValues) => {
     if (!id) return;
     try {
       setSaving(true);
-      await updatePaymentLink(id, {
+      const payload: Parameters<typeof updatePaymentLink>[1] = {
         title: form.title,
         slug: form.slug || undefined,
         description: form.description || null,
@@ -43,9 +77,21 @@ export default function PaymentLinkEdit() {
         expiry: form.expiry,
         total_seats: Number(form.total_seats),
         random_value: form.random_value?.trim() || null,
-        random_boost_accumulator: Number(form.random_boost_accumulator ?? 0),
         status: form.status,
-      });
+      };
+
+      const accInput = String(form.random_boost_accumulator ?? "").trim();
+      const totalSeatsChanged = String(form.total_seats ?? "").trim() !== loadedTotalSeats;
+      const randomValueChanged =
+        (form.random_value?.trim() || "") !== (loadedRandomValue?.trim() || "");
+
+      // Send accumulator when admin changed it, or when total seats / random range changed
+      // (backend resets accumulator on those changes unless a new value is provided).
+      if (accInput !== loadedAccumulator || totalSeatsChanged || randomValueChanged) {
+        payload.random_boost_accumulator = accInput === "" ? 0 : Number(accInput) || 0;
+      }
+
+      await updatePaymentLink(id, payload);
       navigate("/payment-links");
     } catch (err: unknown) {
       alert(getApiErrorMessage(err, "Failed to update payment link"));
@@ -54,26 +100,13 @@ export default function PaymentLinkEdit() {
     }
   };
 
-  if (loading || !data) {
+  if (loading || !data || !defaultValues) {
     return (
       <div className="flex items-center justify-center p-20">
         <p className="text-gray-500">Loading…</p>
       </div>
     );
   }
-
-  const defaultValues: PaymentLinkFormValues = {
-    title: data.title,
-    slug: data.slug,
-    description: data.description ?? "",
-    amount: String(data.amount ?? ""),
-    sale_price: String(data.sale_price ?? ""),
-    expiry: typeof data.expiry === "string" ? data.expiry : String(data.expiry),
-    total_seats: String(data.total_seats ?? ""),
-    random_value: data.random_value ?? "",
-    random_boost_accumulator: String(data.random_boost_accumulator ?? 0),
-    status: (data.status === "publish" ? "publish" : "draft") as PaymentLinkFormValues["status"],
-  };
 
   return (
     <>

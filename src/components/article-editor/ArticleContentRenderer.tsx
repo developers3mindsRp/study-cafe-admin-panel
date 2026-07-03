@@ -6,6 +6,8 @@
 
 import type { ReactNode } from "react";
 import type { JSONContent } from "@tiptap/core";
+import { expandEmbedMarkersInHtml } from "./embedHtml";
+import { ArticleHtmlBlock } from "./ArticleHtmlBlock";
 
 export interface RelatedArticle {
   id: number;
@@ -524,6 +526,14 @@ function renderNode(node: JSONContent, index: number): ReactNode {
         />
       );
 
+    case "articleHtmlEmbed":
+      return (
+        <ArticleHtmlBlock
+          key={key}
+          html={(node.attrs?.html as string) || ""}
+        />
+      );
+
     default:
       return null;
   }
@@ -562,10 +572,9 @@ function renderLegacyContentWithRelated(
     const before = content.slice(lastIndex, m.index);
     if (before) {
       parts.push(
-        <div
+        <ArticleHtmlBlock
           key={`html-${key++}`}
-          className="article-content-preview max-w-none text-gray-800 dark:text-white/90"
-          dangerouslySetInnerHTML={{ __html: injectIds(before) }}
+          html={injectIds(expandEmbedMarkersInHtml(before))}
         />
       );
     }
@@ -594,10 +603,9 @@ function renderLegacyContentWithRelated(
   const tail = content.slice(lastIndex);
   if (tail) {
     parts.push(
-      <div
+      <ArticleHtmlBlock
         key={`html-${key++}`}
-        className="article-content-preview max-w-none text-gray-800 dark:text-white/90"
-          dangerouslySetInnerHTML={{ __html: injectIds(tail) }}
+        html={injectIds(expandEmbedMarkersInHtml(tail))}
       />
     );
   }
@@ -617,13 +625,14 @@ export default function ArticleContentRenderer({
     doc = JSON.parse(content) as JSONContent;
   } catch {
     if (typeof content === "string" && content.trim()) {
+      const html = expandEmbedMarkersInHtml(content);
       const tocItems: TOCItem[] = [];
 
       if (showTableOfContents) {
         // Simple regex to find h2 and h3 in HTML
         const headingRegex = /<(h[23])(?:\s+[^>]*)?>([\s\S]*?)<\/h[23]>/gi;
         let match;
-        while ((match = headingRegex.exec(content)) !== null) {
+        while ((match = headingRegex.exec(html)) !== null) {
           const tag = match[1].toLowerCase();
           const level = tag === "h2" ? 2 : 3;
           // Strip HTML tags from heading text
@@ -639,8 +648,19 @@ export default function ArticleContentRenderer({
       }
 
       RELATED_SHORTCODE_REGEX.lastIndex = 0;
-      const hasShortcode = RELATED_SHORTCODE_REGEX.test(content);
+      const hasShortcode = RELATED_SHORTCODE_REGEX.test(html);
       RELATED_SHORTCODE_REGEX.lastIndex = 0;
+
+      const htmlWithTocIds = showTableOfContents
+        ? html.replace(
+            /<(h[23])(?:\s+[^>]*)?>([\s\S]*?)<\/h[23]>/gi,
+            (_match, tag, inner) => {
+              const rawText = inner.replace(/<[^>]*>?/gm, "").trim();
+              const id = generateId(rawText);
+              return `<${tag} id="${id}">${inner}</${tag}>`;
+            },
+          )
+        : html;
 
       return (
         <div className={`article-content ${className}`}>
@@ -648,21 +668,7 @@ export default function ArticleContentRenderer({
           {hasShortcode ? (
             renderLegacyContentWithRelated(content, relatedArticles, articleUrlBase, showTableOfContents)
           ) : (
-            <div
-              className="article-content-preview max-w-none"
-              dangerouslySetInnerHTML={{
-                __html: showTableOfContents
-                  ? content.replace(
-                    /<(h[23])(?:\s+[^>]*)?>([\s\S]*?)<\/h[23]>/gi,
-                    (_match, tag, inner) => {
-                      const rawText = inner.replace(/<[^>]*>?/gm, "").trim();
-                      const id = generateId(rawText);
-                      return `<${tag} id="${id}">${inner}</${tag}>`;
-                    }
-                  )
-                  : content,
-              }}
-            />
+            <ArticleHtmlBlock html={htmlWithTocIds} />
           )}
         </div>
       );

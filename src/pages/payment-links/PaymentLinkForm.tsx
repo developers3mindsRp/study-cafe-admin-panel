@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
 import Label from "../../components/form/Label";
 import Input from "../../components/form/input/InputField";
@@ -46,9 +46,15 @@ export default function PaymentLinkForm({
 }: Props) {
   const [form, setForm] = useState<PaymentLinkFormValues>({ ...empty, ...defaultValues });
 
+  const defaultValuesKey = useMemo(
+    () => (defaultValues ? JSON.stringify(defaultValues) : ""),
+    [defaultValues],
+  );
+
   useEffect(() => {
-    setForm({ ...empty, ...defaultValues });
-  }, [defaultValues]);
+    if (!defaultValuesKey) return;
+    setForm({ ...empty, ...JSON.parse(defaultValuesKey) as PaymentLinkFormValues });
+  }, [defaultValuesKey]);
 
   const update = <K extends keyof PaymentLinkFormValues>(key: K, value: PaymentLinkFormValues[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -214,8 +220,9 @@ export default function PaymentLinkForm({
             />
             <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
               Sets the initial starting value of the random boost counter. Visitors see: paid orders + this value +
-              future increments (capped by total seats). <strong>Note:</strong> changing Random value or Total seats
-              will automatically reset this to 0.
+              future increments (capped by total seats). Leave unchanged when saving other fields — only edit this
+              when you want to set a new start value. Changing Random value or Total seats resets this (or uses the
+              value you enter here in the same save).
             </p>
           </div>
 

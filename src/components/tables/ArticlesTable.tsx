@@ -123,7 +123,6 @@ export const ArticlesTable = forwardRef<DataTableRef, ArticlesTableProps>(
           content: s.content ?? "",
         })),
         author: { name: "", role: "", imageUrl: "", bio: "" },
-        tagsCommaRaw: "",
         shareEnabled: true,
         status:
           article.status === "publish" || article.status === "published"
