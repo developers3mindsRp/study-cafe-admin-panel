@@ -7,24 +7,26 @@ import { DollarLineIcon } from "../../icons";
 
 const SLIDER_TRACK_MAX = 20_000;
 const DEFAULT_SLIDER_MAX = SLIDER_TRACK_MAX;
-const STEP = 100;
+const DEFAULT_STEP = 100;
 
 function parseNum(s: string): number | null {
   const n = Number(String(s).trim());
   return Number.isFinite(n) ? n : null;
 }
 
-/** Rounds to nearest multiple of STEP; empty or invalid → "". */
-function snapAmountString(raw: string): string {
+/** Rounds to nearest multiple of step; empty or invalid → "". */
+function snapAmountString(raw: string, step: number): string {
   const t = raw.trim();
   if (t === "") return "";
   const n = parseNum(t);
   if (n == null) return "";
-  return String(Math.max(0, Math.round(n / STEP) * STEP));
+  if (step <= 1) return String(Math.max(0, Math.round(n)));
+  return String(Math.max(0, Math.round(n / step) * step));
 }
 
-function snapStep(v: number) {
-  return Math.round(v / STEP) * STEP;
+function snapToStep(v: number, step: number) {
+  if (step <= 1) return Math.max(0, Math.round(v));
+  return Math.round(v / step) * step;
 }
 
 export interface AmountRangeDropdownProps {
@@ -35,6 +37,12 @@ export interface AmountRangeDropdownProps {
   onChange: (next: { amountMin: string; amountMax: string }) => void;
   /** Upper bound for the slider track (never above 20,000; type a higher max in the inputs if needed). */
   sliderMax?: number;
+  /** Slider/input step; defaults to 100 (orders). Use 1 for precise filters. */
+  step?: number;
+  /** Snap typed values to step on blur; defaults to true when step >= 100. */
+  snapOnBlur?: boolean;
+  /** When false, only min/max inputs are shown (no range slider). */
+  showSlider?: boolean;
   className?: string;
 }
 
@@ -45,8 +53,13 @@ export default function AmountRangeDropdown({
   amountMax,
   onChange,
   sliderMax = DEFAULT_SLIDER_MAX,
+  step = DEFAULT_STEP,
+  snapOnBlur,
+  showSlider = true,
   className = "",
 }: AmountRangeDropdownProps) {
+  const snapBlur = snapOnBlur ?? step >= 100;
+  const snapSlider = step >= 100;
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -105,9 +118,10 @@ export default function AmountRangeDropdown({
   }, [open, closePanel]);
 
   const sliderMaxSnapped = useMemo(() => {
-    const capped = Math.min(Math.max(STEP, sliderMax), SLIDER_TRACK_MAX);
-    return Math.max(STEP, Math.floor(capped / STEP) * STEP);
-  }, [sliderMax]);
+    const capped = Math.min(Math.max(step, sliderMax), SLIDER_TRACK_MAX);
+    if (step <= 1) return Math.max(1, capped);
+    return Math.max(step, Math.floor(capped / step) * step);
+  }, [sliderMax, step]);
 
   const cappedHiForLo = useMemo(() => {
     if (amountMax.trim() === "") return sliderMaxSnapped;
@@ -123,19 +137,19 @@ export default function AmountRangeDropdown({
     if (amountMin.trim() === "") return 0;
     const n = parseNum(amountMin) ?? 0;
     const clamped = Math.min(Math.max(0, n), cappedHiForLo);
-    return snapStep(clamped);
-  }, [amountMin, cappedHiForLo]);
+    return snapSlider ? snapToStep(clamped, step) : clamped;
+  }, [amountMin, cappedHiForLo, snapSlider, step]);
 
   const hi = useMemo(() => {
     if (amountMax.trim() === "") return sliderMaxSnapped;
     const n = parseNum(amountMax) ?? sliderMaxSnapped;
     const clamped = Math.min(Math.max(cappedLoForHi, n), sliderMaxSnapped);
-    return snapStep(clamped);
-  }, [amountMax, cappedLoForHi, sliderMaxSnapped]);
+    return snapSlider ? snapToStep(clamped, step) : clamped;
+  }, [amountMax, cappedLoForHi, sliderMaxSnapped, snapSlider, step]);
 
   const setLo = (raw: number) => {
-    const snapped = snapStep(raw);
-    const maxLo = Math.max(0, cappedHiForLo - STEP);
+    const snapped = snapToStep(raw, step);
+    const maxLo = Math.max(0, cappedHiForLo - step);
     const nextLo = Math.min(maxLo, Math.max(0, snapped));
     onChange({
       amountMin: nextLo <= 0 ? "" : String(nextLo),
@@ -144,8 +158,8 @@ export default function AmountRangeDropdown({
   };
 
   const setHi = (raw: number) => {
-    const snapped = snapStep(raw);
-    const minHi = Math.min(sliderMaxSnapped, cappedLoForHi + STEP);
+    const snapped = snapToStep(raw, step);
+    const minHi = Math.min(sliderMaxSnapped, cappedLoForHi + step);
     const nextHi = Math.max(minHi, Math.min(sliderMaxSnapped, snapped));
     onChange({
       amountMin,
@@ -236,7 +250,7 @@ export default function AmountRangeDropdown({
                     type="number"
                     inputMode="numeric"
                     min={0}
-                    step={100}
+                    step={step}
                     placeholder="0"
                     className="h-9 !px-2 !py-1.5 text-xs"
                     value={amountMin}
@@ -244,7 +258,15 @@ export default function AmountRangeDropdown({
                       onChange({ amountMin: e.target.value, amountMax })
                     }
                     onBlur={() => {
-                      const next = snapAmountString(amountMin);
+                      if (!snapBlur) {
+                        const minN = parseNum(amountMin);
+                        const maxN = parseNum(amountMax);
+                        if (minN != null && maxN != null && maxN < minN) {
+                          onChange({ amountMin: amountMin.trim(), amountMax: amountMin });
+                        }
+                        return;
+                      }
+                      const next = snapAmountString(amountMin, step);
                       if (next === amountMin.trim()) return;
                       let maxStr = amountMax;
                       const maxN = parseNum(maxStr);
@@ -262,7 +284,7 @@ export default function AmountRangeDropdown({
                     type="number"
                     inputMode="numeric"
                     min={0}
-                    step={100}
+                    step={step}
                     placeholder="No max"
                     className="h-9 !px-2 !py-1.5 text-xs"
                     value={amountMax}
@@ -270,7 +292,15 @@ export default function AmountRangeDropdown({
                       onChange({ amountMin: amountMin, amountMax: e.target.value })
                     }
                     onBlur={() => {
-                      const next = snapAmountString(amountMax);
+                      if (!snapBlur) {
+                        const minN = parseNum(amountMin);
+                        const maxN = parseNum(amountMax);
+                        if (minN != null && maxN != null && minN > maxN) {
+                          onChange({ amountMin: amountMax, amountMax: amountMax.trim() });
+                        }
+                        return;
+                      }
+                      const next = snapAmountString(amountMax, step);
                       if (next === amountMax.trim()) return;
                       let minStr = amountMin;
                       const maxN = parseNum(next);
@@ -284,36 +314,40 @@ export default function AmountRangeDropdown({
                 </div>
               </div>
 
-              <div className="relative mb-1 h-8">
-                <div className="absolute left-0 right-0 top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-gray-200 dark:bg-gray-700" />
-                <div
-                  className="absolute top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-brand-500 dark:bg-brand-400"
-                  style={rangeStyle}
-                />
-                {/* Max below, min above (higher z): tracks use pointer-events-none so only thumbs hit-test. */}
-                <input
-                  type="range"
-                  min={0}
-                  max={sliderMaxSnapped}
-                  step={STEP}
-                  value={hi}
-                  onChange={(e) => setHi(Number(e.target.value))}
-                  className={twMerge(rangeInputClass, "z-10")}
-                />
-                <input
-                  type="range"
-                  min={0}
-                  max={sliderMaxSnapped}
-                  step={STEP}
-                  value={lo}
-                  onChange={(e) => setLo(Number(e.target.value))}
-                  className={twMerge(rangeInputClass, "z-20")}
-                />
-              </div>
-              <p className="text-theme-xs text-gray-500 dark:text-gray-400">
-                Slider and amounts use steps of {STEP.toLocaleString()}. Type a max above{" "}
-                {sliderMaxSnapped.toLocaleString()} if you need to.
-              </p>
+              {showSlider ? (
+                <>
+                  <div className="relative mb-1 h-8">
+                    <div className="absolute left-0 right-0 top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-gray-200 dark:bg-gray-700" />
+                    <div
+                      className="absolute top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-brand-500 dark:bg-brand-400"
+                      style={rangeStyle}
+                    />
+                    <input
+                      type="range"
+                      min={0}
+                      max={sliderMaxSnapped}
+                      step={step}
+                      value={hi}
+                      onChange={(e) => setHi(Number(e.target.value))}
+                      className={twMerge(rangeInputClass, "z-10")}
+                    />
+                    <input
+                      type="range"
+                      min={0}
+                      max={sliderMaxSnapped}
+                      step={step}
+                      value={lo}
+                      onChange={(e) => setLo(Number(e.target.value))}
+                      className={twMerge(rangeInputClass, "z-20")}
+                    />
+                  </div>
+                  <p className="text-theme-xs text-gray-500 dark:text-gray-400">
+                    {step >= 100
+                      ? `Slider and amounts use steps of ${step.toLocaleString()}. Type a max above ${sliderMaxSnapped.toLocaleString()} if you need to.`
+                      : `Type exact amounts or use the slider (up to ${sliderMaxSnapped.toLocaleString()}).`}
+                  </p>
+                </>
+              ) : null}
 
               <button
                 type="button"

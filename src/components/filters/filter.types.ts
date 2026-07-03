@@ -19,6 +19,36 @@ export type FilterFieldDef =
       placeholder?: string;
     }
   | {
+      type: "searchable-async-select";
+      id: string;
+      label: string;
+      loader: (search: string) => Promise<SelectOption[]>;
+      resolveOption?: (value: string) => Promise<SelectOption | null>;
+      placeholder?: string;
+      searchPlaceholder?: string;
+      /** Minimum characters before search runs; defaults to 2. */
+      minSearchLength?: number;
+      /** When true, loads options on open (e.g. first page without typing). */
+      defaultOptions?: boolean;
+      /** Optional grid column class when FilterBar layout is "full". */
+      className?: string;
+    }
+  | {
+      type: "amount-range";
+      id: string;
+      label: string;
+      minId?: string;
+      maxId?: string;
+      sliderMax?: number;
+      /** Slider/input step; defaults to 1 in filters. */
+      step?: number;
+      /** Snap typed values on blur; off by default for fine-grained filters. */
+      snapOnBlur?: boolean;
+      /** Show dual-thumb slider in dropdown; off by default (min/max inputs only). */
+      showSlider?: boolean;
+      className?: string;
+    }
+  | {
       type: "date-range";
       id: string;
       label: string;
@@ -26,6 +56,7 @@ export type FilterFieldDef =
       fromId?: string;
       /** id for the "to" date value; defaults to `${id}_to` */
       toId?: string;
+      className?: string;
     }
   | {
       type: "text";
