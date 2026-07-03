@@ -5,6 +5,8 @@
 
 import { createCrudApi } from "./apiFactory";
 import { api } from "./axios";
+import { getApiBaseUrl } from "../config/env";
+import { getStoredToken } from "../lib/authStorage";
 import type { DataTableFetchParams, DataTableFetchResult } from "../components/tables/data-table";
 
 /** Resolved "Also Read" article from [related id="..."] shortcodes in legacy content */
@@ -240,4 +242,57 @@ export async function generateArticlePreviewLink(
     `${BASE_URL}/${articleId}/preview-token`
   );
   return data;
+}
+
+/** Hard-delete a trashed article (irreversible). The API rejects articles not in trash. */
+export async function deleteArticlePermanently(articleId: number | string): Promise<void> {
+  await api.delete(`${BASE_URL}/${articleId}/permanent`);
+}
+
+// ── Edit locks (concurrent-editing guard) ────────────────────────────
+
+export interface ArticleEditLockInfo {
+  user_id: number;
+  user_name: string | null;
+  locked_at: string;
+  expires_at: string;
+}
+
+export interface ArticleEditLockResult {
+  acquired: boolean;
+  lock: ArticleEditLockInfo | null;
+  ttl_seconds: number;
+  heartbeat_seconds: number;
+}
+
+/**
+ * Acquire or renew the edit lock for the current admin. Never steals an
+ * active lock held by someone else — returns { acquired: false } with the
+ * holder's info instead.
+ */
+export async function acquireArticleEditLock(
+  articleId: number | string
+): Promise<ArticleEditLockResult> {
+  const { data } = await api.post<ArticleEditLockResult>(`${BASE_URL}/${articleId}/edit-lock`);
+  return data;
+}
+
+export async function releaseArticleEditLock(articleId: number | string): Promise<void> {
+  await api.delete(`${BASE_URL}/${articleId}/edit-lock`);
+}
+
+/**
+ * Lock release for page unload: the browser drops in-flight XHR/axios calls
+ * while the document is being torn down, so this uses a keepalive fetch.
+ * Fire-and-forget — if even this never arrives (network loss, force kill),
+ * the server-side TTL expires the lock shortly after.
+ */
+export function releaseArticleEditLockOnUnload(articleId: number | string): void {
+  const token = getStoredToken();
+  if (!token) return;
+  void fetch(`${getApiBaseUrl()}${BASE_URL}/${articleId}/edit-lock`, {
+    method: "DELETE",
+    keepalive: true,
+    headers: { Authorization: `Bearer ${token}` },
+  }).catch(() => undefined);
 }

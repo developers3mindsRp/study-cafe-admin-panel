@@ -35,6 +35,7 @@ const WEBSITE_URL = getWebsiteUrl();
 export interface ArticlesTableProps {
   onDeleteClick?: (article: ArticleRecord) => void;
   onRestoreClick?: (article: ArticleRecord) => void;
+  onPermanentDeleteClick?: (article: ArticleRecord) => void;
   trashScope?: TrashScope;
   filterStatus?: string;
   filterCategoryId?: string;
@@ -66,6 +67,7 @@ export const ArticlesTable = forwardRef<DataTableRef, ArticlesTableProps>(
     {
       onDeleteClick,
       onRestoreClick,
+      onPermanentDeleteClick,
       trashScope = "active",
       filterStatus = "",
       filterCategoryId = "",
@@ -167,28 +169,6 @@ export const ArticlesTable = forwardRef<DataTableRef, ArticlesTableProps>(
     void handlePreview; // kept for internal preview navigation — not exposed in table UI
 
     const columns = [
-      {
-        key: "image",
-        header: "Image",
-        sortable: false,
-        render: (row: ArticleRecord) => (
-          <div className="h-10 w-16 overflow-hidden rounded bg-gray-100 dark:bg-gray-800">
-            {row.thumbnail_url ? (
-              <img
-                src={row.thumbnail_url}
-                alt={row.title}
-                className="h-full w-full object-cover"
-                referrerPolicy="no-referrer"
-                loading="lazy"
-              />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center text-xs text-gray-400">
-                No IMG
-              </div>
-            )}
-          </div>
-        ),
-      },
       {
         key: "title",
         header: "Title",
@@ -351,6 +331,15 @@ export const ArticlesTable = forwardRef<DataTableRef, ArticlesTableProps>(
                   title="Restore"
                 >
                   Restore
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onPermanentDeleteClick?.(row)}
+                  className="inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-error-500 transition hover:bg-error-50 dark:text-error-400 dark:hover:bg-error-500/10"
+                  title="Delete permanently — cannot be undone"
+                >
+                  <TrashBinIcon className="size-4 shrink-0 fill-current" />
+                  Delete Permanently
                 </button>
               </RequirePermission>
             )}

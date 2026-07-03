@@ -11,6 +11,9 @@ import { articleFormToApiPayload } from "./articlePayload";
 import { articlesApi, fetchArticleCategories, fetchTags, fetchArticleTypes, fetchCourts, type ArticleRecord } from "../../api/articles";
 import { decodeSlugForDisplay } from "../../lib/slug";
 import { getApiErrorMessage } from "../../lib/apiError";
+import { useArticleEditLock } from "../../hooks/useArticleEditLock";
+import { Modal } from "../../components/ui/modal";
+import Button from "../../components/ui/button/Button";
 
 function statusToForm(s: string): ArticleFormData["status"] {
   if (s === "publish" || s === "published") return "Published";
@@ -51,6 +54,17 @@ export default function ArticleEdit() {
     articleTypes: [],
     courts: [],
   });
+  const editLock = useArticleEditLock(id);
+  const [lockWarningDismissed, setLockWarningDismissed] = useState(false);
+
+  // Reset the dismissal when we (re)gain the lock so a fresh takeover by
+  // someone else warns again instead of silently reusing the old dismissal.
+  useEffect(() => {
+    if (editLock.status === "acquired") setLockWarningDismissed(false);
+  }, [editLock.status]);
+
+  const lockedByName =
+    editLock.status === "locked" ? editLock.lockedBy.user_name || "Another user" : null;
 
   useEffect(() => {
     if (id) {
@@ -171,6 +185,12 @@ export default function ArticleEdit() {
           { label: article.title || `Article ${id}`, path: `/articles/${id}` },
         ]}
       />
+      {editLock.status === "locked" && lockWarningDismissed && (
+        <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-300">
+          <strong>{lockedByName}</strong> is currently editing this article. Saving your changes may
+          overwrite their work.
+        </div>
+      )}
       <ArticleForm
         key={id}
         mode="edit"
@@ -180,6 +200,36 @@ export default function ArticleEdit() {
         loading={submitting}
         taxonomyOptions={taxonomyOptions}
       />
+
+      <Modal
+        isOpen={editLock.status === "locked" && !lockWarningDismissed}
+        onClose={() => setLockWarningDismissed(true)}
+        className="max-w-[425px] m-4"
+        showCloseButton={true}
+      >
+        <div className="p-6 sm:p-8">
+          <h3 className="mb-2 text-lg font-semibold text-gray-800 dark:text-white/90">
+            Article is being edited
+          </h3>
+          <p className="mb-6 text-sm text-gray-500 dark:text-gray-400">
+            <strong>{lockedByName}</strong> is currently editing this article. You can view it, but
+            any changes you save may overwrite their work. You will get edit access automatically
+            once they leave.
+          </p>
+          <div className="flex flex-wrap items-center justify-end gap-3">
+            <Button variant="outline" size="sm" onClick={() => navigate("/articles")}>
+              Go back
+            </Button>
+            <button
+              type="button"
+              onClick={() => setLockWarningDismissed(true)}
+              className="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-medium text-white transition bg-warning-500 shadow-theme-xs hover:bg-warning-600"
+            >
+              Edit anyway
+            </button>
+          </div>
+        </div>
+      </Modal>
     </>
   );
 }
