@@ -1,10 +1,5 @@
 import type { ArticleFormData } from "./ArticleForm";
 
-/** Split comma-separated labels (trim, drop empties). Used for API `tag_labels` (server find-or-creates Tag rows). */
-export function parseCommaSeparatedLabels(raw: string): string[] {
-  return raw.split(",").map((s) => s.trim()).filter(Boolean);
-}
-
 /** Maps article editor state → platform-service article write payload (snake_case). */
 export function articleFormToApiPayload(formData: ArticleFormData) {
   const trimmedOg = formData.meta.ogImageUrl?.trim();
@@ -14,9 +9,6 @@ export function articleFormToApiPayload(formData: ArticleFormData) {
       .map((id) => Number(id))
       .filter((n) => Number.isFinite(n) && n > 0),
   )];
-  // Always send both: chip-selected tag_ids AND comma-separated tag_labels.
-  // The server will find-or-create labels and merge them with the id-based tags.
-  const tag_labels = parseCommaSeparatedLabels(formData.tagsCommaRaw ?? "");
 
   return {
     title: formData.meta.title,
@@ -38,7 +30,6 @@ export function articleFormToApiPayload(formData: ArticleFormData) {
     thumbnail_caption: formData.featuredImage?.caption?.trim() || null,
     category_ids: formData.category_ids ?? [],
     tag_ids: chipTagIds,
-    tag_labels,
     article_type_ids: formData.article_type_ids ?? [],
     court_ids: formData.court_ids ?? [],
     blog_access_tier: formData.blog_access_tier,

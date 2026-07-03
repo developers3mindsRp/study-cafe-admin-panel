@@ -40,6 +40,7 @@ export const mainNavItemsConfig: NavItemConfig[] = [
       { name: "List", path: "/articles", requiredPermission: ["articles:list", "articles:view"] },
       { name: "Create", path: "/articles/create", requiredPermission: ["articles:create"] },
       { name: "Blog Categories", path: "/article-categories", requiredPermission: ["articles:list", "articles:view"] },
+      { name: "Article Masters", path: "/article-masters", requiredPermission: ["articles:list", "articles:view"] },
     ],
     requiredPermission: ["articles:list", "articles:view", "articles:create", "articles:edit", "articles:delete"],
   },

@@ -12,6 +12,7 @@ import {
   updatePaymentGatewayKeys,
   deletePaymentGatewayKeys,
   PaymentGatewayKeys,
+  isMaskedCredential,
 } from "../../api/paymentGateway";
 
 export default function PaymentGatewaySettings() {
@@ -76,7 +77,8 @@ export default function PaymentGatewaySettings() {
     setEditingItem(item);
     setName(item.name);
     setGatewayName(item.gateway_name);
-    setKeyId(item.key_id);
+    // Never pre-fill secrets or masked placeholders — leave blank to keep existing values.
+    setKeyId(item.key_id_locked || isMaskedCredential(item.key_id) ? "" : item.key_id);
     setKeySecret("");
     setWebhookSecret("");
     setIsActive(item.is_active === 1);
@@ -85,31 +87,57 @@ export default function PaymentGatewaySettings() {
     setIsOpen(true);
   };
 
+  const buildUpdatePayload = (): Partial<PaymentGatewayKeys> => {
+    const payload: Partial<PaymentGatewayKeys> = {
+      name: name.trim(),
+      gateway_name: gatewayName,
+      is_active: isActive ? 1 : 0,
+    };
+
+    const trimmedKeyId = keyId.trim();
+    if (trimmedKeyId && !isMaskedCredential(trimmedKeyId)) {
+      payload.key_id = trimmedKeyId;
+    }
+
+    const trimmedSecret = keySecret.trim();
+    if (trimmedSecret) {
+      payload.key_secret = trimmedSecret;
+    }
+
+    const trimmedWebhook = webhookSecret.trim();
+    if (trimmedWebhook) {
+      payload.webhook_secret = trimmedWebhook;
+    }
+
+    return payload;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!canEdit) return;
 
     if (!name.trim()) return alert("Label Name is required");
-    if (!keyId.trim()) return alert("Key ID is required");
-    if (!editingItem && !keySecret.trim()) return alert("Key Secret is required for new configurations");
+    if (!editingItem) {
+      if (!keyId.trim()) return alert("Key ID is required");
+      if (!keySecret.trim()) return alert("Key Secret is required for new configurations");
+    }
 
     setSaving(true);
     try {
-      const payload: Partial<PaymentGatewayKeys> = {
-        name: name.trim(),
-        gateway_name: gatewayName,
-        key_id: keyId.trim(),
-        webhook_secret: webhookSecret.trim() || undefined,
-        is_active: isActive ? 1 : 0,
-      };
-
-      if (keySecret.trim()) {
-        payload.key_secret = keySecret.trim();
-      }
-
       if (editingItem) {
-        await updatePaymentGatewayKeys(editingItem.id, payload);
+        await updatePaymentGatewayKeys(editingItem.id, buildUpdatePayload());
       } else {
+        const payload: Partial<PaymentGatewayKeys> = {
+          name: name.trim(),
+          gateway_name: gatewayName,
+          key_id: keyId.trim(),
+          key_secret: keySecret.trim(),
+          is_active: isActive ? 1 : 0,
+        };
+        const trimmedWebhook = webhookSecret.trim();
+        if (trimmedWebhook) {
+          payload.webhook_secret = trimmedWebhook;
+        }
         await createPaymentGatewayKeys(payload);
       }
 
@@ -332,13 +360,21 @@ export default function PaymentGatewaySettings() {
 
           <div>
             <Label htmlFor="rp-key">RAZORPAY_KEY_ID</Label>
+            {editingItem ? (
+              <p className="mb-1.5 text-xs text-gray-500 dark:text-gray-400">
+                Current:{" "}
+                {editingItem.key_id_locked
+                  ? "saved (cannot display — re-enter only if replacing keys)"
+                  : editingItem.key_id}
+              </p>
+            ) : null}
             <Input
               id="rp-key"
               type="text"
-              placeholder="rzp_test_..."
+              placeholder={editingItem ? "Leave blank to keep current Key ID" : "rzp_test_..."}
               value={keyId}
               onChange={(e) => setKeyId(e.target.value)}
-              required
+              required={!editingItem}
             />
           </div>
 

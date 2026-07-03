@@ -48,6 +48,9 @@ import ArticlePreview from "./pages/articles/ArticlePreview";
 import CategoryList from "./pages/categories/CategoryList";
 import CategoryCreate from "./pages/categories/CategoryCreate";
 import CategoryEdit from "./pages/categories/CategoryEdit";
+import ArticleMastersPage from "./pages/article-masters/ArticleMastersPage";
+import MasterTermCreate from "./pages/article-masters/MasterTermCreate";
+import MasterTermEdit from "./pages/article-masters/MasterTermEdit";
 import MembershipList from "./pages/memberships/MembershipList";
 import MembershipCreate from "./pages/memberships/MembershipCreate";
 import MembershipEdit from "./pages/memberships/MembershipEdit";
@@ -208,6 +211,18 @@ const router = createBrowserRouter(
           </Route>
           <Route path="/article-categories/:id/edit" element={<RequirePermissionRoute permissions={["articles:edit"]} />}>
             <Route index element={<CategoryEdit />} />
+          </Route>
+
+          {/* Article Masters (tags, types, courts) */}
+          <Route path="/article-masters" element={<Navigate to="/article-masters/tags" replace />} />
+          <Route path="/article-masters/:kind" element={<RequirePermissionRoute permissions={["articles:list"]} />}>
+            <Route index element={<ArticleMastersPage />} />
+          </Route>
+          <Route path="/article-masters/:kind/create" element={<RequirePermissionRoute permissions={["articles:create"]} />}>
+            <Route index element={<MasterTermCreate />} />
+          </Route>
+          <Route path="/article-masters/:kind/:id/edit" element={<RequirePermissionRoute permissions={["articles:edit"]} />}>
+            <Route index element={<MasterTermEdit />} />
           </Route>
 
           {/* SEO Metadata */}

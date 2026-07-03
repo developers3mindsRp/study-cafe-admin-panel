@@ -17,6 +17,13 @@ export interface PaymentGatewayKeys {
   updated_at?: string;
 }
 
+/** UI/API mask for hidden credentials — must never be sent back on update. */
+export function isMaskedCredential(value: string | undefined | null): boolean {
+  const s = String(value ?? "").trim();
+  if (!s) return false;
+  return /^[•*·.\-_\s]+$/u.test(s);
+}
+
 export async function fetchPaymentGatewayKeys(): Promise<PaymentGatewayKeys[]> {
   const res = await api.get<PaymentGatewayKeys[]>("/admin/payment-gateways");
   return res.data ?? [];
