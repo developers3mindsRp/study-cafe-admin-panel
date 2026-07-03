@@ -40,6 +40,7 @@ export interface ArticlesTableProps {
   filterStatus?: string;
   filterCategoryId?: string;
   filterAccessTier?: string;
+  filterAuthor?: string;
   filterDateFrom?: string;
   filterDateTo?: string;
 }
@@ -72,6 +73,7 @@ export const ArticlesTable = forwardRef<DataTableRef, ArticlesTableProps>(
       filterStatus = "",
       filterCategoryId = "",
       filterAccessTier = "",
+      filterAuthor = "",
       filterDateFrom = "",
       filterDateTo = "",
     },
@@ -88,10 +90,11 @@ export const ArticlesTable = forwardRef<DataTableRef, ArticlesTableProps>(
           ...(filterStatus ? { status: filterStatus } : {}),
           ...(filterCategoryId ? { category_id: filterCategoryId } : {}),
           ...(filterAccessTier ? { blog_access_tier: filterAccessTier } : {}),
+          ...(filterAuthor ? { author: filterAuthor } : {}),
           ...(filterDateFrom ? { date_from: filterDateFrom } : {}),
           ...(filterDateTo ? { date_to: filterDateTo } : {}),
         }),
-      [trashScope, filterStatus, filterCategoryId, filterAccessTier, filterDateFrom, filterDateTo]
+      [trashScope, filterStatus, filterCategoryId, filterAccessTier, filterAuthor, filterDateFrom, filterDateTo]
     );
 
     const handlePreview = useCallback(async (articleId: number | string) => {
@@ -348,7 +351,7 @@ export const ArticlesTable = forwardRef<DataTableRef, ArticlesTableProps>(
       },
     ];
 
-    const filterKey = [trashScope, filterStatus, filterCategoryId, filterAccessTier, filterDateFrom, filterDateTo].join("|");
+    const filterKey = [trashScope, filterStatus, filterCategoryId, filterAccessTier, filterAuthor, filterDateFrom, filterDateTo].join("|");
 
     return (
       <DataTable<ArticleRecord>

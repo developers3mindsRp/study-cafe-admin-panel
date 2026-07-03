@@ -50,6 +50,12 @@ const articleFilterFields: FilterFieldDef[] = [
     },
   },
   {
+    type: "text",
+    id: "author",
+    label: "Author",
+    placeholder: "Filter by author name or email…",
+  },
+  {
     type: "select",
     id: "blog_access_tier",
     label: "Access Tier",
@@ -200,6 +206,7 @@ function ArticleListContent() {
         status: values.status || undefined,
         category_id: values.category_id || undefined,
         blog_access_tier: values.blog_access_tier || undefined,
+        author: values.author || undefined,
         date_from: values.date_from || undefined,
         date_to: values.date_to || undefined,
         search: q?.search ?? "",
@@ -288,6 +295,7 @@ function ArticleListContent() {
           filterStatus={values.status ?? ""}
           filterCategoryId={values.category_id ?? ""}
           filterAccessTier={values.blog_access_tier ?? ""}
+          filterAuthor={values.author ?? ""}
           filterDateFrom={values.date_from ?? ""}
           filterDateTo={values.date_to ?? ""}
         />

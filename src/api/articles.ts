@@ -107,6 +107,8 @@ export async function fetchArticlesPaginated(
     status?: string;
     category_id?: string;
     blog_access_tier?: string;
+    /** Free-text author match (name or email) resolved server-side. */
+    author?: string;
     date_from?: string;
     date_to?: string;
     trashScope?: "active" | "trash";
@@ -123,6 +125,7 @@ export async function fetchArticlesPaginated(
       ...(params.status ? { status: params.status } : {}),
       ...(params.category_id ? { category_id: params.category_id } : {}),
       ...(params.blog_access_tier ? { blog_access_tier: params.blog_access_tier } : {}),
+      ...(params.author?.trim() ? { author: params.author.trim() } : {}),
       ...(params.date_from ? { date_from: params.date_from } : {}),
       ...(params.date_to ? { date_to: params.date_to } : {}),
     },
@@ -164,6 +167,7 @@ export interface ArticlesExportParams {
   status?: string;
   category_id?: string;
   blog_access_tier?: string;
+  author?: string;
   date_from?: string;
   date_to?: string;
   search?: string;
@@ -190,6 +194,7 @@ export async function fetchAllArticlesForExport(
       ...(params.status ? { status: params.status } : {}),
       ...(params.category_id ? { category_id: params.category_id } : {}),
       ...(params.blog_access_tier ? { blog_access_tier: params.blog_access_tier } : {}),
+      ...(params.author ? { author: params.author } : {}),
       ...(params.date_from ? { date_from: params.date_from } : {}),
       ...(params.date_to ? { date_to: params.date_to } : {}),
     });
