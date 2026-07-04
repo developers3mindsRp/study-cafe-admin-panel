@@ -104,6 +104,69 @@ export function buildAffiliateHistoryParams(
   return query;
 }
 
+export type WithdrawalListFilters = {
+  date_from: string;
+  date_to: string;
+  affiliate_id: string;
+  status: string;
+  amount_min: string;
+  amount_max: string;
+};
+
+export function emptyWithdrawalListFilters(): WithdrawalListFilters {
+  return {
+    date_from: "",
+    date_to: "",
+    affiliate_id: "",
+    status: "",
+    amount_min: "",
+    amount_max: "",
+  };
+}
+
+export function withdrawalListFiltersFromValues(
+  values: Record<string, string | undefined>,
+): WithdrawalListFilters {
+  return {
+    date_from: values.date_from ?? "",
+    date_to: values.date_to ?? "",
+    affiliate_id: values.affiliate_id ?? "",
+    status: values.status ?? "",
+    amount_min: values.amount_min ?? "",
+    amount_max: values.amount_max ?? "",
+  };
+}
+
+export function withdrawalListFiltersAreActive(filters: WithdrawalListFilters): boolean {
+  return Boolean(
+    filters.date_from ||
+      filters.date_to ||
+      filters.affiliate_id ||
+      filters.status ||
+      filters.amount_min ||
+      filters.amount_max,
+  );
+}
+
+export function buildWithdrawalListParams(
+  params: DataTableFetchParams & { filters?: WithdrawalListFilters },
+): ListQuery {
+  const { page, limit, search, sortBy, sortOrder, filters } = params;
+  const query: ListQuery = { page, limit };
+  if (search?.trim()) query.search = search.trim();
+  if (sortBy) query.sortBy = sortBy;
+  if (sortOrder) query.sortOrder = sortOrder;
+  if (!filters) return query;
+
+  if (filters.date_from) query.date_from = filters.date_from;
+  if (filters.date_to) query.date_to = filters.date_to;
+  if (filters.affiliate_id) query.affiliate_id = filters.affiliate_id;
+  if (filters.status) query.status = filters.status;
+  if (filters.amount_min) query.amount_min = filters.amount_min;
+  if (filters.amount_max) query.amount_max = filters.amount_max;
+  return query;
+}
+
 export async function fetchAffiliateHistoryPaginated(
   params: DataTableFetchParams & { filters?: AffiliateHistoryFilters },
 ): Promise<DataTableFetchResult<AffiliateRecord>> {
@@ -243,9 +306,75 @@ export async function resolveAffiliateCourseFilterOption(value: string): Promise
   };
 }
 
+export async function fetchWithdrawalRequestsPaginated(
+  params: DataTableFetchParams & { filters?: WithdrawalListFilters },
+): Promise<DataTableFetchResult<WithdrawalRequest>> {
+  const query = buildWithdrawalListParams(params);
+  const { data } = await api.get<
+    WithdrawalRequest[] | { data: WithdrawalRequest[]; total?: number; page?: number; limit?: number; pages?: number }
+  >("/admin/affiliate/withdrawals", { params: query });
+
+  const list = Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : [];
+  const total = typeof (data as { total?: number })?.total === "number" ? (data as { total: number }).total : list.length;
+  const page = typeof (data as { page?: number })?.page === "number" ? (data as { page: number }).page : params.page;
+  const limit = typeof (data as { limit?: number })?.limit === "number" ? (data as { limit: number }).limit : params.limit;
+  const pages =
+    typeof (data as { pages?: number })?.pages === "number"
+      ? (data as { pages: number }).pages
+      : Math.max(1, Math.ceil(total / limit) || 1);
+  return {
+    data: list,
+    meta: {
+      total,
+      page,
+      limit,
+      totalPages: pages,
+      hasNextPage: page < pages,
+      hasPreviousPage: page > 1,
+    },
+  };
+}
+
+/** @deprecated Use fetchWithdrawalRequestsPaginated */
 export async function fetchWithdrawalRequests(): Promise<WithdrawalRequest[]> {
-  const res = await api.get<WithdrawalRequest[]>("/admin/affiliate/withdrawals");
+  const res = await fetchWithdrawalRequestsPaginated({
+    page: 1,
+    limit: 10000,
+    search: "",
+    sortBy: "created_at",
+    sortOrder: "DESC",
+    filters: emptyWithdrawalListFilters(),
+  });
   return res.data;
+}
+
+export async function downloadWithdrawalExportCsv(
+  params: Omit<DataTableFetchParams, "page" | "limit"> & { filters?: WithdrawalListFilters },
+  filename?: string,
+): Promise<void> {
+  await requireAuthForExport();
+  const query = buildWithdrawalListParams({
+    ...params,
+    page: 1,
+    limit: 1,
+    search: params.search ?? "",
+    sortBy: params.sortBy ?? "created_at",
+    sortOrder: params.sortOrder ?? "DESC",
+  });
+  const response = await api.get<Blob>("/admin/affiliate/withdrawals/export.csv", {
+    params: query,
+    responseType: "blob",
+  });
+  const blob = response.data;
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  const datePart = new Date().toISOString().slice(0, 10);
+  anchor.download = filename?.toLowerCase().endsWith(".csv")
+    ? filename
+    : `${filename ?? `affiliate-withdrawals-export-${datePart}`}.csv`;
+  anchor.click();
+  URL.revokeObjectURL(url);
 }
 
 export async function createWithdrawalRequest(data: { affiliate_id: number; amount: number }): Promise<WithdrawalRequest> {
