@@ -320,8 +320,17 @@ export async function fetchBatchEnrollments(batchId: number): Promise<BatchEnrol
   }
 }
 
-export async function addBatchEnrollment(batchId: number, userId: number): Promise<BatchEnrollmentRecord> {
-  const res = await api.post<BatchEnrollmentRecord>(`/admin/batches/${batchId}/enrollments`, { user_id: userId });
+export async function addBatchEnrollment(
+  batchId: number,
+  userId: number,
+  opts?: { price?: string; paymentId?: string; courseId?: number },
+): Promise<BatchEnrollmentRecord> {
+  const res = await api.post<BatchEnrollmentRecord>(`/admin/batches/${batchId}/enrollments`, {
+    user_id: userId,
+    ...(opts?.price ? { price: opts.price } : {}),
+    ...(opts?.paymentId ? { paymentId: opts.paymentId } : {}),
+    ...(opts?.courseId ? { courseId: opts.courseId } : {}),
+  });
   return res.data;
 }
 

@@ -10,6 +10,10 @@ export interface CourseBatchAssignSectionProps {
     selectedBatches: Record<number, number>;
     onBatchChange: (courseId: number, batchId: number) => void;
     batchesLoading: Record<number, boolean>;
+    coursePrices: Record<number, string>;
+    coursePaymentIds: Record<number, string>;
+    onPriceChange: (courseId: number, price: string) => void;
+    onPaymentIdChange: (courseId: number, paymentId: string) => void;
     title?: string;
     description?: string;
     multiselectLabel?: string;
@@ -23,6 +27,10 @@ export function CourseBatchAssignSection({
     selectedBatches,
     onBatchChange,
     batchesLoading,
+    coursePrices,
+    coursePaymentIds,
+    onPriceChange,
+    onPaymentIdChange,
     title = "Assign Courses",
     description,
     multiselectLabel = "Courses",
@@ -105,6 +113,34 @@ export function CourseBatchAssignSection({
                                                 ))}
                                             </select>
                                         )}
+
+                                        {/* Order details — recorded as a paid purchase for this user. */}
+                                        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                                            <div>
+                                                <Label>Price</Label>
+                                                <p className="mb-1 text-xs text-brand-500 italic">
+                                                    Only if different from the course selling price.
+                                                </p>
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    value={coursePrices[courseId] ?? ""}
+                                                    onChange={(e) => onPriceChange(courseId, e.target.value)}
+                                                    placeholder="e.g. 12979"
+                                                    className="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:text-white dark:placeholder:text-gray-500"
+                                                />
+                                            </div>
+                                            <div>
+                                                <Label>RazorPay Payment ID</Label>
+                                                <input
+                                                    type="text"
+                                                    value={coursePaymentIds[courseId] ?? ""}
+                                                    onChange={(e) => onPaymentIdChange(courseId, e.target.value)}
+                                                    placeholder="Payment ID"
+                                                    className="mt-[22px] w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:text-white dark:placeholder:text-gray-500"
+                                                />
+                                            </div>
+                                        </div>
                                     </div>
                                 );
                             })}

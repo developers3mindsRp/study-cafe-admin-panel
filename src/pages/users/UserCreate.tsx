@@ -45,8 +45,12 @@ export default function UserCreate() {
         batchesMap,
         selectedBatches,
         batchesLoading,
+        coursePrices,
+        coursePaymentIds,
         handleCourseSelectionChange,
         onBatchChange,
+        onPriceChange,
+        onPaymentIdChange,
     } = useAssignCoursesState();
 
     // Form state
@@ -160,11 +164,16 @@ export default function UserCreate() {
 
             const enrollPromises = Object.entries(selectedBatches)
                 .filter(([, batchId]) => Number(batchId) > 0)
-                .map(([, batchId]) =>
-                    addBatchEnrollment(Number(batchId), userId).catch((err) =>
+                .map(([courseIdStr, batchId]) => {
+                    const cId = Number(courseIdStr);
+                    return addBatchEnrollment(Number(batchId), userId, {
+                        courseId: cId,
+                        price: coursePrices[cId]?.trim() || undefined,
+                        paymentId: coursePaymentIds[cId]?.trim() || undefined,
+                    }).catch((err) =>
                         console.error(`Failed to enroll in batch ${batchId}:`, err),
-                    ),
-                );
+                    );
+                });
             await Promise.all(enrollPromises);
 
             navigate("/users");
@@ -531,6 +540,10 @@ export default function UserCreate() {
                         selectedBatches={selectedBatches}
                         onBatchChange={onBatchChange}
                         batchesLoading={batchesLoading}
+                        coursePrices={coursePrices}
+                        coursePaymentIds={coursePaymentIds}
+                        onPriceChange={onPriceChange}
+                        onPaymentIdChange={onPaymentIdChange}
                         description="Search and pick one or more courses, choose a batch for each, then create the user — enrollments run right after the account is created."
                     />
 

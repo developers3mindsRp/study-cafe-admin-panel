@@ -7,6 +7,9 @@ export function useAssignCoursesState() {
     const [batchesMap, setBatchesMap] = useState<Record<number, { id: number; name: string }[]>>({});
     const [selectedBatches, setSelectedBatches] = useState<Record<number, number>>({});
     const [batchesLoading, setBatchesLoading] = useState<Record<number, boolean>>({});
+    // Per-course order details entered by the admin. Keyed by courseId.
+    const [coursePrices, setCoursePrices] = useState<Record<number, string>>({});
+    const [coursePaymentIds, setCoursePaymentIds] = useState<Record<number, string>>({});
 
     const selectedCourseIdsRef = useRef(selectedCourseIds);
     useEffect(() => {
@@ -33,6 +36,16 @@ export function useAssignCoursesState() {
                 removed.forEach((id) => {
                     delete next[id];
                 });
+                return next;
+            });
+            setCoursePrices((prevP) => {
+                const next = { ...prevP };
+                removed.forEach((id) => delete next[id]);
+                return next;
+            });
+            setCoursePaymentIds((prevP) => {
+                const next = { ...prevP };
+                removed.forEach((id) => delete next[id]);
                 return next;
             });
         }
@@ -107,6 +120,14 @@ export function useAssignCoursesState() {
         setSelectedBatches((prev) => ({ ...prev, [courseId]: batchId }));
     }, []);
 
+    const onPriceChange = useCallback((courseId: number, price: string) => {
+        setCoursePrices((prev) => ({ ...prev, [courseId]: price }));
+    }, []);
+
+    const onPaymentIdChange = useCallback((courseId: number, paymentId: string) => {
+        setCoursePaymentIds((prev) => ({ ...prev, [courseId]: paymentId }));
+    }, []);
+
     return {
         courses,
         setCourses,
@@ -117,8 +138,12 @@ export function useAssignCoursesState() {
         selectedBatches,
         setSelectedBatches,
         batchesLoading,
+        coursePrices,
+        coursePaymentIds,
         handleCourseSelectionChange,
         hydrateFromEnrollments,
         onBatchChange,
+        onPriceChange,
+        onPaymentIdChange,
     };
 }

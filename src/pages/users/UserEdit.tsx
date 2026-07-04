@@ -50,8 +50,12 @@ export default function UserEdit() {
         batchesMap,
         selectedBatches,
         batchesLoading,
+        coursePrices,
+        coursePaymentIds,
         handleCourseSelectionChange,
         onBatchChange,
+        onPriceChange,
+        onPaymentIdChange,
         hydrateFromEnrollments,
     } = useAssignCoursesState();
 
@@ -260,11 +264,16 @@ export default function UserEdit() {
 
             const enrollPromises = Object.entries(selectedBatches)
                 .filter(([, batchId]) => Number(batchId) > 0)
-                .map(([, batchId]) =>
-                    addBatchEnrollment(Number(batchId), userId).catch((err) =>
+                .map(([courseIdStr, batchId]) => {
+                    const cId = Number(courseIdStr);
+                    return addBatchEnrollment(Number(batchId), userId, {
+                        courseId: cId,
+                        price: coursePrices[cId]?.trim() || undefined,
+                        paymentId: coursePaymentIds[cId]?.trim() || undefined,
+                    }).catch((err) =>
                         console.error(`Failed to enroll in batch ${batchId}:`, err),
-                    ),
-                );
+                    );
+                });
             await Promise.all(enrollPromises);
             navigate("/users");
         } catch (err: any) {
@@ -620,6 +629,10 @@ export default function UserEdit() {
                         selectedBatches={selectedBatches}
                         onBatchChange={onBatchChange}
                         batchesLoading={batchesLoading}
+                        coursePrices={coursePrices}
+                        coursePaymentIds={coursePaymentIds}
+                        onPriceChange={onPriceChange}
+                        onPaymentIdChange={onPaymentIdChange}
                         description="Search and select courses, pick a batch for each, then save — new or updated batch enrollments are applied after the profile is saved."
                     />
 
