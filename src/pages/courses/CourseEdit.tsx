@@ -1,4 +1,4 @@
-import { useNavigate, useParams } from "react-router";
+import { useParams } from "react-router";
 import { useState, useEffect } from "react";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
@@ -9,7 +9,6 @@ import { toast } from "react-toastify";
 
 export default function CourseEdit() {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const [course, setCourse] = useState<Awaited<ReturnType<typeof fetchCourse>>>(null);
   const [loading, setLoading] = useState(false);
   const [loadingPage, setLoadingPage] = useState(true);
@@ -82,7 +81,6 @@ export default function CourseEdit() {
         detail_sections: data.detail_sections?.length ? JSON.stringify(data.detail_sections) : null,
       });
       toast.success("Course updated successfully!");
-      navigate("/courses");
     } catch (err: unknown) {
       console.error("Failed to update course", err);
       toast.error(getApiErrorMessage(err, "Failed to update course. Please try again."));

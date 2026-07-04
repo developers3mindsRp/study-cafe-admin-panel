@@ -12,6 +12,7 @@ import { api } from "../../api/axios";
 import { fetchCourses, addBatchEnrollment, fetchUserEnrollments } from "../../api/courses";
 import { useAssignCoursesState } from "./hooks/useAssignCoursesState";
 import { CourseBatchAssignSection } from "./components/CourseBatchAssignSection";
+import { toast } from "react-toastify";
 
 type UserPayload = Partial<User>;
 
@@ -275,7 +276,7 @@ export default function UserEdit() {
                     );
                 });
             await Promise.all(enrollPromises);
-            navigate("/users");
+            toast.success("User updated successfully!");
         } catch (err: any) {
             console.error("Update failed", err);
             setError(err.response?.data?.error || "Failed to update user");

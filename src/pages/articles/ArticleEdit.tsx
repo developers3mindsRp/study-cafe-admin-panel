@@ -14,6 +14,7 @@ import { getApiErrorMessage } from "../../lib/apiError";
 import { useArticleEditLock } from "../../hooks/useArticleEditLock";
 import { Modal } from "../../components/ui/modal";
 import Button from "../../components/ui/button/Button";
+import { toast } from "react-toastify";
 
 function statusToForm(s: string): ArticleFormData["status"] {
   if (s === "publish" || s === "published") return "Published";
@@ -109,10 +110,10 @@ export default function ArticleEdit() {
         citation: formData.citation || null,
       };
       await articlesApi.update(id, payload);
-      navigate("/articles");
+      toast.success("Article updated successfully!");
     } catch (err: unknown) {
       console.error("Failed to update article", err);
-      alert(getApiErrorMessage(err, "Failed to update article"));
+      toast.error(getApiErrorMessage(err, "Failed to update article"));
     } finally {
       setSubmitting(false);
     }
