@@ -4,6 +4,7 @@ import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import CourseForm, { type CourseFormData } from "./CourseForm";
 import { fetchCourse, updateCourse } from "../../api/courses";
+import { updateCoursePlans } from "../../api/plans";
 import { getApiErrorMessage } from "../../lib/apiError";
 import { toast } from "react-toastify";
 
@@ -80,6 +81,8 @@ export default function CourseEdit() {
         validity: data.validity ?? '1year',
         detail_sections: data.detail_sections?.length ? JSON.stringify(data.detail_sections) : null,
       });
+      // Sync membership (plan_courses) links after the course itself is saved.
+      await updateCoursePlans(Number(id), data.plan_ids ?? []);
       toast.success("Course updated successfully!");
     } catch (err: unknown) {
       console.error("Failed to update course", err);

@@ -4,6 +4,7 @@ import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import CourseForm, { type CourseFormData } from "./CourseForm";
 import { createCourse, createBatch, fetchCourse, type Course } from "../../api/courses";
+import { updateCoursePlans } from "../../api/plans";
 import { getApiErrorMessage } from "../../lib/apiError";
 import { buildCourseDuplicateInitial } from "../../lib/courseDuplicate";
 import { toast } from "react-toastify";
@@ -110,6 +111,16 @@ export default function CourseCreate() {
         validity: data.validity ?? '1year',
         detail_sections: data.detail_sections?.length ? JSON.stringify(data.detail_sections) : null,
       });
+
+      // Link the new course to the selected memberships (plan_courses).
+      if (course?.id && data.plan_ids?.length) {
+        try {
+          await updateCoursePlans(Number(course.id), data.plan_ids);
+        } catch (planErr) {
+          console.error("Course created but membership links failed", planErr);
+          toast.warning("Course created, but membership links could not be saved. You can set them from the course.");
+        }
+      }
 
       // Auto-create the default batch from curriculum if curriculum was provided
       if (data.curriculum?.length && course?.id) {

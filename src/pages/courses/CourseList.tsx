@@ -8,6 +8,7 @@ import { FilterBar, useFilterState } from "../../components/filters";
 import type { FilterFieldDef } from "../../components/filters";
 import { TrashScopeTabs, type TrashScope } from "../../components/trash/TrashScopeTabs";
 import { deleteCourse, fetchCourseCats, restoreCourse, type Course } from "../../api/courses";
+import { plansApi } from "../../api/plans";
 import type { CourseSortFilter, PriceRangeFilter, PublicationFilter } from "./filterTypes";
 
 export default function CourseList() {
@@ -56,6 +57,16 @@ export default function CourseList() {
         loader: async () => {
           const cats = await fetchCourseCats();
           return cats.map((c) => ({ value: String(c.id), label: c.name }));
+        },
+      },
+      {
+        type: "async-select",
+        id: "membershipId",
+        label: "Membership",
+        placeholder: "All memberships",
+        loader: async () => {
+          const res = await plansApi.list();
+          return (res.data ?? []).map((p) => ({ value: String(p.id), label: p.name }));
         },
       },
       {
@@ -153,6 +164,7 @@ export default function CourseList() {
         <CoursesTable
           key={`${trashScope}-${tableRefreshKey}`}
           filterCategoryId={values.categoryId ?? ""}
+          filterMembershipId={values.membershipId ?? ""}
           filterPriceRange={(values.priceRange ?? "") as PriceRangeFilter}
           filterPublication={(values.publication ?? "") as PublicationFilter}
           filterSortBy={(values.sortBy ?? "") as CourseSortFilter}
