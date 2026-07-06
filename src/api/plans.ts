@@ -110,6 +110,45 @@ export const plansApi = createCrudApi<Plan>(BASE_URL)({
     },
 });
 
+/** Plan (membership) ids that directly list a given course, via plan_courses. */
+export async function fetchCoursePlans(courseId: number): Promise<number[]> {
+    try {
+        const { data } = await api.get<{ plan_ids: number[] }>(
+            `/admin/platform/courses/${courseId}/plans`
+        );
+        return Array.isArray(data?.plan_ids) ? data.plan_ids.map(Number) : [];
+    } catch {
+        return [];
+    }
+}
+
+/** Replace the set of memberships that list this course (plan_courses only). */
+export async function updateCoursePlans(courseId: number, planIds: number[]): Promise<number[]> {
+    const { data } = await api.put<{ plan_ids: number[] }>(
+        `/admin/platform/courses/${courseId}/plans`,
+        { plan_ids: planIds }
+    );
+    return Array.isArray(data?.plan_ids) ? data.plan_ids.map(Number) : [];
+}
+
+/** Whole plan_courses table as { [plan_id]: course_ids[] } — for the course-list membership filter. */
+export async function fetchPlanCoursesMap(): Promise<Record<number, number[]>> {
+    try {
+        const { data } = await api.get<Record<string, number[]>>(
+            "/admin/platform/plan-courses/map"
+        );
+        const out: Record<number, number[]> = {};
+        if (data && typeof data === "object") {
+            for (const [k, v] of Object.entries(data)) {
+                out[Number(k)] = Array.isArray(v) ? v.map(Number) : [];
+            }
+        }
+        return out;
+    } catch {
+        return {};
+    }
+}
+
 export async function fetchUpgradeSummary(
     targetPlanId: number,
     couponCode?: string

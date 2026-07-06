@@ -12,6 +12,8 @@ import CourseIncludesEditor, { type CourseIncludeItem } from "./components/Cours
 import { FilePickerMultiSelect, type CurriculumFile } from "./components/FilePickerMultiSelect";
 import { COURSE_PREVIEW_STATE_KEY, COURSE_RESTORE_STATE_KEY } from "./CoursePreview";
 import { fetchCourseCats, generateCoursePreviewLink, type Course, type CourseCat } from "../../api/courses";
+import { plansApi, fetchCoursePlans, type Plan } from "../../api/plans";
+import { ChipMultiSelect } from "../../components/form/ChipMultiSelect";
 import { usersApi, fetchAdminPanelUsers, type User } from "../../api/users";
 import { CourseCatMultiSelect } from "./components/CourseCatMultiSelect";
 import { AuthorUserSelect } from "./components/AuthorUserSelect";
@@ -58,6 +60,8 @@ export interface CourseFormData {
   author_bio: string;
   author_image: string;
   course_cat_ids: number[];
+  /** Membership (plan) ids that should list this course — synced to plan_courses on save. */
+  plan_ids: number[];
   default_batch_start_date: string;
   default_batch_meet_link: string;
   meta_title: string;
@@ -149,6 +153,7 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
           ? restoredData.course_includes
           : [],
         course_cat_ids: Array.isArray(restoredData.course_cat_ids) ? restoredData.course_cat_ids : [],
+        plan_ids: Array.isArray(restoredData.plan_ids) ? restoredData.plan_ids : [],
         affiliate_commission:
           restoredData.affiliate_commission != null && restoredData.affiliate_commission !== ""
             ? String(restoredData.affiliate_commission)
@@ -258,6 +263,8 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
       course_cat_ids:
         initial?.course_cat_ids ??
         (Array.isArray(initial?.categories) ? initial.categories.map((c) => c.id) : []),
+      // Loaded asynchronously (edit mode) from plan_courses; empty for a new course.
+      plan_ids: [],
       default_batch_start_date: "",
       default_batch_meet_link: "",
       meta_title: initial?.meta_title ?? "",
@@ -291,6 +298,7 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
 
   const [adminUsers, setAdminUsers] = useState<User[]>([]);
   const [courseCats, setCourseCats] = useState<CourseCat[]>([]);
+  const [plans, setPlans] = useState<Plan[]>([]);
 
   // Fetch admin panel users once — they are few and always relevant as authors.
   useEffect(() => {
@@ -347,6 +355,30 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
   useEffect(() => {
     fetchCourseCats().then(setCourseCats).catch(() => {});
   }, []);
+
+  // Load memberships for the dropdown; in edit mode also load which ones already
+  // list this course (from plan_courses) so the chips reflect the current state.
+  // Skipped when a preview/restore snapshot already carries plan_ids.
+  useEffect(() => {
+    let cancelled = false;
+    plansApi
+      .list()
+      .then((res) => {
+        if (!cancelled) setPlans(Array.isArray(res.data) ? res.data : []);
+      })
+      .catch(() => {});
+    const courseId = initial?.id;
+    if (courseId && !restoredData) {
+      fetchCoursePlans(courseId)
+        .then((ids) => {
+          if (!cancelled) setForm((prev) => ({ ...prev, plan_ids: ids }));
+        })
+        .catch(() => {});
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [initial?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleAuthorSelect = (userId: string, user?: User) => {
     updateField('author_user_id', userId);
@@ -571,6 +603,18 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
                   onChange={(ids) => updateField("course_cat_ids", ids)}
                   placeholder="Select categories…"
                 />
+              </div>
+              <div className="md:col-span-2">
+                <ChipMultiSelect
+                  label="Memberships (this course is included in)"
+                  options={plans.map((p) => ({ id: p.id, name: p.name }))}
+                  value={form.plan_ids}
+                  onChange={(ids) => updateField("plan_ids", ids)}
+                  placeholder="Select memberships…"
+                />
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  Buyers of the selected memberships get access to this course. Saved when you save the course.
+                </p>
               </div>
               <div className="md:col-span-2">
                 <Label>Brief Description</Label>

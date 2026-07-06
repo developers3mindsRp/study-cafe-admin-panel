@@ -313,6 +313,13 @@ export default function ArticleForm({
       return;
     }
 
+    if (action.type === "draft") {
+      const ok = window.confirm(
+        "This article will be saved as a DRAFT and will stay hidden from the public site.\n\nUse \"Publish now\" or \"Schedule publish\" to make it live.\n\nSave as draft?"
+      );
+      if (!ok) return;
+    }
+
     if (action.type === "schedule") {
       const local = formData.scheduled_publish_at_local?.trim();
       if (!local) {

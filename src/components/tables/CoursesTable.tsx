@@ -11,6 +11,7 @@ import { PencilIcon, CopyIcon, TrashBinIcon } from "../../icons";
 import { RequirePermission } from "../auth/RequirePermission";
 import { PERM_COURSES_CREATE, PERM_COURSES_DELETE } from "../../constants/permissions";
 import { fetchCourses, type Course } from "../../api/courses";
+import { fetchPlanCoursesMap } from "../../api/plans";
 import { formatDateTime } from "../../utils/formatDate";
 import type { TrashScope } from "../trash/TrashScopeTabs";
 import type { DataTableFetchParams, DataTableFetchResult } from "./data-table/DataTable.types";
@@ -115,6 +116,7 @@ function toMeta(total: number, page: number, limit: number): DataTableFetchResul
 
 export interface CoursesTableProps {
   filterCategoryId?: string;
+  filterMembershipId?: string;
   filterPriceRange?: PriceRangeFilter;
   filterPublication?: PublicationFilter;
   filterSortBy?: CourseSortFilter;
@@ -127,6 +129,7 @@ export interface CoursesTableProps {
 
 export function CoursesTable({
   filterCategoryId = "",
+  filterMembershipId = "",
   filterPriceRange = "",
   filterPublication = "",
   filterSortBy = "",
@@ -271,7 +274,11 @@ export function CoursesTable({
 
   const fetchCoursesForTable = useCallback(
     async (params: DataTableFetchParams): Promise<DataTableFetchResult<Course>> => {
-      const all = await fetchCourses({ trashed: isTrash });
+      const membershipActive = !isTrash && Boolean(filterMembershipId);
+      const [all, planCoursesMap] = await Promise.all([
+        fetchCourses({ trashed: isTrash }),
+        membershipActive ? fetchPlanCoursesMap() : Promise.resolve<Record<number, number[]>>({}),
+      ]);
       const search = (params.search ?? "").trim().toLowerCase();
       let filtered = all;
 
@@ -292,6 +299,11 @@ export function CoursesTable({
             matchesPublication(c, filterPublication) &&
             matchesStartDateRange(c, filterStartDateFrom, filterStartDateTo)
         );
+        if (membershipActive) {
+          const planId = Number(filterMembershipId);
+          const courseIds = new Set(planCoursesMap[planId] ?? []);
+          filtered = filtered.filter((c) => courseIds.has(Number(c.id)));
+        }
       }
 
       filtered = sortCoursesList(filtered, filterSortBy);
@@ -307,6 +319,7 @@ export function CoursesTable({
     [
       isTrash,
       filterCategoryId,
+      filterMembershipId,
       filterPriceRange,
       filterPublication,
       filterSortBy,
@@ -315,7 +328,7 @@ export function CoursesTable({
     ],
   );
 
-  const filterKey = `${trashScope}|${filterCategoryId}|${filterPriceRange}|${filterPublication}|${filterSortBy}|${filterStartDateFrom}|${filterStartDateTo}`;
+  const filterKey = `${trashScope}|${filterCategoryId}|${filterMembershipId}|${filterPriceRange}|${filterPublication}|${filterSortBy}|${filterStartDateFrom}|${filterStartDateTo}`;
 
   return (
     <DataTable<Course>
