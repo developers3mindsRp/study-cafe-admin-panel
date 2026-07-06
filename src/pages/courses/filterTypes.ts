@@ -1,4 +1,4 @@
-export type PublicationFilter = "" | "published" | "draft";
+export type PublicationFilter = "" | "published" | "draft" | "unlisted";
 export type PriceRangeFilter = "" | "0-500" | "500-2000" | "2000-5000" | "5000+";
 
 /** Admin course list sort (applied after filters). */

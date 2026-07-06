@@ -300,23 +300,6 @@ export function OrdersTable() {
       ),
     },
     {
-      key: "utm",
-      header: "UTM",
-      sortable: false,
-      render: (row: OrderRecord) => {
-        const u = row.utm;
-        if (!u || (!u.source && !u.medium && !u.campaign)) return "—";
-        return (
-          <div className="text-theme-xs space-y-0.5">
-            {u.source && <div className="text-gray-500"><span className="font-medium">Src:</span> {u.source}</div>}
-            {u.medium && <div className="text-gray-500"><span className="font-medium">Med:</span> {u.medium}</div>}
-            {u.campaign && <div className="text-gray-500"><span className="font-medium">Cam:</span> {u.campaign}</div>}
-          </div>
-        );
-      },
-    },
-
-    {
       key: "amount",
       header: "Amount",
       sortable: false,
@@ -372,20 +355,22 @@ export function OrdersTable() {
       header: "Actions",
       align: "end" as const,
       sortable: false,
+      className:
+        "whitespace-nowrap sticky right-0 z-20 bg-white dark:bg-gray-900 shadow-[-8px_0_8px_-6px_rgba(0,0,0,0.08)]",
       render: (row: OrderRecord) => (
-        <div className="flex items-center justify-end gap-1">
+        <div className="flex items-center justify-end gap-0.5">
           {!isTrash ? (
             <>
               <Link
                 to={`/orders/${encodeURIComponent(row.order_id)}`}
-                className="inline-flex items-center justify-center rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
+                className="inline-flex items-center justify-center rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
                 title="View"
               >
                 <EyeIcon className="size-5" />
               </Link>
               <Link
                 to={`/orders/${encodeURIComponent(row.order_id)}/edit`}
-                className="inline-flex items-center justify-center rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
+                className="inline-flex items-center justify-center rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
                 title="Edit"
               >
                 <PencilIcon className="size-5" />
@@ -393,7 +378,7 @@ export function OrdersTable() {
               {orderStatusAllowsRefund(row.status) && (
                 <button
                   onClick={() => handleRefundClick(row)}
-                  className="inline-flex items-center justify-center rounded-lg p-2 text-error-500 hover:bg-error-50 hover:text-error-600 dark:text-error-400 dark:hover:bg-error-900/20"
+                  className="inline-flex items-center justify-center rounded-lg p-1.5 text-error-500 hover:bg-error-50 hover:text-error-600 dark:text-error-400 dark:hover:bg-error-900/20"
                   title="Refund"
                 >
                   <DollarLineIcon className="size-5" />
@@ -401,7 +386,7 @@ export function OrdersTable() {
               )}
               <button
                 onClick={() => handleDeleteClick(row)}
-                className="inline-flex items-center justify-center rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-error-600 dark:text-gray-400 dark:hover:bg-gray-800"
+                className="inline-flex items-center justify-center rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 hover:text-error-600 dark:text-gray-400 dark:hover:bg-gray-800"
                 title="Move to trash"
               >
                 <TrashBinIcon className="size-5" />
@@ -564,6 +549,7 @@ export function OrdersTable() {
         enableSearch={isTrash}
         enableSorting
         enablePagination
+        stickyHeaderFooter
         searchPlaceholder="Search name, email, phone, payment ID…"
         emptyMessage={
           isTrash

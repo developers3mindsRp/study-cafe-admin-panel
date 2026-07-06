@@ -67,6 +67,17 @@ export interface DataTableProps<T = Record<string, unknown>> {
   className?: string;
   /** Optional empty state message */
   emptyMessage?: string;
+  /**
+   * Keep the column-header row and pagination footer static while rows scroll.
+   * The table body scrolls within a bounded height; the header sticks to the top
+   * and the pagination stays pinned below. Defaults to false.
+   */
+  stickyHeaderFooter?: boolean;
+  /**
+   * Max height of the scrollable body area when stickyHeaderFooter is on.
+   * Any CSS length or Tailwind-compatible value. Defaults to "70vh".
+   */
+  bodyMaxHeight?: string;
 }
 
 export interface UseDataTableState<T> {

@@ -192,6 +192,7 @@ export const UsersTable = forwardRef<DataTableRef, UsersTableProps>(
         enableSearch
         enableSorting
         enablePagination
+        stickyHeaderFooter
         searchPlaceholder="Search users…"
         emptyMessage={isTrash ? "Trash is empty." : "No users found."}
       />

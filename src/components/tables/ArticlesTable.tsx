@@ -366,6 +366,7 @@ export const ArticlesTable = forwardRef<DataTableRef, ArticlesTableProps>(
         enableSearch
         enableSorting
         enablePagination
+        stickyHeaderFooter
         searchPlaceholder="Search articles…"
         emptyMessage={isTrash ? "Trash is empty." : "No articles yet."}
       />

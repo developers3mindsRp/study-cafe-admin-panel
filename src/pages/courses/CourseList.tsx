@@ -66,6 +66,7 @@ export default function CourseList() {
         options: [
           { value: "published", label: "Published" },
           { value: "draft", label: "Draft" },
+          { value: "unlisted", label: "Unlisted" },
         ],
       },
       {

@@ -60,6 +60,7 @@ function matchesCategory(c: Course, categoryId: string): boolean {
 
 function matchesPublication(c: Course, publication: PublicationFilter): boolean {
   if (!publication) return true;
+  if (publication === "unlisted") return Boolean(c.hide_from_public);
   if (publication === "published") return Boolean(c.is_published);
   return !c.is_published;
 }
@@ -326,6 +327,7 @@ export function CoursesTable({
       enableSearch
       enableSorting={false}
       enablePagination
+      stickyHeaderFooter
       searchPlaceholder="Search courses…"
       emptyMessage={isTrash ? "Trash is empty." : "No courses found."}
     />

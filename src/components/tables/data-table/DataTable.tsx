@@ -31,6 +31,8 @@ function DataTableInner<T extends object>({
   emptyMessage = "No data.",
   initialSortBy,
   initialSortOrder,
+  stickyHeaderFooter = false,
+  bodyMaxHeight = "70vh",
 }: DataTableProps<T>, ref: React.Ref<DataTableRef>) {
   const sortableColumnKeys = useMemo(
     () => columns.filter((c) => c.sortable).map((c) => c.key),
@@ -87,7 +89,10 @@ function DataTableInner<T extends object>({
           disabled={false}
         />
       )}
-      <div className="max-w-full overflow-x-auto">
+      <div
+        className={`max-w-full overflow-x-auto ${stickyHeaderFooter ? "overflow-y-auto" : ""}`}
+        style={stickyHeaderFooter ? { maxHeight: bodyMaxHeight } : undefined}
+      >
         <Table className="w-full">
           <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
             <TableRow className="hover:bg-transparent">
@@ -101,7 +106,13 @@ function DataTableInner<T extends object>({
                       : col.align === "center"
                         ? "text-center"
                         : "text-start"
-                  } ${col.className ?? ""}`}
+                  } ${
+                    stickyHeaderFooter
+                      ? "sticky top-0 bg-white dark:bg-gray-900"
+                      : ""
+                  } ${col.className ?? ""} ${
+                    stickyHeaderFooter ? "z-40!" : ""
+                  }`}
                 >
                   {enableSorting && col.sortable ? (
                     <button

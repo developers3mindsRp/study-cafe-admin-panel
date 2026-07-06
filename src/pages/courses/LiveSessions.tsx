@@ -246,6 +246,7 @@ function CreateBatchPanel({
     onCreated: () => void;
 }) {
     const [courseId, setCourseId] = useState("");
+    const [name, setName] = useState("");
     const [startDate, setStartDate] = useState("");
     const [meetLink, setMeetLink] = useState("");
     const [saving, setSaving] = useState(false);
@@ -256,9 +257,11 @@ function CreateBatchPanel({
         setSaving(true);
         try {
             await createBatch(courseId, {
+                name: name.trim() || null,
                 start_date: startDate || null,
                 meet_link: meetLink || null,
             });
+            setName("");
             setStartDate("");
             setMeetLink("");
             onCreated();
@@ -272,8 +275,8 @@ function CreateBatchPanel({
     return (
         <form onSubmit={handleSubmit} className="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-800 space-y-3">
             <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200">Create New Batch</h3>
-            <p className="text-xs text-gray-400 dark:text-gray-500">Sessions & recordings will be auto-created from the course curriculum.</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <p className="text-xs text-gray-400 dark:text-gray-500">Sessions & recordings will be auto-created from the course curriculum. Leave the name blank to auto-generate one.</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
                 <div>
                     <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Course for new batch *</label>
                     <CourseSearchSelect
@@ -282,6 +285,11 @@ function CreateBatchPanel({
                         onChange={setCourseId}
                         placeholder="Choose course…"
                     />
+                </div>
+                <div>
+                    <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Batch Name</label>
+                    <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Auto-generated if blank"
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white" />
                 </div>
                 <div>
                     <CalendarPicker
@@ -485,6 +493,9 @@ function BatchCard({ batch, courseName, onChanged }: { batch: BatchRecord; cours
     const [editStart, setEditStart] = useState(batch.start_date ? batch.start_date.slice(0, 10) : "");
     const [editEnd, setEditEnd] = useState(batch.end_date ? batch.end_date.slice(0, 10) : "");
     const [savingDates, setSavingDates] = useState(false);
+    const [editingName, setEditingName] = useState(false);
+    const [editName, setEditName] = useState(batch.name || "");
+    const [savingName, setSavingName] = useState(false);
 
     // Group sessions by day_number
     const dayGroups: { dayNumber: number; dayTitle: string; sessions: SessionRecord[] }[] = [];
@@ -524,6 +535,24 @@ function BatchCard({ batch, courseName, onChanged }: { batch: BatchRecord; cours
         }
     }
 
+    async function handleSaveName() {
+        const trimmed = editName.trim();
+        if (!trimmed) {
+            alert("Batch name cannot be empty.");
+            return;
+        }
+        setSavingName(true);
+        try {
+            await updateBatch(batch.id, { name: trimmed });
+            setEditingName(false);
+            onChanged();
+        } catch (err: any) {
+            alert(err?.response?.data?.error || "Failed to update batch name");
+        } finally {
+            setSavingName(false);
+        }
+    }
+
     async function handleSaveDates() {
         setSavingDates(true);
         try {
@@ -544,7 +573,47 @@ function BatchCard({ batch, courseName, onChanged }: { batch: BatchRecord; cours
         <div className="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
             <div className="flex items-center justify-between border-b border-gray-100 px-5 py-3 dark:border-gray-700">
                 <div className="flex items-center gap-3 flex-wrap">
-                    <h3 className="font-semibold text-gray-800 dark:text-white">{batch.name}</h3>
+                    {editingName ? (
+                        <div className="flex items-center gap-2">
+                            <input
+                                value={editName}
+                                onChange={(e) => setEditName(e.target.value)}
+                                placeholder="Batch name"
+                                autoFocus
+                                className="w-56 rounded border border-gray-300 px-2.5 py-1 text-sm font-semibold text-gray-800 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                            />
+                            <button
+                                onClick={handleSaveName}
+                                disabled={savingName}
+                                className="rounded bg-brand-500 px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-600 disabled:opacity-50"
+                            >
+                                {savingName ? "Saving..." : "Save"}
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setEditingName(false);
+                                    setEditName(batch.name || "");
+                                }}
+                                className="rounded bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    ) : (
+                        <button
+                            onClick={() => {
+                                setEditName(batch.name || "");
+                                setEditingName(true);
+                            }}
+                            className="group flex items-center gap-1.5 font-semibold text-gray-800 hover:text-brand-600 dark:text-white dark:hover:text-brand-400"
+                            title="Edit batch name"
+                        >
+                            {batch.name}
+                            <svg className="size-3 shrink-0 opacity-0 transition group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-1.414.586H8v-2.414a2 2 0 01.586-1.414z" />
+                            </svg>
+                        </button>
+                    )}
                     <Badge color="primary">{courseName}</Badge>
                     <span className="text-xs text-gray-500">{dayGroups.length} day{dayGroups.length !== 1 ? "s" : ""} · {totalSections} section{totalSections !== 1 ? "s" : ""}</span>
                     {editingDates ? (
