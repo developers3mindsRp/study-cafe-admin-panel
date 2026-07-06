@@ -4,6 +4,7 @@ import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import { WithdrawalRequestsTable } from "../../components/tables/WithdrawalRequestsTable";
 import { CreateWithdrawalModal } from "../../components/affiliate/CreateWithdrawalModal";
 import { UpdateWithdrawalModal } from "../../components/affiliate/UpdateWithdrawalModal";
+import { WithdrawalAccountDetailsModal } from "../../components/affiliate/WithdrawalAccountDetailsModal";
 import { DownloadIcon, PlusIcon } from "../../icons";
 import Button from "../../components/ui/button/Button";
 import type { WithdrawalRequest } from "../../api/affiliate";
@@ -67,6 +68,7 @@ export default function WithdrawalRequests() {
   const tableRef = useRef<DataTableRef>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+  const [isAccountDetailsOpen, setIsAccountDetailsOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<WithdrawalRequest | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [filterResetKey, setFilterResetKey] = useState(0);
@@ -87,6 +89,11 @@ export default function WithdrawalRequests() {
   const handleUpdateClick = (request: WithdrawalRequest) => {
     setSelectedRequest(request);
     setIsUpdateModalOpen(true);
+  };
+
+  const handleAccountDetailsClick = (request: WithdrawalRequest) => {
+    setSelectedRequest(request);
+    setIsAccountDetailsOpen(true);
   };
 
   const handleRefresh = () => {
@@ -170,6 +177,7 @@ export default function WithdrawalRequests() {
           filters={listFilters}
           refreshKey={refreshKey}
           onUpdateStatus={handleUpdateClick}
+          onViewAccountDetails={handleAccountDetailsClick}
         />
       </div>
 
@@ -187,6 +195,15 @@ export default function WithdrawalRequests() {
           setSelectedRequest(null);
         }}
         onSuccess={handleRefresh}
+      />
+
+      <WithdrawalAccountDetailsModal
+        request={selectedRequest}
+        isOpen={isAccountDetailsOpen}
+        onClose={() => {
+          setIsAccountDetailsOpen(false);
+          setSelectedRequest(null);
+        }}
       />
     </>
   );

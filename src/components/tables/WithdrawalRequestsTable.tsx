@@ -7,7 +7,7 @@ import {
 } from "../../api/affiliate";
 import type { DataTableFetchParams, DataTableFetchResult } from "./data-table/DataTable.types";
 import Badge from "../ui/badge/Badge";
-import { PencilIcon } from "../../icons";
+import { PencilIcon, UserCircleIcon } from "../../icons";
 import { formatDate } from "../../utils/formatDate";
 
 function statusColor(s: string) {
@@ -21,10 +21,14 @@ export interface WithdrawalRequestsTableProps {
   filters: WithdrawalListFilters;
   refreshKey?: number;
   onUpdateStatus: (request: WithdrawalRequest) => void;
+  onViewAccountDetails: (request: WithdrawalRequest) => void;
 }
 
 export const WithdrawalRequestsTable = forwardRef<DataTableRef, WithdrawalRequestsTableProps>(
-  function WithdrawalRequestsTable({ filters, refreshKey = 0, onUpdateStatus }, ref) {
+  function WithdrawalRequestsTable(
+    { filters, refreshKey = 0, onUpdateStatus, onViewAccountDetails },
+    ref,
+  ) {
     const fetchWithdrawalRequestsForTable = useCallback(
       async (params: DataTableFetchParams): Promise<DataTableFetchResult<WithdrawalRequest>> => {
         return fetchWithdrawalRequestsPaginated({ ...params, filters });
@@ -94,14 +98,26 @@ export const WithdrawalRequestsTable = forwardRef<DataTableRef, WithdrawalReques
         align: "end" as const,
         sortable: false,
         render: (row: WithdrawalRequest) => (
-          <button
-            onClick={() => onUpdateStatus(row)}
-            className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
-            title="Update Status"
-          >
-            <PencilIcon className="size-4 shrink-0 fill-current" />
-            Update
-          </button>
+          <div className="flex flex-col items-end gap-1 md:flex-row md:justify-end">
+            <button
+              type="button"
+              onClick={() => onViewAccountDetails(row)}
+              className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
+              title="View account details"
+            >
+              <UserCircleIcon className="size-4 shrink-0 fill-current" />
+              Account Details
+            </button>
+            <button
+              type="button"
+              onClick={() => onUpdateStatus(row)}
+              className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
+              title="Update Status"
+            >
+              <PencilIcon className="size-4 shrink-0 fill-current" />
+              Update
+            </button>
+          </div>
         ),
       },
     ];

@@ -22,6 +22,15 @@ export interface AffiliateRecord {
   created_at: string;
 }
 
+export interface AffiliateBankDetails {
+  account_holder_name?: string | null;
+  account_number?: string | null;
+  ifsc?: string | null;
+  bank_name?: string | null;
+  branch?: string | null;
+  updated_at?: string | null;
+}
+
 export interface WithdrawalRequest {
   id: number;
   affiliate_id: number;
@@ -32,6 +41,7 @@ export interface WithdrawalRequest {
   remarks?: string;
   created_at: string;
   updated_at?: string;
+  bank_details?: AffiliateBankDetails | null;
 }
 
 export interface AffiliateBalance {
