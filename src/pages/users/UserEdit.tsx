@@ -9,7 +9,7 @@ import Button from "../../components/ui/button/Button";
 import { usersApi, fetchUserMemberships, type User } from "../../api/users";
 import { plansApi, type Plan } from "../../api/plans";
 import { api } from "../../api/axios";
-import { fetchCourses, addBatchEnrollment, fetchUserEnrollments } from "../../api/courses";
+import { fetchCourses, setUserCourseBatch, fetchUserEnrollments } from "../../api/courses";
 import { useAssignCoursesState } from "./hooks/useAssignCoursesState";
 import { CourseBatchAssignSection } from "./components/CourseBatchAssignSection";
 import { toast } from "react-toastify";
@@ -263,16 +263,18 @@ export default function UserEdit() {
                 }
             }
 
+            // Atomically set exactly one batch per selected course. setUserCourseBatch removes any
+            // other batch of the same course first, so switching a user's batch never leaves them
+            // enrolled in two batches at once (the "2 batches show" bug).
             const enrollPromises = Object.entries(selectedBatches)
                 .filter(([, batchId]) => Number(batchId) > 0)
                 .map(([courseIdStr, batchId]) => {
                     const cId = Number(courseIdStr);
-                    return addBatchEnrollment(Number(batchId), userId, {
-                        courseId: cId,
+                    return setUserCourseBatch(cId, Number(batchId), userId, {
                         price: coursePrices[cId]?.trim() || undefined,
                         paymentId: coursePaymentIds[cId]?.trim() || undefined,
                     }).catch((err) =>
-                        console.error(`Failed to enroll in batch ${batchId}:`, err),
+                        console.error(`Failed to set batch ${batchId} for course ${cId}:`, err),
                     );
                 });
             await Promise.all(enrollPromises);

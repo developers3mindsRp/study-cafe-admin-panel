@@ -338,6 +338,26 @@ export async function removeBatchEnrollment(enrollmentId: number): Promise<void>
   await api.delete(`/admin/batch-enrollments/${enrollmentId}`);
 }
 
+/**
+ * Atomically set a user's single batch for a course. Removes any other batch of the same course
+ * the user was in, then ensures the target enrollment — so switching batches never leaves the user
+ * enrolled in two batches at once. Use this (not addBatchEnrollment) when editing an existing user.
+ */
+export async function setUserCourseBatch(
+  courseId: number,
+  batchId: number,
+  userId: number,
+  opts?: { price?: string; paymentId?: string },
+): Promise<{ batch_id: number; user_id: number; created: boolean; firstEnrollment: boolean }> {
+  const res = await api.post(`/admin/courses/${courseId}/set-batch`, {
+    user_id: userId,
+    batch_id: batchId,
+    ...(opts?.price ? { price: opts.price } : {}),
+    ...(opts?.paymentId ? { paymentId: opts.paymentId } : {}),
+  });
+  return res.data;
+}
+
 export interface UserEnrollmentRecord {
   enrollment_id: number | null;
   batch_id: number | null;
