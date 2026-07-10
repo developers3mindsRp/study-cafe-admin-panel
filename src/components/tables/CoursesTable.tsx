@@ -122,6 +122,7 @@ export interface CoursesTableProps {
   filterSortBy?: CourseSortFilter;
   filterStartDateFrom?: string;
   filterStartDateTo?: string;
+  filterSearch?: string;
   trashScope?: TrashScope;
   onDeleteClick?: (course: Course) => void;
   onRestoreClick?: (course: Course) => void;
@@ -135,6 +136,7 @@ export function CoursesTable({
   filterSortBy = "",
   filterStartDateFrom = "",
   filterStartDateTo = "",
+  filterSearch = "",
   trashScope = "active",
   onDeleteClick,
   onRestoreClick,
@@ -279,7 +281,7 @@ export function CoursesTable({
         fetchCourses({ trashed: isTrash }),
         membershipActive ? fetchPlanCoursesMap() : Promise.resolve<Record<number, number[]>>({}),
       ]);
-      const search = (params.search ?? "").trim().toLowerCase();
+      const search = filterSearch.trim().toLowerCase();
       let filtered = all;
 
       if (search) {
@@ -325,6 +327,7 @@ export function CoursesTable({
       filterSortBy,
       filterStartDateFrom,
       filterStartDateTo,
+      filterSearch,
     ],
   );
 
@@ -337,11 +340,10 @@ export function CoursesTable({
       fetchData={fetchCoursesForTable}
       initialPageSize={20}
       pageSizeOptions={[10, 20, 50, 100]}
-      enableSearch
+      enableSearch={false}
       enableSorting={false}
       enablePagination
       stickyHeaderFooter
-      searchPlaceholder="Search courses…"
       emptyMessage={isTrash ? "Trash is empty." : "No courses found."}
     />
   );
