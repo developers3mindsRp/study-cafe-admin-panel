@@ -63,6 +63,9 @@ import GoogleReviewView from "./pages/google-reviews/TestimonialView";
 import TestimonialList from "./pages/testimonials/TestimonialList";
 import TestimonialCreate from "./pages/testimonials/TestimonialCreate";
 import TestimonialEdit from "./pages/testimonials/TestimonialEdit";
+import ProductList from "./pages/products/ProductList";
+import ProductCreate from "./pages/products/ProductCreate";
+import ProductEdit from "./pages/products/ProductEdit";
 import MarketingPageList from "./pages/marketing/MarketingPageList";
 import MarketingPageCreate from "./pages/marketing/MarketingPageCreate";
 import MarketingPageEdit from "./pages/marketing/MarketingPageEdit";
@@ -361,6 +364,17 @@ const router = createBrowserRouter(
           </Route>
           <Route path="/testimonials/:id/edit" element={<RequirePermissionRoute permissions={["testimonials:edit"]} />}>
             <Route index element={<TestimonialEdit />} />
+          </Route>
+
+          {/* Products ("Our Products") */}
+          <Route path="/products" element={<RequirePermissionRoute permissions={["products:list"]} />}>
+            <Route index element={<ProductList />} />
+          </Route>
+          <Route path="/products/create" element={<RequirePermissionRoute permissions={["products:create"]} />}>
+            <Route index element={<ProductCreate />} />
+          </Route>
+          <Route path="/products/:id/edit" element={<RequirePermissionRoute permissions={["products:edit"]} />}>
+            <Route index element={<ProductEdit />} />
           </Route>
 
           {/* Marketing pages */}

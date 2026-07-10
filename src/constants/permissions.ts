@@ -44,6 +44,13 @@ export const PERM_TESTIMONIALS_CREATE = "testimonials:create";
 export const PERM_TESTIMONIALS_EDIT = "testimonials:edit";
 export const PERM_TESTIMONIALS_DELETE = "testimonials:delete";
 
+// Products ("Our Products")
+export const PERM_PRODUCTS_LIST = "products:list";
+export const PERM_PRODUCTS_VIEW = "products:view";
+export const PERM_PRODUCTS_CREATE = "products:create";
+export const PERM_PRODUCTS_EDIT = "products:edit";
+export const PERM_PRODUCTS_DELETE = "products:delete";
+
 // FAQ
 export const PERM_FAQ_LIST = "faq:list";
 export const PERM_FAQ_VIEW = "faq:view";
@@ -191,6 +198,11 @@ export const ALL_PERMISSIONS = [
   PERM_TESTIMONIALS_CREATE,
   PERM_TESTIMONIALS_EDIT,
   PERM_TESTIMONIALS_DELETE,
+  PERM_PRODUCTS_LIST,
+  PERM_PRODUCTS_VIEW,
+  PERM_PRODUCTS_CREATE,
+  PERM_PRODUCTS_EDIT,
+  PERM_PRODUCTS_DELETE,
   PERM_FAQ_LIST,
   PERM_FAQ_VIEW,
   PERM_FAQ_CREATE,
