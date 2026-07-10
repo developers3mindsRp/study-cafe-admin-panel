@@ -20,12 +20,21 @@ import { ArticlesTable } from "../../components/tables";
 import type { DataTableRef } from "../../components/tables/data-table";
 import { FilterBar, useFilterState } from "../../components/filters";
 import type { FilterFieldDef } from "../../components/filters";
+import { searchAuthorUsers, type User } from "../../api/users";
 import { exportRowsToExcel } from "../../utils/exportToExcel";
 import { ARTICLE_EXPORT_COLUMNS } from "../../utils/articleExportColumns";
 import { ArticleExportModal } from "./components/ArticleExportModal";
 import { ArticleStatusBar } from "./components/ArticleStatusBar";
 import Button from "../../components/ui/button/Button";
 import { DownloadIcon } from "../../icons";
+
+/** Dropdown label for an author option: "Name — Role". */
+function authorFilterLabel(u: User): string {
+  const name =
+    u.name?.trim() || u.display_name?.trim() || u.email?.trim() || `User #${u.id}`;
+  const roleHint = u.role?.trim() || u.designation?.trim() || u.profession?.trim() || "";
+  return roleHint ? `${name} — ${roleHint}` : name;
+}
 
 const articleFilterFields: FilterFieldDef[] = [
   {
@@ -50,10 +59,22 @@ const articleFilterFields: FilterFieldDef[] = [
     },
   },
   {
-    type: "text",
+    type: "searchable-async-select",
     id: "author",
     label: "Author",
-    placeholder: "Filter by author name or email…",
+    placeholder: "All authors",
+    searchPlaceholder: "Search by name or email…",
+    // Admin users listed on open; type to search all users too. Selecting a user
+    // sends their email as the `author` term, which the API matches server-side.
+    minSearchLength: 0,
+    defaultOptions: true,
+    loader: async (search) => {
+      const users = await searchAuthorUsers(search);
+      return users.map((u) => ({
+        value: u.email?.trim() || u.name?.trim() || String(u.id),
+        label: authorFilterLabel(u),
+      }));
+    },
   },
   {
     type: "select",

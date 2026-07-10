@@ -310,6 +310,81 @@ export async function fetchAdminPanelUsers(): Promise<User[]> {
   }
 }
 
+/**
+ * Cached admin-panel users for author pickers. They are few and stable within
+ * a session, so we fetch them once from /auth/admin/users and reuse.
+ */
+let adminAuthorUsersCache: User[] | null = null;
+
+async function getAdminAuthorUsers(): Promise<User[]> {
+  if (adminAuthorUsersCache) return adminAuthorUsersCache;
+  adminAuthorUsersCache = await fetchAdminPanelUsers();
+  return adminAuthorUsersCache;
+}
+
+function sortUsersByName(list: User[]): User[] {
+  return [...list].sort((a, b) => {
+    const nameA = (a.name || a.display_name || a.email || "").toLowerCase();
+    const nameB = (b.name || b.display_name || b.email || "").toLowerCase();
+    return nameA.localeCompare(nameB);
+  });
+}
+
+/** First page of a live user search (all users), used only when a query is typed. */
+async function searchRegularUsers(q: string): Promise<User[]> {
+  try {
+    const res = await usersApi.list({
+      page: 1,
+      limit: 10,
+      sortBy: "name",
+      sortOrder: "ASC",
+      lean: true,
+      ...(q ? { search: q } : {}),
+    });
+    return res.data ?? [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Author search for filters/pickers.
+ *
+ * Empty query (default dropdown) → admin-panel users only, so the list stays
+ * clean and relevant (these are the people who author content). Typing a query
+ * → live-searches ALL users and merges in matching admins, so any author is
+ * still reachable by writing, like the previous free-text filter.
+ */
+export async function searchAuthorUsers(search: string): Promise<User[]> {
+  const q = search.trim();
+  const admins = await getAdminAuthorUsers();
+
+  if (!q) {
+    // Fall back to a plain user search only when the admin list is unavailable
+    // (e.g. the current admin lacks the admin_users:list permission).
+    return sortUsersByName(admins.length > 0 ? admins : await searchRegularUsers(""));
+  }
+
+  const regular = await searchRegularUsers(q);
+
+  const ql = q.toLowerCase();
+  const matchingAdmins = admins.filter(
+    (u) =>
+      (u.name || "").toLowerCase().includes(ql) ||
+      (u.display_name || "").toLowerCase().includes(ql) ||
+      (u.email || "").toLowerCase().includes(ql) ||
+      (u.role || "").toLowerCase().includes(ql) ||
+      (u.designation || "").toLowerCase().includes(ql),
+  );
+
+  const seen = new Set(regular.map((u) => String(u.id)));
+  const merged = [...regular];
+  for (const au of matchingAdmins) {
+    if (!seen.has(String(au.id))) merged.push(au);
+  }
+  return sortUsersByName(merged);
+}
+
 /** Server-side export job with progress polling — fast + percentage for large datasets. */
 export type UserExportJobStatus = {
   jobId: string;
