@@ -4,7 +4,7 @@ import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import { ConfirmDeleteModal } from "../../components/ui/modal/ConfirmDeleteModal";
 import { CoursesTable } from "../../components/tables";
-import { FilterBar, useFilterState } from "../../components/filters";
+import { FilterBar, FilterSearchInput, useFilterState } from "../../components/filters";
 import type { FilterFieldDef } from "../../components/filters";
 import { TrashScopeTabs, type TrashScope } from "../../components/trash/TrashScopeTabs";
 import { deleteCourse, fetchCourseCats, restoreCourse, type Course } from "../../api/courses";
@@ -13,6 +13,7 @@ import type { CourseSortFilter, PriceRangeFilter, PublicationFilter } from "./fi
 
 export default function CourseList() {
   const { values, set, reset, hasActive } = useFilterState({ sortBy: "newest" });
+  const [search, setSearch] = useState("");
   const [dateFilterKey, setDateFilterKey] = useState(0);
   const [tableRefreshKey, setTableRefreshKey] = useState(0);
   const [trashScope, setTrashScope] = useState<TrashScope>("active");
@@ -151,16 +152,24 @@ export default function CourseList() {
       />
       <div className="space-y-6">
         <TrashScopeTabs value={trashScope} onChange={setTrashScope} />
-        {!isTrash ? (
-          <FilterBar
-            fields={courseFilterFields}
-            values={values}
-            onChange={set}
-            onReset={handleResetFilters}
-            hasActive={hasActive}
-            resetKey={dateFilterKey}
+        <div className="space-y-4">
+          <FilterSearchInput
+            value={search}
+            onChange={setSearch}
+            placeholder="Search courses…"
+            className="w-full sm:max-w-sm"
           />
-        ) : null}
+          {!isTrash ? (
+            <FilterBar
+              fields={courseFilterFields}
+              values={values}
+              onChange={set}
+              onReset={handleResetFilters}
+              hasActive={hasActive}
+              resetKey={dateFilterKey}
+            />
+          ) : null}
+        </div>
         <CoursesTable
           key={`${trashScope}-${tableRefreshKey}`}
           filterCategoryId={values.categoryId ?? ""}
@@ -170,6 +179,7 @@ export default function CourseList() {
           filterSortBy={(values.sortBy ?? "") as CourseSortFilter}
           filterStartDateFrom={values.startDateFrom ?? ""}
           filterStartDateTo={values.startDateTo ?? ""}
+          filterSearch={search}
           trashScope={trashScope}
           onDeleteClick={handleDeleteClick}
           onRestoreClick={handleRestoreClick}

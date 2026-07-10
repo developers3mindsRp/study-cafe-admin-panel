@@ -173,6 +173,21 @@ export const mainNavItemsConfig: NavItemConfig[] = [
     ],
   },
   {
+    iconKey: "grid",
+    name: "Our Products",
+    subItems: [
+      { name: "List", path: "/products", requiredPermission: ["products:list", "products:view"] },
+      { name: "Create", path: "/products/create", requiredPermission: ["products:create"] },
+    ],
+    requiredPermission: [
+      "products:list",
+      "products:view",
+      "products:create",
+      "products:edit",
+      "products:delete",
+    ],
+  },
+  {
     iconKey: "info",
     name: "FAQ",
     subItems: [

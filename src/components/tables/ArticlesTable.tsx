@@ -2,11 +2,11 @@
  * Articles table using the reusable DataTable with server-side pagination, sort, and search.
  */
 
-import { forwardRef, useCallback } from "react";
+import { forwardRef, useCallback, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { DataTable, type DataTableRef } from "./data-table";
 import Badge from "../ui/badge/Badge";
-import { PencilIcon, TrashBinIcon } from "../../icons";
+import { PencilIcon, TrashBinIcon, EyeIcon } from "../../icons";
 import { RequirePermission } from "../auth/RequirePermission";
 import {
   PERM_ARTICLES_EDIT,
@@ -21,6 +21,7 @@ import {
   fetchArticlesPaginated,
   fetchCourts,
   fetchTags,
+  generateArticlePreviewLink,
   type ArticleRecord,
 } from "../../api/articles";
 import type { TrashScope } from "../trash/TrashScopeTabs";
@@ -28,7 +29,7 @@ import type { DataTableFetchParams, DataTableFetchResult } from "./data-table/Da
 import { PREVIEW_STATE_KEY } from "../../pages/articles/ArticlePreview";
 import type { ArticleFormData } from "../../pages/articles/ArticleForm";
 import { getWebsiteUrl } from "../../config/env";
-import { WebsiteViewLink, AdminViewLink } from "../common/WebsiteLink";
+import { WebsiteViewLink } from "../common/WebsiteLink";
 
 const WEBSITE_URL = getWebsiteUrl();
 
@@ -43,6 +44,40 @@ export interface ArticlesTableProps {
   filterAuthor?: string;
   filterDateFrom?: string;
   filterDateTo?: string;
+}
+
+/**
+ * Opens a short-lived live-preview URL for an unpublished article in a new tab.
+ * Uses the same preview-token flow as the "Live Preview" button in the editor,
+ * so drafts/scheduled articles render exactly as they will on the public site.
+ */
+function ArticlePreviewButton({ articleId }: { articleId: number | string }) {
+  const [loading, setLoading] = useState(false);
+
+  const handleClick = async () => {
+    setLoading(true);
+    try {
+      const { previewUrl } = await generateArticlePreviewLink(Number(articleId));
+      window.open(previewUrl, "_blank", "noopener,noreferrer");
+    } catch {
+      alert("Could not generate preview link. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      disabled={loading}
+      title="Live preview"
+      className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-lg px-2.5 py-2 text-sm text-brand-600 transition hover:bg-brand-50 hover:text-brand-700 disabled:opacity-50 dark:text-brand-400 dark:hover:bg-brand-500/10"
+    >
+      <EyeIcon className="size-4 shrink-0 fill-current" />
+      {loading ? "Generating…" : "Preview"}
+    </button>
+  );
 }
 
 const statusColor = (status: string) =>
@@ -176,14 +211,9 @@ export const ArticlesTable = forwardRef<DataTableRef, ArticlesTableProps>(
         header: "Title",
         sortable: true,
         render: (row: ArticleRecord) => (
-          <div>
-            <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
-              {row.title}
-            </span>
-            <span className="block text-gray-500 text-theme-xs dark:text-gray-400">
-              /{decodeSlugForDisplay(row.slug) || row.id}
-            </span>
-          </div>
+          <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
+            {row.title}
+          </span>
         ),
       },
       {
@@ -301,7 +331,7 @@ export const ArticlesTable = forwardRef<DataTableRef, ArticlesTableProps>(
               <>
                 {websiteUrl
                   ? <WebsiteViewLink href={websiteUrl} />
-                  : <AdminViewLink to={`/articles/${row.id}`} />}
+                  : <ArticlePreviewButton articleId={row.id} />}
                 <RequirePermission permissions={[PERM_ARTICLES_EDIT]} fallback={null}>
                   <Link
                     to={`/articles/${row.id}/edit`}
