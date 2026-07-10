@@ -182,6 +182,21 @@ export const mainNavItemsConfig: NavItemConfig[] = [
     requiredPermission: ["faq:list", "faq:view", "faq:create", "faq:edit", "faq:delete"],
   },
   {
+    iconKey: "docs",
+    name: "Professions",
+    subItems: [
+      { name: "List", path: "/professions", requiredPermission: ["professions:list", "professions:view"] },
+      { name: "Create", path: "/professions/create", requiredPermission: ["professions:create"] },
+    ],
+    requiredPermission: [
+      "professions:list",
+      "professions:view",
+      "professions:create",
+      "professions:edit",
+      "professions:delete",
+    ],
+  },
+  {
     iconKey: "mail",
     name: "Contact Inquiries",
     subItems: [{ name: "List", path: "/contact-inquiries", requiredPermission: ["contact_inquiries:list", "contact_inquiries:view"] }],

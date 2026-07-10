@@ -95,6 +95,17 @@ export const MODULE_LEVELS: ModuleConfig[] = [
     ],
   },
   {
+    key: "professions",
+    name: "Professions",
+    levels: [
+      { value: "none", label: "None", permissions: [] },
+      { value: "view", label: "View only", permissions: ["professions:list", "professions:view"] },
+      { value: "edit", label: "Edit (includes view)", permissions: ["professions:list", "professions:view", "professions:edit"] },
+      { value: "create", label: "Create (includes view, edit)", permissions: ["professions:list", "professions:view", "professions:edit", "professions:create"] },
+      { value: "delete", label: "Delete / Full", permissions: ["professions:list", "professions:view", "professions:edit", "professions:create", "professions:delete"] },
+    ],
+  },
+  {
     key: "admin_users",
     name: "Admin Users",
     levels: [
@@ -329,6 +340,7 @@ export const PERMISSION_NAV_GROUPS: PermissionNavGroup[] = [
   { name: "Google Reviews", modules: [{ key: "google_reviews" }] },
   { name: "Testimonials", modules: [{ key: "testimonials" }] },
   { name: "FAQ", modules: [{ key: "faq" }] },
+  { name: "Professions", modules: [{ key: "professions" }] },
   { name: "Contact Inquiries", modules: [{ key: "contact_inquiries" }] },
   {
     name: "Newsletter",
