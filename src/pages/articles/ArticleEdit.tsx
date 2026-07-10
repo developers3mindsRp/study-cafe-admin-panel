@@ -156,7 +156,7 @@ export default function ArticleEdit() {
       title: s.title ?? "",
       content: s.content ?? "",
     })),
-    author: { name: article.author_name ?? "", role: "", imageUrl: "", bio: "" },
+    author: { id: article.author_id ?? null, name: article.author_name ?? "", role: "", imageUrl: "", bio: "" },
     shareEnabled: true,
     status: statusToForm(article.status),
     scheduled_publish_at: article.scheduled_publish_at ?? null,

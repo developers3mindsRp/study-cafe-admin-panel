@@ -14,6 +14,7 @@ export function articleFormToApiPayload(formData: ArticleFormData) {
     title: formData.meta.title,
     slug: formData.meta.slug || undefined,
     sub_heading: formData.meta.subHeading?.trim() || null,
+    author_id: formData.author?.id ?? null,
     meta_title: formData.meta.metaTitle?.trim() || null,
     meta_description: formData.meta.metaDesc?.trim() || null,
     meta_keywords: formData.meta.metaKeywords?.trim() || null,

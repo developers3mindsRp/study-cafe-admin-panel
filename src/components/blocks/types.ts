@@ -129,6 +129,8 @@ export function isMembershipCTABlockData(
 
 /** Author bio for article footer */
 export interface AuthorBio {
+  /** User id (from the `users` table) this author profile belongs to. */
+  id?: number | null;
   name: string;
   role?: string;
   imageUrl?: string;
