@@ -21,6 +21,10 @@ import { generateArticlePreviewLink } from "../../api/articles";
 import DatePicker from "../../components/form/date-picker";
 import { ARTICLE_TAX_TYPE_OPTIONS } from "../../constants/articleTaxTypes";
 import ArticleSectionsEditor from "./components/ArticleSectionsEditor";
+import AsyncSelect from "react-select/async";
+import type { CSSObjectWithLabel } from "react-select";
+import { fetchAdminPanelUsers } from "../../api/users";
+import { useAuth } from "../../context/AuthContext";
 
 /** One article section: a title (TOC entry) + rich HTML content. */
 export interface ArticleSection {
@@ -230,6 +234,7 @@ export default function ArticleForm({
   taxonomyOptions,
 }: ArticleFormProps) {
   const location = useLocation();
+  const { user: currentAdmin } = useAuth();
 
   // Check if we're returning from preview with restored data (must preserve when Back to Editor)
   const restoredData = location.state?.[RESTORE_STATE_KEY] as ArticleFormSeed | undefined;
@@ -255,6 +260,54 @@ export default function ArticleForm({
       initialDataRef.current = init;
     }
   }, [restoredData]);
+
+  // Default a new article's author to the logged-in admin (only once, and only when
+  // nothing else — e.g. a restored preview state — already picked one).
+  useEffect(() => {
+    if (mode === "create" && !formData.author.id && currentAdmin) {
+      setFormData((prev) => {
+        if (prev.author.id) return prev;
+        const next = { ...prev, author: { ...prev.author, id: Number(currentAdmin.id), name: currentAdmin.name } };
+        // Not a real user edit — keep the dirty-check baseline in sync so this
+        // default alone doesn't trigger the unsaved-changes prompt.
+        initialDataRef.current = next;
+        return next;
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, currentAdmin]);
+
+  // Author options mirror the /admin-users list (same admin-panel accounts, same permission
+  // gate) — fetched once and filtered client-side, same as AdminUserList's own search.
+  const [adminUsers, setAdminUsers] = useState<Awaited<ReturnType<typeof fetchAdminPanelUsers>>>([]);
+  useEffect(() => {
+    fetchAdminPanelUsers().then(setAdminUsers);
+  }, []);
+
+  const loadAuthorOptions = async (inputValue: string) => {
+    const q = inputValue.trim().toLowerCase();
+    const matches = q
+      ? adminUsers.filter(
+          (u) =>
+            u.name?.toLowerCase().includes(q) ||
+            u.email?.toLowerCase().includes(q) ||
+            u.role?.toLowerCase().includes(q),
+        )
+      : adminUsers;
+    return matches.slice(0, 20).map((u) => ({
+      value: String(u.id),
+      label: `${u.name} (${u.email})`,
+      name: u.name,
+    }));
+  };
+
+  const authorDefaultOptions = adminUsers.slice(0, 20).map((u) => ({
+    value: String(u.id),
+    label: `${u.name} (${u.email})`,
+    name: u.name,
+  }));
+
+  const isAuthorLocked = formData.status === "Published";
 
   const isDirty =
     initialDataRef.current !== null &&
@@ -392,17 +445,23 @@ export default function ArticleForm({
                 onChange={(e) => {
                   const title = e.target.value;
                   setFormData((prev) => {
-                    const keepSync = shouldResyncSlugFromSource(
+                    const keepSlugSync = shouldResyncSlugFromSource(
                       prev.meta.slug,
                       prev.meta.title,
                       (t) => slugifyForSeo(t),
+                    );
+                    const keepMetaTitleSync = shouldResyncSlugFromSource(
+                      prev.meta.metaTitle ?? "",
+                      prev.meta.title,
+                      (t) => t,
                     );
                     return {
                       ...prev,
                       meta: {
                         ...prev.meta,
                         title,
-                        slug: keepSync ? slugifyForSeo(title) : prev.meta.slug,
+                        slug: keepSlugSync ? slugifyForSeo(title) : prev.meta.slug,
+                        metaTitle: keepMetaTitleSync ? title : prev.meta.metaTitle,
                       },
                     };
                   });
@@ -428,10 +487,21 @@ export default function ArticleForm({
               <TextArea
                 value={formData.meta.description ?? ""}
                 onChange={(value) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    meta: { ...prev.meta, description: value },
-                  }))
+                  setFormData((prev) => {
+                    const keepMetaDescSync = shouldResyncSlugFromSource(
+                      prev.meta.metaDesc ?? "",
+                      prev.meta.description ?? "",
+                      (t) => t,
+                    );
+                    return {
+                      ...prev,
+                      meta: {
+                        ...prev.meta,
+                        description: value,
+                        metaDesc: keepMetaDescSync ? value : prev.meta.metaDesc,
+                      },
+                    };
+                  })
                 }
                 placeholder="Short description or excerpt for the article"
                 rows={3}
@@ -455,6 +525,61 @@ export default function ArticleForm({
                 }
                 placeholder="Auto from title when empty; SEO format on blur"
               />
+            </div>
+          </div>
+        </div>
+
+        {/* Author — searchable pick from registered admin-panel users; drives the public author-bio profile */}
+        <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] sm:p-6">
+          <h3 className="mb-4 text-lg font-semibold text-gray-800 dark:text-white/90">
+            Author
+          </h3>
+          <div className="space-y-4">
+            <div>
+              <Label>Search &amp; select author</Label>
+              <AsyncSelect
+                cacheOptions
+                defaultOptions={authorDefaultOptions}
+                loadOptions={loadAuthorOptions}
+                isDisabled={isAuthorLocked}
+                value={
+                  formData.author.id
+                    ? { value: String(formData.author.id), label: formData.author.name, name: formData.author.name }
+                    : null
+                }
+                onChange={(option: { value: string; name: string } | null) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    author: { ...prev.author, id: option ? Number(option.value) : null, name: option?.name ?? "" },
+                  }))
+                }
+                placeholder="Type name or email…"
+                className="text-sm text-gray-800 dark:text-gray-200"
+                styles={{
+                  control: (base: CSSObjectWithLabel) => ({
+                    ...base,
+                    minHeight: "44px",
+                    borderRadius: "0.5rem",
+                    borderColor: "rgb(209 213 219)",
+                    boxShadow: "none",
+                    backgroundColor: isAuthorLocked ? "rgb(243 244 246)" : base.backgroundColor,
+                    "&:hover": { borderColor: "rgb(156 163 175)" },
+                  }),
+                }}
+              />
+              {isAuthorLocked ? (
+                <p className="mt-2 text-xs text-warning-600 dark:text-warning-400">
+                  Author is locked once an article is published.
+                </p>
+              ) : null}
+              <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                Lists the same admin-panel users as{" "}
+                <Link to="/admin-users" className="text-brand-500 hover:text-brand-600">
+                  Admin Users
+                </Link>
+                . Their bio, profession, and photo (managed on their profile) power the public author
+                section on the article.
+              </p>
             </div>
           </div>
         </div>
@@ -827,70 +952,6 @@ export default function ArticleForm({
           </div>
         </div>
 
-        {/* Author Bio — create only; author is locked after first save */}
-        {mode === "create" ? (
-        <div className="rounded-2xl hidden border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] sm:p-6">
-          <h3 className="mb-4 text-lg font-semibold text-gray-800 dark:text-white/90">
-            Author Bio
-          </h3>
-          <div className="space-y-4">
-            <div>
-              <Label>Name</Label>
-              <Input
-                value={formData.author.name}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    author: { ...prev.author, name: e.target.value },
-                  }))
-                }
-                placeholder="Author name"
-              />
-            </div>
-            <div>
-              <Label>Role (optional)</Label>
-              <Input
-                value={formData.author.role ?? ""}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    author: { ...prev.author, role: e.target.value },
-                  }))
-                }
-                placeholder="e.g. CA, CFA"
-              />
-            </div>
-            <div>
-              <ImageUpload
-                label="Author photo (optional)"
-                value={formData.author.imageUrl ?? ""}
-                onChange={(imageUrl) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    author: { ...prev.author, imageUrl },
-                  }))
-                }
-                placeholder="Drop or select author photo"
-              />
-            </div>
-            <div>
-              <Label>Bio (optional)</Label>
-              <TextArea
-                rows={3}
-                value={formData.author.bio ?? ""}
-                onChange={(value) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    author: { ...prev.author, bio: value },
-                  }))
-                }
-                placeholder="Brief author bio"
-              />
-            </div>
-          </div>
-        </div>
-        ) : null}
-
         {/* Taxonomies (Categories, Tags, Article Types, Courts) — chip-style multi-select */}
         {taxonomyOptions && (
           <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] sm:p-6">
@@ -987,9 +1048,6 @@ export default function ArticleForm({
                 <Label>Author</Label>
                 <p className="mt-1 text-sm font-medium text-gray-800 dark:text-white/90">
                   {formData.author.name?.trim() || "—"}
-                </p>
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  Original author is preserved when editing.
                 </p>
               </div>
             ) : null}
