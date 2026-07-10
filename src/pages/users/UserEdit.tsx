@@ -12,6 +12,7 @@ import { api } from "../../api/axios";
 import { fetchCourses, setUserCourseBatch, fetchUserEnrollments } from "../../api/courses";
 import { useAssignCoursesState } from "./hooks/useAssignCoursesState";
 import { CourseBatchAssignSection } from "./components/CourseBatchAssignSection";
+import { FREE_MEMBERSHIP_VALUE } from "./constants/userMembershipOptions";
 import { toast } from "react-toastify";
 
 type UserPayload = Partial<User>;
@@ -147,7 +148,9 @@ export default function UserEdit() {
                         name: user.name || "",
                         email: user.email || "",
                         phone: user.phone || "",
-                        membership: activeMembershipType,
+                        // Fall back to the "Free" sentinel so users with no active plan
+                        // show as Free (not a blank "Select Plan") in the dropdown.
+                        membership: activeMembershipType || FREE_MEMBERSHIP_VALUE,
                         status: user.status || "active",
 
                         first_name: user.first_name || "",
@@ -220,7 +223,20 @@ export default function UserEdit() {
             const newMembership = formData.membership || "";
             const membershipChanged = newMembership && newMembership !== originalMembership;
 
-            if (newMembership) {
+            if (newMembership === FREE_MEMBERSHIP_VALUE) {
+                // Admin downgraded the user to Free. Only hit the API when the user
+                // actually had an active paid membership to remove.
+                if (originalMembership) {
+                    await api.delete(`/admin/users/${id}/membership`);
+                    setOriginalMembership("");
+                    setPlanFields({
+                        price: "",
+                        payment_id: "",
+                        plan_purchased: toDatetimeLocal(new Date()),
+                        plan_expiry: "",
+                    });
+                }
+            } else if (newMembership) {
                 const startDate = planFields.plan_purchased
                     ? new Date(planFields.plan_purchased.replace(" ", "T"))
                     : new Date();
@@ -338,6 +354,7 @@ export default function UserEdit() {
                                         className="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-900 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:text-white"
                                     >
                                         <option value="">Select Plan</option>
+                                        <option value={FREE_MEMBERSHIP_VALUE}>Free (No membership)</option>
                                         {plans.map((plan) => (
                                             <option key={plan.id} value={plan.slug}>
                                                 {plan.name} ({plan.currency} {plan.price})
@@ -345,9 +362,14 @@ export default function UserEdit() {
                                         ))}
                                     </select>
                                 </div>
+                                {formData.membership === FREE_MEMBERSHIP_VALUE && originalMembership && (
+                                    <p className="mt-1.5 text-xs text-warning-600 dark:text-warning-400">
+                                        Saving will remove this user's active membership and downgrade them to Free.
+                                    </p>
+                                )}
                             </div>
 
-                            {formData.membership && (
+                            {formData.membership && formData.membership !== FREE_MEMBERSHIP_VALUE && (
                                 <>
                                     <div>
                                         <Label>Price</Label>

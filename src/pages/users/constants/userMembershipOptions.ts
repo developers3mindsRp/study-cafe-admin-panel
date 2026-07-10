@@ -1,5 +1,12 @@
 /** Slugs must match `users.membership` values stored by the API. */
 
+/**
+ * Sentinel value used by the user edit form's membership dropdown to mean
+ * "Free — no paid membership". Selecting it removes any active membership.
+ * It is intentionally NOT a real premium_plans slug.
+ */
+export const FREE_MEMBERSHIP_VALUE = "free";
+
 export const USER_MEMBERSHIP_FILTER_OPTIONS = [
   { value: "free", label: "Free" },
   { value: "basic", label: "Basic" },
