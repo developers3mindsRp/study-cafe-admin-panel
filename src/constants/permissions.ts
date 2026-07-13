@@ -58,6 +58,13 @@ export const PERM_FAQ_CREATE = "faq:create";
 export const PERM_FAQ_EDIT = "faq:edit";
 export const PERM_FAQ_DELETE = "faq:delete";
 
+// Professions
+export const PERM_PROFESSION_LIST = "professions:list";
+export const PERM_PROFESSION_VIEW = "professions:view";
+export const PERM_PROFESSION_CREATE = "professions:create";
+export const PERM_PROFESSION_EDIT = "professions:edit";
+export const PERM_PROFESSION_DELETE = "professions:delete";
+
 // Newsletter
 export const PERM_NEWSLETTER_LIST = "newsletter:list";
 export const PERM_NEWSLETTER_CREATE = "newsletter:create";
@@ -208,6 +215,11 @@ export const ALL_PERMISSIONS = [
   PERM_FAQ_CREATE,
   PERM_FAQ_EDIT,
   PERM_FAQ_DELETE,
+  PERM_PROFESSION_LIST,
+  PERM_PROFESSION_VIEW,
+  PERM_PROFESSION_CREATE,
+  PERM_PROFESSION_EDIT,
+  PERM_PROFESSION_DELETE,
   PERM_NEWSLETTER_LIST,
   PERM_NEWSLETTER_CREATE,
   PERM_NEWSLETTER_EDIT,

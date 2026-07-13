@@ -74,6 +74,9 @@ import FAQList from "./pages/faq/FAQList";
 import FAQCreate from "./pages/faq/FAQCreate";
 import FAQEdit from "./pages/faq/FAQEdit";
 import FAQView from "./pages/faq/FAQView";
+import ProfessionList from "./pages/professions/ProfessionList";
+import ProfessionCreate from "./pages/professions/ProfessionCreate";
+import ProfessionEdit from "./pages/professions/ProfessionEdit";
 import SubscribersList from "./pages/newsletter/SubscribersList";
 import TemplatesList from "./pages/newsletter/TemplatesList";
 import TemplateCreate from "./pages/newsletter/TemplateCreate";
@@ -403,6 +406,17 @@ const router = createBrowserRouter(
           </Route>
           <Route path="/faq/:id/edit" element={<RequirePermissionRoute permissions={["faq:edit"]} />}>
             <Route index element={<FAQEdit />} />
+          </Route>
+
+          {/* Professions */}
+          <Route path="/professions" element={<RequirePermissionRoute permissions={["professions:list"]} />}>
+            <Route index element={<ProfessionList />} />
+          </Route>
+          <Route path="/professions/create" element={<RequirePermissionRoute permissions={["professions:create"]} />}>
+            <Route index element={<ProfessionCreate />} />
+          </Route>
+          <Route path="/professions/:id/edit" element={<RequirePermissionRoute permissions={["professions:edit"]} />}>
+            <Route index element={<ProfessionEdit />} />
           </Route>
 
           {/* Newsletter */}
