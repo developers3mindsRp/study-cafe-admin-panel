@@ -447,8 +447,11 @@ export default function UserEdit() {
                                 <Label>Display Name</Label>
                                 <Input
                                     type="text"
-                                    name="display_name" // fixed name to match state
-                                    value={formData.display_name || ""} // use display_name
+                                    // Bind to `name` (the field shown in the users list and detail
+                                    // view). `display_name` is empty for most users, so binding to it
+                                    // left this input blank even when the user had a name.
+                                    name="name"
+                                    value={formData.name || ""}
                                     onChange={handleChange}
                                     placeholder="Full Display Name"
                                 />

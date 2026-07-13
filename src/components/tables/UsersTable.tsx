@@ -79,7 +79,14 @@ export const UsersTable = forwardRef<DataTableRef, UsersTableProps>(
         header: "Membership Plan",
         sortable: false,
         render: (row: User) => {
-          const planName = row.membership_plan_name || row.membership_name || "Free";
+          // Only treat the user as a paid member while the plan is actually active.
+          // The API returns the latest membership row regardless of expiry, so an
+          // expired user still carries membership_plan_name — fall back to "Free"
+          // unless membership_status says it's currently Active.
+          const isActive = row.membership_status === "Active";
+          const planName = isActive
+            ? row.membership_plan_name || row.membership_name || "Free"
+            : "Free";
           const expiresAt = row.membership_expires_at;
           let expiryLabel = "";
           if (expiresAt) {
@@ -98,7 +105,7 @@ export const UsersTable = forwardRef<DataTableRef, UsersTableProps>(
               </span>
               {expiryLabel ? (
                 <span className="text-xs text-gray-500 dark:text-gray-400">
-                  Expired At: {expiryLabel}
+                  {isActive ? "Expires At" : "Expired At"}: {expiryLabel}
                 </span>
               ) : null}
             </div>
