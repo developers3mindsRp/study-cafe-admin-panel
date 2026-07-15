@@ -117,7 +117,8 @@ export default function SEOMetadataEdit() {
         ogImageUrl: formData.ogImageUrl,
         robots: formData.robots,
       });
-      navigate("/seo-metadata");
+      alert("SEO metadata updated successfully!");
+      navigate(`/seo-metadata/${id}/edit`);
     } catch (err: unknown) {
       console.error("Failed to update SEO metadata", err);
       const msg =

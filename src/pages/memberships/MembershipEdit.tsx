@@ -102,7 +102,8 @@ export default function MembershipEdit() {
       delete (payload as Record<string, unknown>).mrp;
 
       await plansApi.update(id, payload);
-      navigate("/memberships");
+      alert("Membership updated successfully!");
+      navigate(`/memberships/${id}/edit`);
     } catch (err: unknown) {
       console.error("Failed to update membership", err);
       alert(getApiErrorMessage(err, "Failed to update membership"));

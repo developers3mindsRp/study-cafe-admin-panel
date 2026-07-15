@@ -342,13 +342,14 @@ export default function OrderEdit() {
 
       await updateOrder(order.id, payload);
       alert("Order updated successfully!");
-      navigate(`/orders/${orderId}`);
+      navigate(`/orders/${orderId}/edit`);
     } catch (error: unknown) {
       const msg =
         error && typeof error === "object" && "response" in error
           ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
           : undefined;
       alert(msg || "Failed to update order");
+    } finally {
       setLoading(false);
     }
   };

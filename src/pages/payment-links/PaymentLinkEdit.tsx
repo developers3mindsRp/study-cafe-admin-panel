@@ -92,7 +92,8 @@ export default function PaymentLinkEdit() {
       }
 
       await updatePaymentLink(id, payload);
-      navigate("/payment-links");
+      alert("Payment link updated successfully!");
+      navigate(`/payment-links/${id}/edit`);
     } catch (err: unknown) {
       alert(getApiErrorMessage(err, "Failed to update payment link"));
     } finally {

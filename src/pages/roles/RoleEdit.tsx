@@ -59,7 +59,8 @@ export default function RoleEdit() {
           setSubmitting(true);
           try {
             await rolesApi.update(role.id, data);
-            navigate("/roles");
+            alert("Role updated successfully!");
+            navigate(`/roles/${role.id}/edit`);
           } catch (err: unknown) {
             const msg =
               (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||

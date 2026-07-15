@@ -61,7 +61,8 @@ export default function PromoCodeEdit() {
         expire_date: formData.expire_date || undefined,
         status: formData.status,
       });
-      navigate("/coupons");
+      alert("Coupon updated successfully!");
+      navigate(`/coupons/${id}/edit`);
     } catch (err: unknown) {
       console.error("Failed to update coupon", err);
       alert(getErrorMessage(err) || "Failed to update coupon");
