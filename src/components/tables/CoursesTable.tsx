@@ -126,6 +126,7 @@ export interface CoursesTableProps {
   trashScope?: TrashScope;
   onDeleteClick?: (course: Course) => void;
   onRestoreClick?: (course: Course) => void;
+  onPermanentDeleteClick?: (course: Course) => void;
 }
 
 export function CoursesTable({
@@ -140,6 +141,7 @@ export function CoursesTable({
   trashScope = "active",
   onDeleteClick,
   onRestoreClick,
+  onPermanentDeleteClick,
 }: CoursesTableProps) {
   const isTrash = trashScope === "trash";
 
@@ -264,6 +266,15 @@ export function CoursesTable({
                   >
                     Restore
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => onPermanentDeleteClick?.(row)}
+                    className="inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-error-500 transition hover:bg-error-50 dark:text-error-400 dark:hover:bg-error-500/10"
+                    title="Delete permanently — cannot be undone"
+                  >
+                    <TrashBinIcon className="size-4 shrink-0 fill-current" />
+                    Delete Permanently
+                  </button>
                 </RequirePermission>
               )}
             </div>
@@ -271,7 +282,7 @@ export function CoursesTable({
         },
       },
     ],
-    [isTrash, onDeleteClick, onRestoreClick],
+    [isTrash, onDeleteClick, onRestoreClick, onPermanentDeleteClick],
   );
 
   const fetchCoursesForTable = useCallback(

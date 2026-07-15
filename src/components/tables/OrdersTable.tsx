@@ -11,6 +11,7 @@ import { DownloadIcon, EyeIcon, PencilIcon, DollarLineIcon, TrashBinIcon } from 
 import {
   buildOrdersListParams,
   deleteOrder,
+  deleteOrderPermanently,
   fetchAllOrdersForExport,
   fetchOrders,
   orderStatusAllowsRefund,
@@ -75,7 +76,10 @@ export function OrdersTable() {
   const [restoreTarget, setRestoreTarget] = useState<OrderRecord | null>(null);
   const [isRestoreModalOpen, setIsRestoreModalOpen] = useState(false);
   const [restoreLoading, setRestoreLoading] = useState(false);
-  
+  const [permanentDeleteTarget, setPermanentDeleteTarget] = useState<OrderRecord | null>(null);
+  const [isPermanentDeleteModalOpen, setIsPermanentDeleteModalOpen] = useState(false);
+  const [permanentDeleteLoading, setPermanentDeleteLoading] = useState(false);
+
   // Filters
   const [courses, setCourses] = useState<Course[]>([]);
   const [filters, setFilters] = useState({ ...ORDERS_FILTER_INITIAL });
@@ -249,6 +253,30 @@ export function OrdersTable() {
     }
   };
 
+  const handlePermanentDeleteClick = (order: OrderRecord) => {
+    setPermanentDeleteTarget(order);
+    setIsPermanentDeleteModalOpen(true);
+  };
+
+  const handlePermanentDeleteConfirm = async () => {
+    if (!permanentDeleteTarget) return;
+    setPermanentDeleteLoading(true);
+    try {
+      await deleteOrderPermanently(permanentDeleteTarget.id);
+      setPermanentDeleteTarget(null);
+      setIsPermanentDeleteModalOpen(false);
+      tableRef.current?.refetch();
+    } catch (err: unknown) {
+      const msg =
+        err && typeof err === "object" && "response" in err
+          ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
+          : undefined;
+      alert(msg || "Failed to permanently delete order");
+    } finally {
+      setPermanentDeleteLoading(false);
+    }
+  };
+
   const columns = [
     {
       key: "order_id",
@@ -393,14 +421,25 @@ export function OrdersTable() {
               </button>
             </>
           ) : (
-            <button
-              type="button"
-              onClick={() => handleRestoreClick(row)}
-              className="inline-flex items-center justify-center rounded-lg px-3 py-1.5 text-sm font-medium text-brand-600 transition hover:bg-brand-50 dark:text-brand-400 dark:hover:bg-brand-500/10"
-              title="Restore"
-            >
-              Restore
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={() => handleRestoreClick(row)}
+                className="inline-flex items-center justify-center rounded-lg px-3 py-1.5 text-sm font-medium text-brand-600 transition hover:bg-brand-50 dark:text-brand-400 dark:hover:bg-brand-500/10"
+                title="Restore"
+              >
+                Restore
+              </button>
+              <button
+                type="button"
+                onClick={() => handlePermanentDeleteClick(row)}
+                className="inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-error-500 transition hover:bg-error-50 dark:text-error-400 dark:hover:bg-error-500/10"
+                title="Delete permanently — cannot be undone"
+              >
+                <TrashBinIcon className="size-4 shrink-0 fill-current" />
+                Delete Permanently
+              </button>
+            </>
           )}
         </div>
       ),
@@ -603,6 +642,24 @@ export function OrdersTable() {
         loadingLabel="Restoring…"
         confirmVariant="brand"
         isLoading={restoreLoading}
+      />
+
+      <ConfirmDeleteModal
+        isOpen={isPermanentDeleteModalOpen}
+        onClose={() => {
+          setPermanentDeleteTarget(null);
+          setIsPermanentDeleteModalOpen(false);
+        }}
+        onConfirm={handlePermanentDeleteConfirm}
+        title="Delete Permanently"
+        message={
+          permanentDeleteTarget
+            ? `Permanently delete order ${permanentDeleteTarget.order_id}? This removes the order and its payment and coupon-usage records forever and cannot be undone.`
+            : undefined
+        }
+        confirmLabel="Delete Permanently"
+        loadingLabel="Deleting…"
+        isLoading={permanentDeleteLoading}
       />
     </div>
   );

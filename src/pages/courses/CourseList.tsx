@@ -7,7 +7,7 @@ import { CoursesTable } from "../../components/tables";
 import { FilterBar, FilterSearchInput, useFilterState } from "../../components/filters";
 import type { FilterFieldDef } from "../../components/filters";
 import { TrashScopeTabs, type TrashScope } from "../../components/trash/TrashScopeTabs";
-import { deleteCourse, fetchCourseCats, restoreCourse, type Course } from "../../api/courses";
+import { deleteCourse, deleteCoursePermanently, fetchCourseCats, restoreCourse, type Course } from "../../api/courses";
 import { plansApi } from "../../api/plans";
 import type { CourseSortFilter, PriceRangeFilter, PublicationFilter } from "./filterTypes";
 
@@ -22,6 +22,9 @@ export default function CourseList() {
   const [restoreTarget, setRestoreTarget] = useState<Course | null>(null);
   const [isRestoreModalOpen, setIsRestoreModalOpen] = useState(false);
   const [restoreLoading, setRestoreLoading] = useState(false);
+  const [permanentDeleteTarget, setPermanentDeleteTarget] = useState<Course | null>(null);
+  const [isPermanentDeleteModalOpen, setIsPermanentDeleteModalOpen] = useState(false);
+  const [permanentDeleteLoading, setPermanentDeleteLoading] = useState(false);
   const isTrash = trashScope === "trash";
 
   const handleResetFilters = useCallback(() => {
@@ -134,6 +137,27 @@ export default function CourseList() {
     }
   };
 
+  const handlePermanentDeleteClick = (course: Course) => {
+    setPermanentDeleteTarget(course);
+    setIsPermanentDeleteModalOpen(true);
+  };
+
+  const handlePermanentDeleteConfirm = async () => {
+    if (!permanentDeleteTarget) return;
+    setPermanentDeleteLoading(true);
+    try {
+      await deleteCoursePermanently(permanentDeleteTarget.id);
+      setPermanentDeleteTarget(null);
+      setIsPermanentDeleteModalOpen(false);
+      setTableRefreshKey((k) => k + 1);
+    } catch (err) {
+      console.error("Failed to permanently delete course", err);
+      alert("Failed to permanently delete course");
+    } finally {
+      setPermanentDeleteLoading(false);
+    }
+  };
+
   return (
     <>
       <PageMeta title="Courses | StudyCafe Admin" description="Manage courses" />
@@ -183,6 +207,7 @@ export default function CourseList() {
           trashScope={trashScope}
           onDeleteClick={handleDeleteClick}
           onRestoreClick={handleRestoreClick}
+          onPermanentDeleteClick={handlePermanentDeleteClick}
         />
       </div>
 
@@ -219,6 +244,24 @@ export default function CourseList() {
         loadingLabel="Restoring…"
         confirmVariant="brand"
         isLoading={restoreLoading}
+      />
+
+      <ConfirmDeleteModal
+        isOpen={isPermanentDeleteModalOpen}
+        onClose={() => {
+          setPermanentDeleteTarget(null);
+          setIsPermanentDeleteModalOpen(false);
+        }}
+        onConfirm={handlePermanentDeleteConfirm}
+        title="Delete Permanently"
+        message={
+          permanentDeleteTarget
+            ? `Permanently delete "${permanentDeleteTarget.title}"? This removes the course and all its batches, sessions, materials, enrollments, and reviews forever and cannot be undone.`
+            : undefined
+        }
+        confirmLabel="Delete Permanently"
+        loadingLabel="Deleting…"
+        isLoading={permanentDeleteLoading}
       />
     </>
   );

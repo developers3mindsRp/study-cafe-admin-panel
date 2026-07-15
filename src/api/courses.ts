@@ -104,6 +104,11 @@ export async function restoreCourse(id: number): Promise<void> {
   await api.post(`/admin/courses/${id}/restore`);
 }
 
+/** Hard-delete a trashed course and all its owned data. Cannot be undone. */
+export async function deleteCoursePermanently(id: number): Promise<void> {
+  await api.delete(`/admin/courses/${id}/permanent`);
+}
+
 export async function fetchCourseCats(): Promise<CourseCat[]> {
   const res = await api.get<CourseCat[]>("/admin/course-cats");
   return Array.isArray(res.data) ? res.data : [];

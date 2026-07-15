@@ -289,3 +289,8 @@ export async function deleteOrder(id: number): Promise<void> {
 export async function restoreOrder(id: number): Promise<void> {
   await api.post(`/admin/orders/${id}/restore`);
 }
+
+/** Hard-delete a trashed order and its owned payment/coupon-usage rows. Cannot be undone. */
+export async function deleteOrderPermanently(id: number): Promise<void> {
+  await api.delete(`/admin/orders/${id}/permanent`);
+}
