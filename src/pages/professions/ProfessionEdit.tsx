@@ -26,7 +26,8 @@ export default function ProfessionEdit() {
     try {
       setSubmitting(true);
       await updateProfession(Number(id), formData);
-      navigate("/professions");
+      alert("Profession updated successfully!");
+      navigate(`/professions/${id}/edit`);
     } catch (err: unknown) {
       console.error("Failed to update profession", err);
       alert(getApiErrorMessage(err, "Failed to update profession"));

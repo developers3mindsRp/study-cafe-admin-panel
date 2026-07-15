@@ -45,7 +45,8 @@ export default function TestimonialEdit() {
           formData.media_type === "video" ? formData.video_url || undefined : undefined,
         sort_order: formData.sort_order ? Number(formData.sort_order) : 0,
       });
-      navigate("/testimonials");
+      alert("Testimonial updated successfully!");
+      navigate(`/testimonials/${id}/edit`);
     } catch (err: any) {
       console.error("Failed to update testimonial", err);
       alert(err.response?.data?.message || "Failed to update testimonial");

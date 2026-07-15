@@ -39,7 +39,8 @@ export default function ProductEdit() {
         sort_order: formData.sort_order ? Number(formData.sort_order) : 0,
         is_active: formData.is_active,
       });
-      navigate("/products");
+      alert("Product updated successfully!");
+      navigate(`/products/${id}/edit`);
     } catch (err: any) {
       console.error("Failed to update product", err);
       alert(err.response?.data?.message || "Failed to update product");

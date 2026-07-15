@@ -42,7 +42,8 @@ export default function GoogleReviewEdit() {
         reviewed_at: formData.reviewed_at || undefined,
         sort_order: formData.sort_order ? Number(formData.sort_order) : 0,
       });
-      navigate("/google-reviews");
+      alert("Google review updated successfully!");
+      navigate(`/google-reviews/${id}/edit`);
     } catch (err: any) {
       console.error("Failed to update google review", err);
       alert(err.response?.data?.message || "Failed to update google review");

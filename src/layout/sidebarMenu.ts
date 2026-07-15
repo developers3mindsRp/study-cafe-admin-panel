@@ -313,6 +313,11 @@ export const mainNavItemsConfig: NavItemConfig[] = [
           "content:edit",
         ],
       },
+      {
+        name: "Redirects",
+        path: "/redirects",
+        requiredPermission: ["redirects:list", "redirects:view"],
+      },
     ],
     requiredPermission: [
       "global_settings:list",
@@ -321,6 +326,8 @@ export const mainNavItemsConfig: NavItemConfig[] = [
       "content:list",
       "content:view",
       "content:edit",
+      "redirects:list",
+      "redirects:view",
     ],
   },
 ];

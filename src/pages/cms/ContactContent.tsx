@@ -52,9 +52,11 @@ export default function ContactContent() {
     })
       .then(() => {
         setStatus("saved");
+        alert("Changes saved. They will appear on the public site after the next revalidation (or within a few minutes).");
         setTimeout(() => setStatus("idle"), 4000);
       })
       .catch(() => {
+        alert("Failed to save changes. Please check your network connection and try again.");
         setStatus("error");
       })
       .finally(() => {

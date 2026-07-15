@@ -45,7 +45,8 @@ export default function AdminUserEdit() {
         ...(formData.password ? { password: formData.password } : {}),
         permission_overrides: [],
       });
-      navigate("/admin-users");
+      alert("Admin user updated successfully!");
+      navigate(`/admin-users/${id}/edit`);
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || "Failed to update user";
       setError(msg);
