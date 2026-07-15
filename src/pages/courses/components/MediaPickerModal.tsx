@@ -1,7 +1,22 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useDropzone } from "react-dropzone";
+import { toast } from "react-toastify";
 import { getMediaLibrary, type MediaAsset } from "../../../api/mediaAssets";
+import { uploadMedia } from "../../../api/uploads";
 import { getImageUrl } from "../../../utils/image.utils";
 import { inferMediaKind } from "../../../utils/media.utils";
+
+const UPLOAD_ACCEPT = "image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx";
+const DROPZONE_ACCEPT = {
+  "image/*": [".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg"],
+  "application/pdf": [".pdf"],
+  "application/msword": [".doc"],
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [".docx"],
+  "application/vnd.ms-excel": [".xls"],
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"],
+  "application/vnd.ms-powerpoint": [".ppt"],
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation": [".pptx"],
+};
 
 type FilterType = "all" | "image" | "document";
 
@@ -38,6 +53,7 @@ function DocThumbnail({ url }: { url: string }) {
 export function MediaPickerModal({ selectedIds, onConfirm, onClose }: Props) {
   const [assets, setAssets] = useState<MediaAsset[]>([]);
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
   const [filter, setFilter] = useState<FilterType>("all");
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
@@ -49,6 +65,7 @@ export function MediaPickerModal({ selectedIds, onConfirm, onClose }: Props) {
   const [picked, setPicked] = useState<Map<number, MediaAsset>>(new Map());
 
   const searchRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load media assets
   const load = useCallback(async () => {
@@ -71,6 +88,53 @@ export function MediaPickerModal({ selectedIds, onConfirm, onClose }: Props) {
   }, [filter, page, search]);
 
   useEffect(() => { load(); }, [load]);
+
+  // Upload local device files → CDN (server registers them in the library),
+  // then reload the newest-first list and auto-select the freshly uploaded files.
+  const handleUpload = useCallback(async (files: File[]) => {
+    if (!files.length) return;
+    setUploading(true);
+    try {
+      const uploadedUrls: string[] = [];
+      for (const file of files) {
+        const { url } = await uploadMedia(file);
+        uploadedUrls.push(url);
+      }
+      toast.success(files.length > 1 ? `${files.length} files uploaded` : "File uploaded");
+
+      // Reset view so the newest uploads are visible, then fetch fresh.
+      setFilter("all");
+      setSearchInput("");
+      setSearch("");
+      setPage(1);
+      const res = await getMediaLibrary({ page: 1, limit: 24, type: "all" });
+      setAssets(res.data);
+      setTotal(res.total);
+      setTotalPages(res.totalPages || 1);
+
+      // Auto-select the just-uploaded assets by matching their URLs.
+      const urlSet = new Set(uploadedUrls);
+      setPicked((prev) => {
+        const next = new Map(prev);
+        for (const a of res.data) {
+          if (urlSet.has(a.url)) next.set(a.id, a);
+        }
+        return next;
+      });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  }, []);
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop: (accepted) => { handleUpload(accepted); },
+    disabled: uploading,
+    noClick: true,
+    noKeyboard: true,
+    accept: DROPZONE_ACCEPT,
+  });
 
   // Close on Escape
   useEffect(() => {
@@ -105,11 +169,22 @@ export function MediaPickerModal({ selectedIds, onConfirm, onClose }: Props) {
       className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="flex h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-gray-900">
+      <div
+        {...getRootProps()}
+        className="relative flex h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-gray-900"
+      >
+        <input {...getInputProps()} />
+
+        {/* Drag-to-upload overlay */}
+        {isDragActive && (
+          <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center rounded-2xl border-2 border-dashed border-brand-500 bg-brand-500/10 backdrop-blur-sm">
+            <p className="text-sm font-semibold text-brand-600 dark:text-brand-300">Drop files to upload</p>
+          </div>
+        )}
 
         {/* ── Header ── */}
         <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4 dark:border-gray-700">
-          <h2 className="text-base font-semibold text-gray-800 dark:text-white">Select Files from Media Library</h2>
+          <h2 className="text-base font-semibold text-gray-800 dark:text-white">Select or Upload Files</h2>
           <button
             type="button"
             onClick={onClose}
@@ -160,6 +235,41 @@ export function MediaPickerModal({ selectedIds, onConfirm, onClose }: Props) {
               </button>
             ))}
           </div>
+          <button
+            type="button"
+            disabled={uploading}
+            onClick={() => fileInputRef.current?.click()}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-brand-500 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {uploading ? (
+              <>
+                <svg className="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth={4} />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                </svg>
+                Uploading…
+              </>
+            ) : (
+              <>
+                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 16V4m0 0L8 8m4-4l4 4M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2" />
+                </svg>
+                Upload from device
+              </>
+            )}
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            className="hidden"
+            accept={UPLOAD_ACCEPT}
+            onChange={(e) => {
+              const list = e.target.files ? Array.from(e.target.files) : [];
+              if (list.length) handleUpload(list);
+              e.target.value = "";
+            }}
+          />
           <span className="ml-auto text-xs text-gray-400">{total} item{total !== 1 ? "s" : ""}</span>
         </div>
 
