@@ -4,6 +4,7 @@ import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import CourseCatForm, { type CourseCatFormData } from "./CourseCatForm";
 import { createCourseCat } from "../../api/courses";
+import { getApiErrorMessage } from "../../lib/apiError";
 
 export default function CourseCatCreate() {
   const navigate = useNavigate();
@@ -16,7 +17,7 @@ export default function CourseCatCreate() {
       navigate("/courses/categories");
     } catch (err: unknown) {
       console.error("Failed to create course category", err);
-      alert((err as any)?.response?.data?.message || "Failed to create course category");
+      alert(getApiErrorMessage(err, "Failed to create course category"));
     } finally {
       setLoading(false);
     }
