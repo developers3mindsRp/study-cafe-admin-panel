@@ -25,6 +25,10 @@ export interface ArticleRecord {
   thumbnail_url: string | null;
   author_id: number | null;
   author_name: string | null;
+  /** users.id of the admin who last saved an edit (listing audit column). */
+  updated_by?: number | null;
+  /** Resolved display name for `updated_by`; paired with `updated_at`. */
+  updated_by_name?: string | null;
   sub_heading?: string | null;
   status: string;
   /** When status is `scheduled`, BullMQ will publish at this time. */

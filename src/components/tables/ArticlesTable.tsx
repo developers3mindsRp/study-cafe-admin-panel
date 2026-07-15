@@ -309,6 +309,26 @@ export const ArticlesTable = forwardRef<DataTableRef, ArticlesTableProps>(
           ),
       },
       {
+        key: "updated_by",
+        header: "Edited by",
+        sortable: false,
+        render: (row: ArticleRecord) =>
+          row.updated_by_name ? (
+            <div>
+              <span className="block text-gray-800 text-theme-sm dark:text-white/90">
+                {row.updated_by_name}
+              </span>
+              {row.updated_at && (
+                <span className="mt-1 block text-theme-xs text-gray-500 dark:text-gray-400">
+                  {formatDateTime(row.updated_at)}
+                </span>
+              )}
+            </div>
+          ) : (
+            <span className="text-gray-400 text-theme-xs">—</span>
+          ),
+      },
+      {
         key: "created_at",
         header: "Created At",
         sortable: true,
