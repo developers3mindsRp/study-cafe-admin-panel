@@ -40,6 +40,7 @@ import SEOMetadataCreate from "./pages/seo/SEOMetadataCreate";
 import SEOMetadataEdit from "./pages/seo/SEOMetadataEdit";
 import SEOMetadataView from "./pages/seo/SEOMetadataView";
 import SiteSeoRoutesPage from "./pages/seo/SiteSeoRoutesPage";
+import RedirectsPage from "./pages/redirects/RedirectsPage";
 import ArticleList from "./pages/articles/ArticleList";
 import ArticleCreate from "./pages/articles/ArticleCreate";
 import ArticleEdit from "./pages/articles/ArticleEdit";
@@ -170,6 +171,9 @@ const router = createBrowserRouter(
             }
           >
             <Route index element={<DisplayAdsContent />} />
+          </Route>
+          <Route path="/redirects" element={<RequirePermissionRoute permissions={["redirects:list"]} />}>
+            <Route index element={<RedirectsPage />} />
           </Route>
 
           {/* Media library */}

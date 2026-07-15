@@ -175,6 +175,13 @@ export const PERM_ROLES_CREATE = "roles:create";
 export const PERM_ROLES_EDIT = "roles:edit";
 export const PERM_ROLES_DELETE = "roles:delete";
 
+// Redirects (old URL → new URL)
+export const PERM_REDIRECTS_LIST = "redirects:list";
+export const PERM_REDIRECTS_VIEW = "redirects:view";
+export const PERM_REDIRECTS_CREATE = "redirects:create";
+export const PERM_REDIRECTS_EDIT = "redirects:edit";
+export const PERM_REDIRECTS_DELETE = "redirects:delete";
+
 /** All permissions for reference / super_admin grant */
 export const ALL_PERMISSIONS = [
   PERM_ARTICLES_LIST,
@@ -293,6 +300,11 @@ export const ALL_PERMISSIONS = [
   PERM_ROLES_DELETE,
   PERM_USERS_COURSE_ALLOTMENT,
   PERM_USERS_MEMBERSHIP_ALLOTMENT,
+  PERM_REDIRECTS_LIST,
+  PERM_REDIRECTS_VIEW,
+  PERM_REDIRECTS_CREATE,
+  PERM_REDIRECTS_EDIT,
+  PERM_REDIRECTS_DELETE,
 ] as const;
 
 export type Permission = (typeof ALL_PERMISSIONS)[number];
