@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Modal } from "../../../components/ui/modal";
 import Label from "../../../components/form/Label";
+import SearchableSelect from "../../../components/form/SearchableSelect";
 import { CsvEmailUpload } from "./CsvEmailUpload";
 import {
   fetchCourses,
@@ -193,21 +194,22 @@ export function CourseAllotmentModal({ isOpen, onClose }: CourseAllotmentModalPr
               {coursesLoading ? (
                 <p className="mt-1.5 text-sm text-gray-400">Loading courses…</p>
               ) : (
-                <select
-                  id="allotment-course"
-                  value={selectedCourseId}
-                  onChange={(e) =>
-                    setSelectedCourseId(e.target.value === "" ? "" : Number(e.target.value))
-                  }
-                  className="mt-1.5 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-900 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:text-white"
-                >
-                  <option value="">Select a course</option>
-                  {courses.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.title || `Course #${c.id}`}
-                    </option>
-                  ))}
-                </select>
+                <div className="mt-1.5">
+                  <SearchableSelect
+                    id="allotment-course"
+                    options={courses.map((c) => ({
+                      value: String(c.id),
+                      text: c.title || `Course #${c.id}`,
+                    }))}
+                    value={selectedCourseId === "" ? "" : String(selectedCourseId)}
+                    onChange={(v) =>
+                      setSelectedCourseId(v === "" ? "" : Number(v))
+                    }
+                    placeholder="Select a course"
+                    searchPlaceholder="Search courses by name…"
+                    emptyMessage="No courses found."
+                  />
+                </div>
               )}
             </div>
 
