@@ -1,8 +1,13 @@
 import { api } from "./axios";
 
+export type SiteAdsSlotMode = "image" | "script";
+
 export interface SiteAdsSlot {
+  /** "image" → image_url + link_url; "script" → raw ad-network markup. */
+  mode?: SiteAdsSlotMode;
   image_url: string;
   link_url: string;
+  script?: string;
 }
 
 export interface SiteDisplayAdsPayload {

@@ -5,16 +5,86 @@ import Label from "../../components/form/Label";
 import Input from "../../components/form/input/InputField";
 import Button from "../../components/ui/button/Button";
 import ImageUpload from "../../components/form/ImageUpload";
+import TextArea from "../../components/form/input/TextArea";
 import {
   fetchSiteAdsAdmin,
   putSiteAdsAdmin,
   type SiteDisplayAdsPayload,
   type SiteAdsSlot,
+  type SiteAdsSlotMode,
 } from "../../api/siteAds";
 
 type TabKey = "popup" | "sidebar" | "between";
 
-const emptySlot = (): SiteAdsSlot => ({ image_url: "", link_url: "" });
+const emptySlot = (): SiteAdsSlot => ({ mode: "image", image_url: "", link_url: "", script: "" });
+
+/**
+ * One ad placement: a type dropdown that swaps between an uploaded banner
+ * (image + click-through link) and a raw ad-network script block.
+ */
+function SlotEditor({
+  slot,
+  onChange,
+  imageLabel = "Image",
+  linkLabel = "Ad link",
+}: {
+  slot: SiteAdsSlot;
+  onChange: (patch: Partial<SiteAdsSlot>) => void;
+  imageLabel?: string;
+  linkLabel?: string;
+}) {
+  const mode: SiteAdsSlotMode = slot.mode === "script" ? "script" : "image";
+
+  return (
+    <>
+      <div>
+        <Label>Ad type</Label>
+        <select
+          value={mode}
+          onChange={(e) => onChange({ mode: e.target.value as SiteAdsSlotMode })}
+          className="h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 pr-11 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
+        >
+          <option value="image" className="dark:bg-gray-900">
+            Image banner
+          </option>
+          <option value="script" className="dark:bg-gray-900">
+            Script / ad code
+          </option>
+        </select>
+      </div>
+
+      {mode === "image" ? (
+        <>
+          <div>
+            <Label>{imageLabel}</Label>
+            <ImageUpload value={slot.image_url ?? ""} onChange={(url) => onChange({ image_url: url })} />
+          </div>
+          <div>
+            <Label>{linkLabel}</Label>
+            <Input
+              type="url"
+              value={slot.link_url ?? ""}
+              onChange={(e) => onChange({ link_url: e.target.value })}
+              placeholder="https://"
+            />
+          </div>
+        </>
+      ) : (
+        <div>
+          <Label>Ad script</Label>
+          <TextArea
+            rows={8}
+            value={slot.script ?? ""}
+            onChange={(val) => onChange({ script: val })}
+            placeholder="<script async src=…></script>"
+            className="font-mono"
+            hint="Pasted markup is injected as-is on the site. Only use code from ad networks you trust."
+          />
+        </div>
+      )}
+    </>
+  );
+}
 
 export default function DisplayAdsContent() {
   const [tab, setTab] = useState<TabKey>("popup");
@@ -164,22 +234,11 @@ export default function DisplayAdsContent() {
                           (article detail page — right column)
                         </span>
                       </h2>
-                      <div>
-                        <Label>Image</Label>
-                        <ImageUpload
-                          value={detail[i]?.image_url ?? ""}
-                          onChange={(url) => updateDetailSide(i as 0 | 1, { image_url: url })}
-                        />
-                      </div>
-                      <div>
-                        <Label>{i === 0 ? "Ad link" : "Ad link 2"}</Label>
-                        <Input
-                          type="url"
-                          value={detail[i]?.link_url ?? ""}
-                          onChange={(e) => updateDetailSide(i as 0 | 1, { link_url: e.target.value })}
-                          placeholder="https://"
-                        />
-                      </div>
+                      <SlotEditor
+                        slot={detail[i] ?? emptySlot()}
+                        onChange={(patch) => updateDetailSide(i as 0 | 1, patch)}
+                        linkLabel={i === 0 ? "Ad link" : "Ad link 2"}
+                      />
                     </div>
                   ))}
                   <div className="space-y-5 md:col-span-2">
@@ -189,22 +248,12 @@ export default function DisplayAdsContent() {
                         (/blogs grid — sticky right column)
                       </span>
                     </h2>
-                    <div>
-                      <Label>Listing sidebar image</Label>
-                      <ImageUpload
-                        value={data.article_listing_sidebar.image_url}
-                        onChange={(url) => updateListingSide({ image_url: url })}
-                      />
-                    </div>
-                    <div>
-                      <Label>Listing sidebar link</Label>
-                      <Input
-                        type="url"
-                        value={data.article_listing_sidebar.link_url}
-                        onChange={(e) => updateListingSide({ link_url: e.target.value })}
-                        placeholder="https://"
-                      />
-                    </div>
+                    <SlotEditor
+                      slot={data.article_listing_sidebar}
+                      onChange={updateListingSide}
+                      imageLabel="Listing sidebar image"
+                      linkLabel="Listing sidebar link"
+                    />
                   </div>
                 </div>
               )}
@@ -218,41 +267,23 @@ export default function DisplayAdsContent() {
                         (inside article body)
                       </span>
                     </h2>
-                    <div>
-                      <Label>Banner image</Label>
-                      <ImageUpload
-                        value={data.between_article.after_paragraph_3.image_url}
-                        onChange={(url) => updateBetween("after_paragraph_3", { image_url: url })}
-                      />
-                    </div>
-                    <div>
-                      <Label>URL</Label>
-                      <Input
-                        type="url"
-                        value={data.between_article.after_paragraph_3.link_url}
-                        onChange={(e) => updateBetween("after_paragraph_3", { link_url: e.target.value })}
-                      />
-                    </div>
+                    <SlotEditor
+                      slot={data.between_article.after_paragraph_3}
+                      onChange={(patch) => updateBetween("after_paragraph_3", patch)}
+                      imageLabel="Banner image"
+                      linkLabel="URL"
+                    />
                   </div>
                   <div className="space-y-5">
                     <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
                       After 6th paragraph
                     </h2>
-                    <div>
-                      <Label>Banner image</Label>
-                      <ImageUpload
-                        value={data.between_article.after_paragraph_6.image_url}
-                        onChange={(url) => updateBetween("after_paragraph_6", { image_url: url })}
-                      />
-                    </div>
-                    <div>
-                      <Label>URL</Label>
-                      <Input
-                        type="url"
-                        value={data.between_article.after_paragraph_6.link_url}
-                        onChange={(e) => updateBetween("after_paragraph_6", { link_url: e.target.value })}
-                      />
-                    </div>
+                    <SlotEditor
+                      slot={data.between_article.after_paragraph_6}
+                      onChange={(patch) => updateBetween("after_paragraph_6", patch)}
+                      imageLabel="Banner image"
+                      linkLabel="URL"
+                    />
                   </div>
                   <div className="space-y-5">
                     <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -261,21 +292,12 @@ export default function DisplayAdsContent() {
                         (shown on blog index under search banner)
                       </span>
                     </h2>
-                    <div>
-                      <Label>Banner image</Label>
-                      <ImageUpload
-                        value={data.between_article.below_featured_post.image_url}
-                        onChange={(url) => updateBetween("below_featured_post", { image_url: url })}
-                      />
-                    </div>
-                    <div>
-                      <Label>URL</Label>
-                      <Input
-                        type="url"
-                        value={data.between_article.below_featured_post.link_url}
-                        onChange={(e) => updateBetween("below_featured_post", { link_url: e.target.value })}
-                      />
-                    </div>
+                    <SlotEditor
+                      slot={data.between_article.below_featured_post}
+                      onChange={(patch) => updateBetween("below_featured_post", patch)}
+                      imageLabel="Banner image"
+                      linkLabel="URL"
+                    />
                   </div>
                 </div>
               )}
