@@ -291,11 +291,11 @@ export const mainNavItemsConfig: NavItemConfig[] = [
         path: "/settings/global/common",
         requiredPermission: ["global_settings:list", "global_settings:view", "global_settings:edit"],
       },
-      {
-        name: "Marketing & analytics",
-        path: "/settings/global",
-        requiredPermission: ["global_settings:list", "global_settings:view", "global_settings:edit"],
-      },
+      // {
+      //   name: "Marketing & analytics",
+      //   path: "/settings/global",
+      //   requiredPermission: ["global_settings:list", "global_settings:view", "global_settings:edit"],
+      // },
       {
         name: "Payment Gateway",
         path: "/settings/global/payment-gateway",
