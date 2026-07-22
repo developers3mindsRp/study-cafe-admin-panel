@@ -12,12 +12,9 @@ dist
 dist-ssr
 *.local
 package-lock.json
-.env
-.env.local
 .env.*.local
 
 # Editor directories and files
-.vscode/*
 !.vscode/extensions.json
 .idea
 .DS_Store
@@ -28,3 +25,4 @@ package-lock.json
 *.sw?
 .vercel
 /docs
+config.bat

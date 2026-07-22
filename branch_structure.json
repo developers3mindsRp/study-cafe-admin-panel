@@ -1,0 +1,18 @@
+{
+  "default_branch": "main",
+  "branches": [
+    "live-session-count",
+    "main",
+    "origin"
+  ],
+  "parent": {
+    "live-session-count": "main",
+    "main": null,
+    "origin": "main"
+  },
+  "order": [
+    "main",
+    "live-session-count",
+    "origin"
+  ]
+}
