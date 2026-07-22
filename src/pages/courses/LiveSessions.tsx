@@ -462,11 +462,34 @@ function BatchEnrollmentsPanel({ batchId }: { batchId: number }) {
 
     if (loading) return <p className="text-xs text-gray-500 p-2">Loading enrollments...</p>;
 
+    const membershipCount = enrollments.filter((e) => e.enrollment_source === "membership").length;
+    const courseOrderCount = enrollments.filter((e) => e.enrollment_source === "course_order").length;
+    const deletedCount = enrollments.filter((e) => e.enrollment_source === "deleted_order").length;
+    // unpaid_order folds into "unknown" too -- an order that never paid doesn't
+    // explain the enrollment any better than having no trace at all.
+    const unknownCount = enrollments.length - membershipCount - courseOrderCount - deletedCount;
+
     return (
         <div className="mt-3 rounded-lg border border-blue-200 bg-blue-50 p-3 dark:border-blue-700 dark:bg-blue-900/20">
-            <h4 className="text-xs font-semibold text-blue-700 dark:text-blue-300 mb-2">
+            <h4 className="text-xs font-semibold text-blue-700 dark:text-blue-300 mb-1">
                 Enrolled Students ({enrollments.length})
             </h4>
+            {enrollments.length > 0 && (
+                <div className="flex flex-wrap items-center gap-2 mb-2">
+                    <span className="rounded bg-green-100 px-1.5 py-0.5 text-xs text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                        {courseOrderCount} direct order
+                    </span>
+                    <span className="rounded bg-purple-100 px-1.5 py-0.5 text-xs text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">
+                        {membershipCount} membership-linked
+                    </span>
+                    <span className="rounded bg-red-100 px-1.5 py-0.5 text-xs text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                        {deletedCount} deleted order
+                    </span>
+                    <span className="rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                        {unknownCount} unknown source
+                    </span>
+                </div>
+            )}
             {enrollments.length === 0 ? (
                 <p className="text-xs text-gray-500 dark:text-gray-400">No students enrolled yet.</p>
             ) : (
@@ -474,7 +497,21 @@ function BatchEnrollmentsPanel({ batchId }: { batchId: number }) {
                     {enrollments.map((e) => (
                         <div key={e.id} className="flex items-center justify-between rounded bg-white px-2 py-1 text-xs dark:bg-gray-700">
                             <span className="text-gray-700 dark:text-gray-300">User #{e.user_id}</span>
-                            <span className="text-gray-400">{fmtDate(e.enrolled_at)}</span>
+                            <span className="flex items-center gap-2">
+                                {e.enrollment_source === "course_order" && (
+                                    <span className="rounded bg-green-100 px-1 py-0.5 text-[10px] text-green-700 dark:bg-green-900/30 dark:text-green-400">direct order</span>
+                                )}
+                                {e.enrollment_source === "membership" && (
+                                    <span className="rounded bg-purple-100 px-1 py-0.5 text-[10px] text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">membership</span>
+                                )}
+                                {e.enrollment_source === "deleted_order" && (
+                                    <span className="rounded bg-red-100 px-1 py-0.5 text-[10px] text-red-700 dark:bg-red-900/30 dark:text-red-400">deleted</span>
+                                )}
+                                {e.enrollment_source !== "membership" && e.enrollment_source !== "course_order" && e.enrollment_source !== "deleted_order" && (
+                                    <span className="rounded bg-amber-100 px-1 py-0.5 text-[10px] text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">unknown</span>
+                                )}
+                                <span className="text-gray-400">{fmtDate(e.enrolled_at)}</span>
+                            </span>
                         </div>
                     ))}
                 </div>

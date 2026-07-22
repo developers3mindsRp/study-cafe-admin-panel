@@ -204,6 +204,12 @@ export interface BatchEnrollmentRecord {
   batch_id: number;
   user_id: number;
   enrolled_at: string | null;
+  course_id?: number | null;
+  enrollment_source?: "course_order" | "membership" | "unpaid_order" | "deleted_order" | "unknown";
+  is_membership_linked?: boolean;
+  source_order_id?: string | null;
+  source_order_status?: string | null;
+  source_order_was_refunded?: boolean;
 }
 
 export async function fetchCourseSessions(courseId: string): Promise<BatchRecord[]> {
