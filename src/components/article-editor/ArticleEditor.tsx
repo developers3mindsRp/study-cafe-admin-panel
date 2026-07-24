@@ -8,6 +8,7 @@ import { LinkBubbleMenu, LinkToolbarButton } from "../form/EditorLinkControls";
 import { ArticleBodyJSON } from "./types";
 import { createArticleEditorExtensions } from "./articleEditorExtensions";
 import {
+  cleanPastedHtml,
   compactEmbedsToMarkersInHtml,
   canonicalizeEmbedHtml,
   extractEmbedHtmlFromPaste,
@@ -453,6 +454,7 @@ export default function ArticleEditor({
       attributes: {
         class: "tiptap px-4 py-3 min-h-[200px] focus:outline-none",
       },
+      transformPastedHTML: (html) => cleanPastedHtml(html),
       handlePaste: (_view, event) => {
         const ed = editorRef.current;
         if (!ed) return false;

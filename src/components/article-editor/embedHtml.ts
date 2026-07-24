@@ -29,6 +29,45 @@ export function isTwitterLikeBlockquote(el: Element): boolean {
   return TWITTER_STATUS_RE.test(html) || /pic\.twitter\.com|t\.co\//i.test(html);
 }
 
+/**
+ * Browsers often wrap a copied fragment with phantom empty content at the
+ * start/end of the clipboard HTML — either a bare `<br>` (which ProseMirror's
+ * parser then auto-wraps into an empty paragraph) or an already-wrapped
+ * `<p><br></p>` — so copying a paragraph and pasting it right after itself
+ * leaves stray blank lines around it. Strip leading/trailing nodes that carry
+ * no real content (whitespace text, comments, bare `<br>`s, or block elements
+ * containing only those).
+ */
+export function cleanPastedHtml(html: string): string {
+  if (!html) return html;
+
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  const body = doc.body;
+
+  const isEmptyNode = (node: ChildNode): boolean => {
+    if (node.nodeType === Node.COMMENT_NODE) return true;
+    if (node.nodeType === Node.TEXT_NODE) return !node.textContent?.trim();
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      const el = node as Element;
+      if (el.tagName === "BR") return true;
+      if (el.tagName === "P" || el.tagName === "DIV") {
+        return Array.from(el.childNodes).every(isEmptyNode);
+      }
+      return false;
+    }
+    return false;
+  };
+
+  while (body.firstChild && isEmptyNode(body.firstChild)) {
+    body.removeChild(body.firstChild);
+  }
+  while (body.lastChild && isEmptyNode(body.lastChild)) {
+    body.removeChild(body.lastChild);
+  }
+
+  return body.innerHTML || html;
+}
+
 /** Strip TipTap link attrs and rebuild canonical twitter-tweet markup for storage / widgets.js. */
 export function canonicalizeTwitterEmbedHtml(rawHtml: string): string {
   const doc = new DOMParser().parseFromString(`<body>${rawHtml}</body>`, "text/html");
