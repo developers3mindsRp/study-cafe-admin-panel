@@ -433,6 +433,12 @@ export interface BulkEnrollResult {
   email: string;
   status: "enrolled" | "already_enrolled" | "user_not_found" | "error";
   message?: string;
+  /**
+   * Present (and false) only when the user was enrolled + granted access but the
+   * backing course order could not be created. They have access; the order/
+   * "Purchased Course" record and revenue row are missing and may need a backfill.
+   */
+  orderCreated?: boolean;
 }
 
 export async function bulkEnrollByEmails(
