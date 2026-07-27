@@ -429,9 +429,20 @@ export async function fetchCourseBatches(courseId: number): Promise<{ id: number
   }
 }
 
+/** One row of a bulk allotment request: an email plus the payment it was collected for. */
+export interface BulkEnrollEntry {
+  email: string;
+  /** Amount paid. Blank/omitted records a ₹0 free allotment. */
+  price?: string;
+  /** Razorpay payment id. Must be unique and requires a price above 0. */
+  paymentId?: string;
+}
+
 export interface BulkEnrollResult {
   email: string;
-  status: "enrolled" | "already_enrolled" | "user_not_found" | "error";
+  /** `invalid` = rejected before processing (bad email, bad amount, duplicate payment id). */
+  status: "enrolled" | "already_enrolled" | "user_not_found" | "error" | "invalid";
+  /** Why the row was rejected or skipped — shown per row so the admin can fix the file. */
   message?: string;
   /**
    * Present (and false) only when the user was enrolled + granted access but the
@@ -439,16 +450,26 @@ export interface BulkEnrollResult {
    * "Purchased Course" record and revenue row are missing and may need a backfill.
    */
   orderCreated?: boolean;
+  /** Reason the order failed — e.g. a payment id already linked to another order. */
+  orderError?: string;
+  amount?: number | null;
+  paymentId?: string;
 }
 
 export async function bulkEnrollByEmails(
   batchId: number,
-  emails: string[],
+  entries: BulkEnrollEntry[],
   opts?: { price?: string; paymentId?: string; courseId?: number }
 ): Promise<BulkEnrollResult[]> {
   const res = await api.post<BulkEnrollResult[]>(
     `/admin/batches/${batchId}/enrollments/bulk`,
-    { emails, ...opts }
+    {
+      entries,
+      // Kept for older admin-service builds that only read `emails`; newer ones prefer
+      // `entries` and ignore this. Harmless duplication, avoids a lockstep deploy.
+      emails: entries.map((e) => e.email),
+      ...opts,
+    }
   );
   return Array.isArray(res.data) ? res.data : [];
 }
