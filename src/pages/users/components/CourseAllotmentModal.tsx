@@ -133,6 +133,7 @@ export function CourseAllotmentModal({ isOpen, onClose }: CourseAllotmentModalPr
   const enrolled = results.filter((r) => r.status === "enrolled").length;
   const failed = results.filter((r) => r.status === "user_not_found" || r.status === "error").length;
   const skipped = results.filter((r) => r.status === "already_enrolled").length;
+  const orderIssues = results.filter((r) => r.status === "enrolled" && r.orderCreated === false).length;
 
   const selectedCourse = courses.find((c) => c.id === Number(selectedCourseId));
   const selectedBatch = batches.find((b) => b.id === Number(selectedBatchId));
@@ -327,6 +328,13 @@ export function CourseAllotmentModal({ isOpen, onClose }: CourseAllotmentModalPr
                   </span>
                 )}
               </div>
+              {orderIssues > 0 && (
+                <p className="mt-2 text-xs text-warning-600 dark:text-warning-400">
+                  {orderIssues} user{orderIssues !== 1 ? "s" : ""} enrolled with access, but the order record
+                  couldn’t be created — these won’t show under Orders / “Purchased Course”. Retry or create the
+                  order manually.
+                </p>
+              )}
             </div>
 
             {/* Per-email results */}
@@ -339,11 +347,21 @@ export function CourseAllotmentModal({ isOpen, onClose }: CourseAllotmentModalPr
                   <span className="truncate text-sm text-gray-800 dark:text-gray-200">
                     {r.email}
                   </span>
-                  <span
-                    className={`shrink-0 rounded-md px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[r.status]}`}
-                  >
-                    {STATUS_LABEL[r.status]}
-                  </span>
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    {r.status === "enrolled" && r.orderCreated === false && (
+                      <span
+                        title="Enrolled and granted access, but the order record wasn't created."
+                        className="rounded-md bg-warning-50 px-2 py-0.5 text-xs font-medium text-warning-700 dark:bg-warning-500/10 dark:text-warning-400"
+                      >
+                        No order
+                      </span>
+                    )}
+                    <span
+                      className={`rounded-md px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[r.status]}`}
+                    >
+                      {STATUS_LABEL[r.status]}
+                    </span>
+                  </div>
                 </div>
               ))}
             </div>
