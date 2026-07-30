@@ -199,11 +199,34 @@ export interface BatchesListMeta {
   hasPreviousPage: boolean;
 }
 
+/** How a learner's enrollment came about, resolved by order-service. */
+export type EnrollmentSource =
+  /** A live paid course order explains this enrollment. */
+  | "course_order"
+  /** Access came via a membership plan — there is no course order to match. */
+  | "membership"
+  /** The order that granted it has since been hard-deleted; the enrollment is orphaned. */
+  | "deleted_order"
+  /** An order exists but is pending/failed/refunded, so it does not explain access. */
+  | "unpaid_order"
+  /** No trace found in orders or the outbox (typically pre-migration). */
+  | "unknown";
+
 export interface BatchEnrollmentRecord {
   id: number;
   batch_id: number;
   user_id: number;
   enrolled_at: string | null;
+  /** Owning course, added by course-service so the caller need not look it up. */
+  course_id?: number | null;
+  // The fields below are attached by admin-service from order-service's
+  // /internal/courses/:courseId/enrollment-sources. They are absent when that
+  // lookup fails, so treat every one as optional.
+  enrollment_source?: EnrollmentSource;
+  is_membership_linked?: boolean;
+  source_order_id?: string | null;
+  source_order_status?: string | null;
+  source_order_was_refunded?: boolean;
 }
 
 export async function fetchCourseSessions(courseId: string): Promise<BatchRecord[]> {

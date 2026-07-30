@@ -18,7 +18,10 @@ import {
     type BatchRecordWithCourse,
     type SessionRecord,
     type BatchEnrollmentRecord,
+    type EnrollmentSource,
 } from "../../api/courses";
+// ENROLLMENT-VS-ORDER-SUMMARY — disabled for now, keep for re-enable.
+// import { fetchOrders } from "../../api/orders";
 import { DataTablePagination } from "../../components/tables/data-table/DataTablePagination";
 import type { DataTableMeta } from "../../components/tables/data-table/DataTable.types";
 import { CourseSearchSelect } from "../../components/courses/CourseSearchSelect";
@@ -447,36 +450,201 @@ function DayGroup({ dayNumber, dayTitle, sessions, onChanged }: { dayNumber: num
 
 /* ─── Batch Enrollments ───────────────────────────────────────────── */
 
-function BatchEnrollmentsPanel({ batchId }: { batchId: number }) {
+/**
+ * Enrollment counts and order counts are NOT the same measurement, and admins kept
+ * reading the gap as a bug. They differ on three axes at once:
+ *   - enrollments are per BATCH, orders are per COURSE
+ *   - enrollments are one row per learner, orders are one row per transaction
+ *   - the Orders screen lists every status, not just paid
+ * So this label set exists to spell out, per learner, why they are here.
+ */
+const SOURCE_META: Record<EnrollmentSource, { label: string; color: "success" | "info" | "error" | "warning" | "light"; hint: string }> = {
+    course_order: { label: "Purchase", color: "success", hint: "A live paid order for this course" },
+    membership: { label: "Membership", color: "info", hint: "Access via a membership plan — payment sits on the membership order, not a course order" },
+    deleted_order: { label: "Order deleted", color: "error", hint: "The order that granted this was deleted; the enrollment was left behind" },
+    unpaid_order: { label: "Order unpaid", color: "warning", hint: "An order exists but is pending/failed/refunded" },
+    unknown: { label: "Source unknown", color: "light", hint: "No matching order or purchase event could be traced (usually pre-migration)" },
+};
+
+function sourceOf(e: BatchEnrollmentRecord): EnrollmentSource {
+    return e.enrollment_source ?? "unknown";
+}
+
+// `courseId` is still accepted (and still passed by BatchCard) but intentionally not
+// destructured while the summary is off — see ENROLLMENT-VS-ORDER-SUMMARY below.
+function BatchEnrollmentsPanel({ batchId }: { batchId: number; courseId?: number }) {
     const [enrollments, setEnrollments] = useState<BatchEnrollmentRecord[]>([]);
     const [loading, setLoading] = useState(true);
+    /* ENROLLMENT-VS-ORDER-SUMMARY — disabled for now, keep for re-enable.
+    const [showWhy, setShowWhy] = useState(false);
+    // Course-wide order counts. null = not loaded / lookup failed — never render a guessed 0.
+    const [orderTotal, setOrderTotal] = useState<number | null>(null);
+    const [paidOrderTotal, setPaidOrderTotal] = useState<number | null>(null);
+    const [batchCount, setBatchCount] = useState<number | null>(null);
+    */
 
     const load = useCallback(async () => {
         setLoading(true);
         const rows = await fetchBatchEnrollments(batchId);
         setEnrollments(rows);
         setLoading(false);
+
+        /* ENROLLMENT-VS-ORDER-SUMMARY — disabled for now, keep for re-enable.
+           Restoring this also needs `courseId` destructured in the signature above, added
+           back to this callback's dependency array, and the `fetchOrders` import uncommented.
+
+        // Resolve the course from the rows when the caller did not pass it (course-service
+        // stamps course_id onto every enrollment row).
+        const cid = courseId ?? (rows[0]?.course_id != null ? Number(rows[0].course_id) : undefined);
+        if (cid == null || !Number.isFinite(cid)) return;
+
+        // All `limit: 1` — we only want the totals, never the rows. allSettled so a single
+        // failing count leaves the rest of the panel working.
+        const [all, paid, batches] = await Promise.allSettled([
+            fetchOrders({ courseId: cid, limit: 1 }),
+            fetchOrders({ courseId: cid, status: "completed", limit: 1 }),
+            fetchBatchesList({ courseId: cid, limit: 1 }),
+        ]);
+        setOrderTotal(all.status === "fulfilled" ? all.value.total : null);
+        setPaidOrderTotal(paid.status === "fulfilled" ? paid.value.total : null);
+        setBatchCount(batches.status === "fulfilled" ? batches.value.meta.total : null);
+        */
     }, [batchId]);
 
     useEffect(() => { load(); }, [load]);
 
     if (loading) return <p className="text-xs text-gray-500 p-2">Loading enrollments...</p>;
 
+    const students = enrollments.length;
+
+    const sourceCounts = enrollments.reduce<Record<string, number>>((acc, e) => {
+        const s = sourceOf(e);
+        acc[s] = (acc[s] || 0) + 1;
+        return acc;
+    }, {});
+    // admin-service attaches enrollment_source per row, but swallows a failed lookup and
+    // returns the bare rows. Without this check every learner would read as "Source unknown"
+    // and the summary below would claim they all lack a paid order — worse than saying nothing.
+    const sourcesResolved = enrollments.some((e) => e.enrollment_source != null);
+
+    /* ENROLLMENT-VS-ORDER-SUMMARY — disabled for now, keep for re-enable.
+    const payingStudents = sourceCounts.course_order || 0;
+    const withoutPaidOrder = sourcesResolved ? students - payingStudents : 0;
+
+    // Repeat orders are only arithmetic we can trust when the course has exactly one batch;
+    // with more batches, course-wide orders cover learners who are not in this list at all.
+    const singleBatchCourse = batchCount === 1;
+    const repeatOrders =
+        sourcesResolved && singleBatchCourse && paidOrderTotal != null
+            ? paidOrderTotal - payingStudents
+            : null;
+    const nonPaidOrders =
+        orderTotal != null && paidOrderTotal != null ? orderTotal - paidOrderTotal : null;
+    */
+
     return (
         <div className="mt-3 rounded-lg border border-blue-200 bg-blue-50 p-3 dark:border-blue-700 dark:bg-blue-900/20">
-            <h4 className="text-xs font-semibold text-blue-700 dark:text-blue-300 mb-2">
-                Enrolled Students ({enrollments.length})
-            </h4>
-            {enrollments.length === 0 ? (
+            <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                <h4 className="text-xs font-semibold text-blue-700 dark:text-blue-300">
+                    Enrolled Students ({students})
+                </h4>
+                {/* ENROLLMENT-VS-ORDER-SUMMARY — disabled for now, keep for re-enable.
+                {orderTotal != null && (
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-600 dark:text-gray-300">
+                        <span>
+                            {orderTotal} order {orderTotal === 1 ? "record" : "records"} for this course
+                            {paidOrderTotal != null && paidOrderTotal !== orderTotal && (
+                                <span className="text-gray-500 dark:text-gray-400"> ({paidOrderTotal} paid)</span>
+                            )}
+                        </span>
+                        {orderTotal !== students && (
+                            <button
+                                onClick={() => setShowWhy((v) => !v)}
+                                className="rounded border border-blue-300 px-1.5 py-0.5 font-medium text-blue-700 hover:bg-blue-100 dark:border-blue-600 dark:text-blue-300 dark:hover:bg-blue-900/40"
+                            >
+                                {showWhy ? "Hide" : "Why the difference?"}
+                            </button>
+                        )}
+                    </div>
+                )}
+                */}
+            </div>
+
+            {/* ENROLLMENT-VS-ORDER-SUMMARY — disabled for now, keep for re-enable.
+            {showWhy && (
+                <div className="mb-3 space-y-1.5 rounded-md border border-blue-200 bg-white p-2.5 text-xs text-gray-600 dark:border-blue-700 dark:bg-gray-800 dark:text-gray-300">
+                    <p className="font-medium text-gray-700 dark:text-gray-200">
+                        These two numbers count different things — a gap is normal.
+                    </p>
+                    <ul className="list-disc space-y-1 pl-4">
+                        <li>
+                            <span className="font-medium">One row per learner vs one row per transaction.</span>{" "}
+                            {repeatOrders != null && repeatOrders > 0 ? (
+                                <>
+                                    {repeatOrders} order {repeatOrders === 1 ? "record is" : "records are"} a{" "}
+                                    repeat registration by someone already enrolled.
+                                </>
+                            ) : (
+                                <>A learner who registers twice adds one enrollment but two order records.</>
+                            )}
+                        </li>
+                        {nonPaidOrders != null && nonPaidOrders > 0 && (
+                            <li>
+                                <span className="font-medium">{nonPaidOrders} order {nonPaidOrders === 1 ? "record is" : "records are"} not paid</span>{" "}
+                                (abandoned checkout, failed payment, refunded or cancelled) — correctly no enrollment.
+                            </li>
+                        )}
+                        {withoutPaidOrder > 0 && (
+                            <li>
+                                <span className="font-medium">{withoutPaidOrder} enrolled {withoutPaidOrder === 1 ? "learner has" : "learners have"} no paid course order</span>{" "}
+                                — see the badge on each row below (membership access, or an order that was deleted).
+                            </li>
+                        )}
+                        {batchCount != null && batchCount > 1 && (
+                            <li>
+                                <span className="font-medium">This course has {batchCount} batches.</span>{" "}
+                                This list is only this batch, while the order count covers the whole course.
+                            </li>
+                        )}
+                    </ul>
+                </div>
+            )}
+            */}
+
+            {students > 0 && sourcesResolved && (
+                <div className="mb-2 flex flex-wrap gap-1.5">
+                    {(Object.keys(SOURCE_META) as EnrollmentSource[])
+                        .filter((s) => (sourceCounts[s] || 0) > 0)
+                        .map((s) => (
+                            <span key={s} title={SOURCE_META[s].hint}>
+                                <Badge size="sm" color={SOURCE_META[s].color}>
+                                    {sourceCounts[s]} {SOURCE_META[s].label}
+                                </Badge>
+                            </span>
+                        ))}
+                </div>
+            )}
+
+            {students === 0 ? (
                 <p className="text-xs text-gray-500 dark:text-gray-400">No students enrolled yet.</p>
             ) : (
                 <div className="space-y-1 max-h-40 overflow-y-auto">
-                    {enrollments.map((e) => (
-                        <div key={e.id} className="flex items-center justify-between rounded bg-white px-2 py-1 text-xs dark:bg-gray-700">
-                            <span className="text-gray-700 dark:text-gray-300">User #{e.user_id}</span>
-                            <span className="text-gray-400">{fmtDate(e.enrolled_at)}</span>
-                        </div>
-                    ))}
+                    {enrollments.map((e) => {
+                        const meta = SOURCE_META[sourceOf(e)];
+                        return (
+                            <div key={e.id} className="flex items-center justify-between gap-2 rounded bg-white px-2 py-1 text-xs dark:bg-gray-700">
+                                <span className="text-gray-700 dark:text-gray-300">User #{e.user_id}</span>
+                                <span className="flex items-center gap-2">
+                                    {sourcesResolved && (
+                                        <span title={e.source_order_id ? `${meta.hint} (${e.source_order_id})` : meta.hint}>
+                                            <Badge size="sm" color={meta.color}>{meta.label}</Badge>
+                                        </span>
+                                    )}
+                                    <span className="text-gray-400">{fmtDate(e.enrolled_at)}</span>
+                                </span>
+                            </div>
+                        );
+                    })}
                 </div>
             )}
         </div>
@@ -485,7 +653,7 @@ function BatchEnrollmentsPanel({ batchId }: { batchId: number }) {
 
 /* ─── Batch Card (per course) ─────────────────────────────────────── */
 
-function BatchCard({ batch, courseName, onChanged }: { batch: BatchRecord; courseName: string; onChanged: () => void }) {
+function BatchCard({ batch, courseName, courseId, onChanged }: { batch: BatchRecord; courseName: string; courseId?: number; onChanged: () => void }) {
     const [showEnrollments, setShowEnrollments] = useState(false);
     const [deleting, setDeleting] = useState(false);
     const [syncing, setSyncing] = useState(false);
@@ -691,7 +859,7 @@ function BatchCard({ batch, courseName, onChanged }: { batch: BatchRecord; cours
 
             {showEnrollments && (
                 <div className="border-t border-gray-100 px-5 pb-4 dark:border-gray-700">
-                    <BatchEnrollmentsPanel batchId={batch.id} />
+                    <BatchEnrollmentsPanel batchId={batch.id} courseId={courseId} />
                 </div>
             )}
         </div>
@@ -886,6 +1054,7 @@ export default function LiveSessions() {
                                                             <BatchCard
                                                                 batch={row}
                                                                 courseName={row.course_title}
+                                                                courseId={row.course_id}
                                                                 onChanged={refreshAll}
                                                             />
                                                         </td>
