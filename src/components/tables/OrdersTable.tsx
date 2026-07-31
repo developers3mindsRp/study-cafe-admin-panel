@@ -34,6 +34,7 @@ import type { DataTableFetchParams, DataTableFetchResult } from "./data-table/Da
 import RefundModal from "../../pages/orders/RefundModal";
 import { ConfirmDeleteModal } from "../ui/modal/ConfirmDeleteModal";
 import Select from "../form/Select";
+import SearchableSelect from "../form/SearchableSelect";
 import { fetchCourses, type Course } from "../../api/courses";
 import DatePicker from "../form/date-picker";
 import AmountRangeDropdown from "../form/AmountRangeDropdown";
@@ -447,8 +448,8 @@ export function OrdersTable() {
   ];
 
   const courseOptions = [
-    { value: "", label: "All Courses" },
-    ...courses.map(c => ({ value: String(c.id), label: c.title }))
+    { value: "", text: "All Courses" },
+    ...courses.map((c) => ({ value: String(c.id), text: c.title || `Course #${c.id}` })),
   ];
 
   const typeOptions = [
@@ -477,12 +478,15 @@ export function OrdersTable() {
         <div className="flex min-w-0 flex-nowrap items-end gap-3 overflow-x-auto pb-0.5">
           <div className="min-w-[10rem] max-w-[22rem] flex-[1.2] shrink-0">
             <label className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-400">Course</label>
-            <Select
-              key={`course-${filterBarKey}`}
+            <SearchableSelect
+              id="orders-course-filter"
               options={courseOptions}
-              defaultValue={filters.courseId}
-              onChange={(val) => setFilters(f => ({ ...f, courseId: val }))}
+              value={filters.courseId}
+              onChange={(val) => setFilters((f) => ({ ...f, courseId: val }))}
               placeholder="Filter by Course"
+              searchPlaceholder="Search courses…"
+              emptyMessage="No courses match."
+              portal
             />
           </div>
           <div className="w-[7.25rem] shrink-0 sm:w-[8rem]">

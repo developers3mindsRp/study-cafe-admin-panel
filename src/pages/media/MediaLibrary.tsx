@@ -81,6 +81,8 @@ export default function MediaLibrary() {
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"],
       "application/vnd.ms-powerpoint": [".ppt"],
       "application/vnd.openxmlformats-officedocument.presentationml.presentation": [".pptx"],
+      "application/zip": [".zip"],
+      "application/x-zip-compressed": [".zip"],
     },
   });
 
@@ -129,7 +131,7 @@ export default function MediaLibrary() {
                 type="file"
                 multiple
                 className="hidden"
-                accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
+                accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip"
                 onChange={(e) => {
                   const list = e.target.files ? Array.from(e.target.files) : [];
                   if (list.length) handleUpload(list);
@@ -208,6 +210,7 @@ export default function MediaLibrary() {
               {assets.map((asset) => {
                 const kind = inferMediaKind(asset);
                 const name = asset.label || asset.url.split("/").pop() || "file";
+                const ext = asset.url.split("?")[0].split(".").pop()?.toLowerCase() ?? "";
                 return (
                   <div
                     key={asset.id}
@@ -227,8 +230,14 @@ export default function MediaLibrary() {
                         />
                       ) : (
                         <div className="flex h-full flex-col items-center justify-center text-gray-400">
-                          <span className="text-3xl font-bold text-error-500">PDF</span>
-                          <span className="mt-1 text-xs uppercase text-gray-500">Document</span>
+                          <span
+                            className={`text-3xl font-bold ${ext === "zip" ? "text-warning-500" : "text-error-500"}`}
+                          >
+                            {ext ? ext.toUpperCase() : "FILE"}
+                          </span>
+                          <span className="mt-1 text-xs uppercase text-gray-500">
+                            {ext === "zip" ? "Archive" : "Document"}
+                          </span>
                         </div>
                       )}
                     </a>

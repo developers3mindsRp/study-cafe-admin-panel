@@ -6,7 +6,7 @@ import { uploadMedia } from "../../../api/uploads";
 import { getImageUrl } from "../../../utils/image.utils";
 import { inferMediaKind } from "../../../utils/media.utils";
 
-const UPLOAD_ACCEPT = "image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx";
+const UPLOAD_ACCEPT = "image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip";
 const DROPZONE_ACCEPT = {
   "image/*": [".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg"],
   "application/pdf": [".pdf"],
@@ -16,6 +16,8 @@ const DROPZONE_ACCEPT = {
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"],
   "application/vnd.ms-powerpoint": [".ppt"],
   "application/vnd.openxmlformats-officedocument.presentationml.presentation": [".pptx"],
+  "application/zip": [".zip"],
+  "application/x-zip-compressed": [".zip"],
 };
 
 type FilterType = "all" | "image" | "document";

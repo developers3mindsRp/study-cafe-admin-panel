@@ -106,6 +106,8 @@ export default function MediaPickerModal({
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"],
       "application/vnd.ms-powerpoint": [".ppt"],
       "application/vnd.openxmlformats-officedocument.presentationml.presentation": [".pptx"],
+      "application/zip": [".zip"],
+      "application/x-zip-compressed": [".zip"],
     },
   });
 
@@ -202,7 +204,7 @@ export default function MediaPickerModal({
             type="file"
             multiple
             className="hidden"
-            accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
+            accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip"
             onChange={(e) => {
               const list = e.target.files ? Array.from(e.target.files) : [];
               if (list.length) handleUpload(list);

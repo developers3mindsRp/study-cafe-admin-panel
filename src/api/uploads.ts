@@ -47,5 +47,5 @@ export async function uploadMedia(
     const { url } = await uploadFile(file, onProgress);
     return { url, mimeType: file.type || undefined };
   }
-  throw new Error("Unsupported file type. Use images (PNG, JPG, WebP, GIF, SVG) or PDF/Office documents.");
+  throw new Error("Unsupported file type. Use images (PNG, JPG, WebP, GIF, SVG), PDF/Office documents, or ZIP archives.");
 }

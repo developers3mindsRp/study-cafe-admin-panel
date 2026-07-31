@@ -1,7 +1,10 @@
 import type { MediaAsset } from "../api/mediaAssets";
 
 const IMAGE_EXT = /\.(jpe?g|png|gif|webp|svg)(\?.*)?$/i;
-const DOC_EXT = /\.(pdf|doc|docx|xls|xlsx|ppt|pptx)(\?.*)?$/i;
+const DOC_EXT = /\.(pdf|doc|docx|xls|xlsx|ppt|pptx|zip)(\?.*)?$/i;
+
+// Chrome/Windows sends application/x-zip-compressed, Firefox application/zip
+const ZIP_MIME = /(^application\/(x-)?zip(-compressed)?$|^multipart\/x-zip$)/i;
 
 export type MediaFileKind = "image" | "document" | "other";
 
@@ -11,7 +14,8 @@ export function inferMediaKind(asset: Pick<MediaAsset, "url" | "mime_type">): Me
   if (
     mime === "application/pdf" ||
     mime.startsWith("application/vnd.") ||
-    mime === "application/msword"
+    mime === "application/msword" ||
+    ZIP_MIME.test(mime)
   ) {
     return "document";
   }
@@ -30,6 +34,7 @@ export function isDocumentFile(file: File): boolean {
     file.type === "application/pdf" ||
     file.type.startsWith("application/vnd.") ||
     file.type === "application/msword" ||
+    ZIP_MIME.test(file.type) ||
     DOC_EXT.test(file.name)
   );
 }
