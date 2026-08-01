@@ -13,10 +13,13 @@ import { FilterBar, useFilterState } from "../../components/filters";
 import type { FilterFieldDef } from "../../components/filters";
 import type { DataTableFetchParams, DataTableFetchResult } from "../../components/tables/data-table/DataTable.types";
 import {
+  COUPON_STATE_LABELS,
+  couponState,
   formatCouponExpireDate,
   formatCouponStartDate,
   formatPublishedDate,
   publishedDateInRange,
+  type CouponState,
 } from "../../utils/couponDates";
 
 const couponFilterFields: FilterFieldDef[] = [
@@ -26,7 +29,9 @@ const couponFilterFields: FilterFieldDef[] = [
     label: "Status",
     placeholder: "All statuses",
     options: [
-      { value: "publish", label: "Published" },
+      { value: "active", label: "Active" },
+      { value: "expired", label: "Expired" },
+      { value: "scheduled", label: "Scheduled" },
       { value: "draft", label: "Draft" },
     ],
   },
@@ -73,7 +78,14 @@ function toMeta(total: number, page: number, limit: number): DataTableFetchResul
   return { total, page, limit, totalPages, hasNextPage: page < totalPages, hasPreviousPage: page > 1 };
 }
 
-type CouponRow = Coupon & { usage_count?: number };
+type CouponRow = Coupon & { usage_count?: number; state: CouponState };
+
+const STATE_BADGE_CLASSES: Record<CouponState, string> = {
+  active: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400",
+  expired: "bg-error-50 text-error-600 dark:bg-error-500/15 dark:text-error-400",
+  scheduled: "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400",
+  draft: "bg-gray-100 text-gray-500 dark:bg-white/[0.05] dark:text-gray-400",
+};
 
 export default function PromoCodeList() {
   const [deleteTarget, setDeleteTarget] = useState<Coupon | null>(null);
@@ -130,7 +142,7 @@ export default function PromoCodeList() {
       }
       let data: CouponRow[] = res.data.map((c) => {
         const stats = usageMap.get(Number(c.id));
-        return { ...c, usage_count: stats?.usage_count ?? 0 };
+        return { ...c, usage_count: stats?.usage_count ?? 0, state: couponState(c) };
       });
 
       const search = (params.search ?? "").trim().toLowerCase();
@@ -143,7 +155,7 @@ export default function PromoCodeList() {
       }
 
       if (values.status) {
-        data = data.filter((c) => c.status === values.status);
+        data = data.filter((c) => c.state === values.status);
       }
 
       if (values.type) {
@@ -244,12 +256,21 @@ export default function PromoCodeList() {
       ),
     },
     {
-      key: "status",
+      key: "state",
       header: "Status",
       sortable: true,
       render: (row: CouponRow) => (
-        <span className={`rounded-full px-2 py-1 text-theme-xs font-semibold ${row.status === "publish" ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-500 dark:bg-white/[0.05] dark:text-gray-400"}`}>
-          {row.status === "publish" ? "Published" : "Draft"}
+        <span
+          className={`rounded-full px-2 py-1 text-theme-xs font-semibold ${STATE_BADGE_CLASSES[row.state]}`}
+          title={
+            row.state === "expired"
+              ? `Published, but expired on ${formatCouponExpireDate(row.expire_date)} — no longer usable at checkout`
+              : row.state === "scheduled"
+                ? `Published, but not usable until ${formatCouponStartDate(row.start_date)}`
+                : undefined
+          }
+        >
+          {COUPON_STATE_LABELS[row.state]}
         </span>
       ),
     },

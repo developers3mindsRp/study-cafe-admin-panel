@@ -35,6 +35,41 @@ export function formatCouponExpireDate(iso?: string | null): string {
   return ymd ? formatYmdEnIn(ymd) : "—";
 }
 
+/** Today's calendar day in IST — the reference point for coupon validity. */
+export function todayIstYmd(): string {
+  return new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
+}
+
+/**
+ * Effective state of a coupon, as opposed to its stored status.
+ * A `publish` coupon whose expiry has passed is no longer usable at checkout —
+ * this surfaces that instead of showing it as plainly "Published".
+ * Compared on the same YMD values the Validity column renders, so the badge can
+ * never contradict the dates shown next to it.
+ */
+export type CouponState = "active" | "expired" | "scheduled" | "draft";
+
+export function couponState(coupon: {
+  status?: string | null;
+  start_date?: string | null;
+  expire_date?: string | null;
+}): CouponState {
+  if (coupon.status !== "publish") return "draft";
+  const today = todayIstYmd();
+  const start = couponStartYmd(coupon.start_date);
+  const expire = couponExpireYmd(coupon.expire_date);
+  if (expire && today > expire) return "expired";
+  if (start && today < start) return "scheduled";
+  return "active";
+}
+
+export const COUPON_STATE_LABELS: Record<CouponState, string> = {
+  active: "Active",
+  expired: "Expired",
+  scheduled: "Scheduled",
+  draft: "Draft",
+};
+
 /** Published (created_at) date in IST for listing. */
 export function formatPublishedDate(iso?: string | null): string {
   const ymd = istCalendarYmd(iso);
