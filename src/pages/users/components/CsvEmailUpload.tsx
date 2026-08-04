@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
+import * as XLSX from "xlsx";
 
-/** One parsed CSV row. `amount`/`paymentId` are raw strings — "" means the cell was blank. */
+/** One parsed row. `amount`/`paymentId` are raw strings — "" means the cell was blank. */
 export interface AllotmentRow {
   email: string;
   amount: string;
@@ -8,12 +9,21 @@ export interface AllotmentRow {
 }
 
 interface CsvEmailUploadProps {
-  /** Receives newline-joined emails. Used where only addresses matter (membership allotment). */
+  /** Receives newline-joined emails. Used where only addresses matter. */
   onEmails?: (emails: string) => void;
   /** Receives full rows including amount paid + payment id. Takes precedence over onEmails. */
   onRows?: (rows: AllotmentRow[]) => void;
   /** Advertise the amount/payment columns in the hint text and sample download. */
   withPayment?: boolean;
+  /** Sample file offered for download. Defaults by `withPayment`. */
+  sampleHref?: string;
+}
+
+const ACCEPTED_EXTENSIONS = [".csv", ".xlsx", ".xls"];
+
+function fileExtension(name: string): string {
+  const dot = name.lastIndexOf(".");
+  return dot === -1 ? "" : name.slice(dot).toLowerCase();
 }
 
 const EMAIL_HEADERS = ["email", "email address", "emailaddress", "email_address", "e-mail", "e mail"];
@@ -80,12 +90,41 @@ function findColumn(headers: string[], aliases: string[]): number {
   return headers.findIndex((h) => aliases.includes(h));
 }
 
-function parseRows(text: string): AllotmentRow[] {
+function tableFromCsv(text: string): string[][] {
   // Excel writes a UTF-8 BOM, which would otherwise glue itself to the first header name.
   const clean = text.replace(/^\uFEFF/, "");
   const firstLine = clean.split(/\r?\n/)[0] ?? "";
   const delimiter = firstLine.includes(";") && !firstLine.includes(",") ? ";" : ",";
-  const table = parseCsv(clean, delimiter);
+  return parseCsv(clean, delimiter);
+}
+
+/**
+ * First sheet of a real .xlsx/.xls workbook as a plain table.
+ *
+ * `raw: true` reads each cell's underlying value rather than its displayed text. That
+ * matters for the payment id column: a purely numeric reference (a UTR or bank txn id
+ * typed into a General-formatted cell) renders as "1.23457E+15" under `raw: false`, and
+ * would be stored as that corrupted string. The underlying number stringifies exactly.
+ * Amounts are unaffected \u2014 a currency-formatted cell yields the plain number, which
+ * normalizeAmount parses the same as the "\u20B912,979.00" text would have.
+ */
+function tableFromWorkbook(buffer: ArrayBuffer): string[][] {
+  const workbook = XLSX.read(buffer, { type: "array" });
+  const firstSheetName = workbook.SheetNames[0];
+  if (!firstSheetName) return [];
+  const sheet = workbook.Sheets[firstSheetName];
+  const table = XLSX.utils.sheet_to_json<string[]>(sheet, {
+    header: 1,
+    raw: true,
+    defval: "",
+    blankrows: false,
+  });
+  return table
+    .map((row) => (Array.isArray(row) ? row.map((cell) => String(cell ?? "")) : []))
+    .filter((row) => row.some((cell) => cell.trim() !== ""));
+}
+
+function rowsFromTable(table: string[][]): AllotmentRow[] {
   if (table.length === 0) return [];
 
   const headers = table[0].map((h) => h.trim().toLowerCase());
@@ -123,43 +162,76 @@ function parseRows(text: string): AllotmentRow[] {
   return rows;
 }
 
-export function CsvEmailUpload({ onEmails, onRows, withPayment = false }: CsvEmailUploadProps) {
+export function CsvEmailUpload({
+  onEmails,
+  onRows,
+  withPayment = false,
+  sampleHref: sampleHrefProp,
+}: CsvEmailUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
   const [csvError, setCsvError] = useState<string | null>(null);
   const [lastCount, setLastCount] = useState<number | null>(null);
 
+  const emitRows = (rows: AllotmentRow[], fileLabel: string) => {
+    if (rows.length === 0) {
+      setCsvError(`No rows found in this ${fileLabel} file.`);
+      return;
+    }
+    if (onRows) {
+      setLastCount(rows.length);
+      onRows(rows);
+      return;
+    }
+    if (onEmails) {
+      const emails = [...new Set(rows.map((r) => r.email).filter((e) => e.includes("@")))];
+      if (emails.length === 0) {
+        setCsvError(`No valid emails found in this ${fileLabel} file.`);
+        setLastCount(null);
+        return;
+      }
+      setLastCount(emails.length);
+      onEmails(emails.join("\n"));
+    }
+  };
+
   const processFile = (file: File) => {
     setCsvError(null);
     setLastCount(null);
 
-    if (!file.name.endsWith(".csv") && file.type !== "text/csv") {
-      setCsvError("Please upload a .csv file.");
+    const ext = fileExtension(file.name);
+    const isExcel = ext === ".xlsx" || ext === ".xls";
+    const isCsv = ext === ".csv" || file.type === "text/csv";
+    if (!isExcel && !isCsv) {
+      setCsvError("Please upload a .xlsx, .xls or .csv file.");
       return;
     }
 
     const reader = new FileReader();
+    reader.onerror = () => setCsvError("Could not read that file. Please try again.");
     reader.onload = (e) => {
-      const rows = parseRows((e.target?.result as string) ?? "");
-      if (rows.length === 0) {
-        setCsvError("No rows found in this CSV file.");
-        return;
-      }
-      setLastCount(rows.length);
-      if (onRows) {
-        onRows(rows);
-      } else if (onEmails) {
-        const emails = [...new Set(rows.map((r) => r.email).filter((e) => e.includes("@")))];
-        if (emails.length === 0) {
-          setCsvError("No valid emails found in this CSV file.");
-          setLastCount(null);
-          return;
+      try {
+        if (isExcel) {
+          const buffer = e.target?.result as ArrayBuffer;
+          emitRows(rowsFromTable(tableFromWorkbook(buffer)), "Excel");
+        } else {
+          const text = (e.target?.result as string) ?? "";
+          emitRows(rowsFromTable(tableFromCsv(text)), "CSV");
         }
-        setLastCount(emails.length);
-        onEmails(emails.join("\n"));
+      } catch {
+        setCsvError(
+          isExcel
+            ? "That Excel file could not be read. Re-save it as .xlsx or export it as CSV."
+            : "That CSV file could not be read.",
+        );
       }
     };
-    reader.readAsText(file);
+
+    if (isExcel) {
+      reader.readAsArrayBuffer(file);
+    } else {
+      reader.readAsText(file);
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -175,9 +247,10 @@ export function CsvEmailUpload({ onEmails, onRows, withPayment = false }: CsvEma
     if (file) processFile(file);
   };
 
-  const sampleHref = withPayment
-    ? "/samples/sample-course-allotment.csv"
-    : "/samples/sample-email-upload.csv";
+  const sampleHref =
+    sampleHrefProp ??
+    (withPayment ? "/samples/sample-course-allotment.csv" : "/samples/sample-email-upload.csv");
+  const sampleLabel = sampleHref.endsWith(".csv") ? "Download sample CSV" : "Download sample file";
 
   return (
     <div>
@@ -196,7 +269,7 @@ export function CsvEmailUpload({ onEmails, onRows, withPayment = false }: CsvEma
           <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
         </svg>
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          <span className="font-medium text-brand-600 dark:text-brand-400">Upload CSV</span>
+          <span className="font-medium text-brand-600 dark:text-brand-400">Upload Excel or CSV</span>
           {" "}or drag & drop
         </p>
         <p className="px-2 text-center text-xs text-gray-400">
@@ -210,21 +283,21 @@ export function CsvEmailUpload({ onEmails, onRows, withPayment = false }: CsvEma
           onClick={(e) => e.stopPropagation()}
           className="text-xs text-brand-500 underline hover:text-brand-600 dark:text-brand-400"
         >
-          Download sample CSV
+          {sampleLabel}
         </a>
       </div>
 
       <input
         ref={inputRef}
         type="file"
-        accept=".csv,text/csv"
+        accept={ACCEPTED_EXTENSIONS.join(",")}
         className="hidden"
         onChange={handleFileChange}
       />
 
       {lastCount !== null && !csvError && (
         <p className="mt-1.5 text-xs text-success-600 dark:text-success-400">
-          {lastCount} row{lastCount !== 1 ? "s" : ""} read from CSV.
+          {lastCount} row{lastCount !== 1 ? "s" : ""} read from file.
         </p>
       )}
       {csvError && (
