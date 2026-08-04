@@ -172,14 +172,39 @@ export async function createMembershipOrder(
     return res.data.data ?? (res.data as unknown as CreateOrderResponse);
 }
 
+/** One row of a membership allotment upload, as submitted. */
+export interface BulkMembershipEntry {
+  email: string;
+  /** Amount paid for this user. Blank falls back to the form-level default; blank both = ₹0. */
+  price?: string;
+  /** Razorpay payment id for this user. Blank generates an internal capture reference. */
+  paymentId?: string;
+}
+
 export interface BulkMembershipResult {
   email: string;
-  status: "granted" | "user_not_found" | "error";
+  /**
+   * `invalid`         rejected before processing (bad email, bad amount, duplicate payment id)
+   * `already_member`  skipped — already active on this same plan; nothing was created
+   * `granted_expired` allotted, but the membership was already expired on arrival — a paid
+   *                   order exists and no access was conferred (explicit backfill only)
+   * `error`           the order failed, so no membership was granted (see `message`)
+   */
+  status: "granted" | "granted_expired" | "already_member" | "user_not_found" | "error" | "invalid";
+  /** Why the row was rejected or skipped — shown per row so the admin can fix the file. */
   message?: string;
+  /** Order booked for this allotment. Present on granted rows. */
+  orderId?: string;
+  /** Present (and false) when the order could not be created; no membership was granted. */
+  orderCreated?: boolean;
+  /** The membership this allotment replaced, when the user was on a different plan. */
+  replacedPlan?: string;
+  amount?: number | null;
+  paymentId?: string;
 }
 
 export async function bulkGrantMembershipByEmails(payload: {
-  emails: string[];
+  entries: BulkMembershipEntry[];
   membershipType: string;
   startsAt: string;
   expiresAt: string;
@@ -188,8 +213,18 @@ export async function bulkGrantMembershipByEmails(payload: {
   planValidity?: string;
   planPurchasedFormatted?: string;
   planExpiryFormatted?: string;
+  /**
+   * Confirms an allotment whose expiry has already passed. The server rejects such a
+   * request without it, since every user would get a paid order but no access.
+   */
+  allowExpired?: boolean;
 }): Promise<BulkMembershipResult[]> {
-  const res = await api.post<BulkMembershipResult[]>("/admin/memberships/bulk", payload);
+  const res = await api.post<BulkMembershipResult[]>("/admin/memberships/bulk", {
+    ...payload,
+    // Kept for older admin-service builds that only read `emails`; newer ones prefer
+    // `entries` and ignore this. Harmless duplication, avoids a lockstep deploy.
+    emails: payload.entries.map((e) => e.email),
+  });
   return Array.isArray(res.data) ? res.data : [];
 }
 
