@@ -27,6 +27,7 @@ import { ScrollToTop } from "./components/common/ScrollToTop";
 import Home from "./pages/dashboard/Home";
 import HomeContent from "./pages/cms/HomeContent";
 import AboutContent from "./pages/cms/AboutContent";
+import AffiliateContent from "./pages/cms/AffiliateContent";
 import ContactContent from "./pages/cms/ContactContent";
 import PrivacyPolicyContent from "./pages/cms/PrivacyPolicyContent";
 import EthicsPolicyContent from "./pages/cms/EthicsPolicyContent";
@@ -185,6 +186,7 @@ const router = createBrowserRouter(
           <Route element={<RequirePermissionRoute permissions={["content:list", "content:view", "content:edit"]} />}>
             <Route path="/content/home" element={<HomeContent />} />
             <Route path="/content/about" element={<AboutContent />} />
+            <Route path="/content/affiliates" element={<AffiliateContent />} />
             <Route path="/content/contact" element={<ContactContent />} />
             <Route path="/content/privacy-policy" element={<PrivacyPolicyContent />} />
             <Route path="/content/ethics-policy" element={<EthicsPolicyContent />} />

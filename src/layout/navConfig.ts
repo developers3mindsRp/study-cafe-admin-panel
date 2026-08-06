@@ -108,6 +108,7 @@ export const mainNavItemsConfig: NavItemConfig[] = [
     subItems: [
       { name: "Home", path: "/content/home", requiredPermission: ["content:list", "content:view", "content:edit"] },
       { name: "About", path: "/content/about", requiredPermission: ["content:list", "content:view", "content:edit"] },
+      { name: "Affiliates", path: "/content/affiliates", requiredPermission: ["content:list", "content:view", "content:edit"] },
       { name: "Contact", path: "/content/contact", requiredPermission: ["content:list", "content:view", "content:edit"] },
       { name: "Privacy Policy", path: "/content/privacy-policy", requiredPermission: ["content:list", "content:view", "content:edit"] },
       { name: "Ethics Policy", path: "/content/ethics-policy", requiredPermission: ["content:list", "content:view", "content:edit"] },
