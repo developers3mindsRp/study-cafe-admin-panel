@@ -221,14 +221,14 @@ export const DEFAULT_AFFILIATE_PAGE_DATA: AffiliatePageData = {
       {
         name: "Shabir Virk",
         role: "Finance Professional",
-        image: "https://studycafe.in/wp-content/uploads/2023/11/Shabir-Virk.jpg",
+        image: "/images/userplaceholder.png",
         quote:
           "I was skeptical at first about affiliate marketing, but after signing up for Studycafe affiliate program, I was pleasantly surprised at how easy it was to get started and start earning money. My first month, I made over Rs. 40,000, and I've been making consistently over 50,000 per month ever since. I highly recommend Studycafe affiliate program to anyone looking to make a serious income online.",
       },
       {
         name: "Prabhat",
         role: "CA Final",
-        image: "https://studycafe.in/wp-content/uploads/2023/11/Prabhat-Goyal.jpg",
+        image: "/images/userplaceholder.png",
         quote:
           "I am CA Final Student, but I've never made as much money as I have since joining Studycafe affiliate program. The team is incredibly supportive and helpful, and the affiliate program is very generous. I've made over Rs. 50,000 each month for the past few months, and I'm on track to make even more this month. If you're looking for an affiliate program that can help you achieve your financial goals, look no further than Studycafe affiliate program.",
       },
