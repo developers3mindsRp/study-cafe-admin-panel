@@ -25,6 +25,10 @@ export default function PaymentLinkCreate() {
         random_value: form.random_value?.trim() || null,
         random_boost_accumulator: Number(String(form.random_boost_accumulator ?? "").trim()) || 0,
         status: form.status,
+        product_type: form.product_type,
+        product_id: form.product_type === "custom" ? null : form.product_id || null,
+        batch_id: form.product_type === "course" && form.batch_id ? Number(form.batch_id) : null,
+        auto_enroll: form.auto_enroll,
       };
       await createPaymentLink(payload);
       navigate("/payment-links");

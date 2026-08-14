@@ -61,6 +61,10 @@ export default function PaymentLinkEdit() {
       random_value: data.random_value ?? "",
       random_boost_accumulator: loadedAccumulator,
       status: (data.status === "publish" ? "publish" : "draft") as PaymentLinkFormValues["status"],
+      product_type: data.product_type ?? "custom",
+      product_id: data.product_id != null ? String(data.product_id) : "",
+      batch_id: data.batch_id != null ? String(data.batch_id) : "",
+      auto_enroll: data.auto_enroll !== false,
     };
   }, [data, loadedAccumulator]);
 
@@ -78,6 +82,10 @@ export default function PaymentLinkEdit() {
         total_seats: Number(form.total_seats),
         random_value: form.random_value?.trim() || null,
         status: form.status,
+        product_type: form.product_type,
+        product_id: form.product_type === "custom" ? null : form.product_id || null,
+        batch_id: form.product_type === "course" && form.batch_id ? Number(form.batch_id) : null,
+        auto_enroll: form.auto_enroll,
       };
 
       const accInput = String(form.random_boost_accumulator ?? "").trim();

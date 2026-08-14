@@ -41,6 +41,7 @@
     "axios": "^1.13.5",
     "clsx": "^2.1.1",
     "flatpickr": "^4.6.13",
+    "qrcode": "^1.5.4",
     "react": "^19.0.0",
     "react-apexcharts": "^1.7.0",
     "react-dnd": "^16.0.1",
@@ -59,6 +60,7 @@
   "devDependencies": {
     "@eslint/js": "^9.19.0",
     "@tailwindcss/postcss": "^4.0.8",
+    "@types/qrcode": "^1.5.6",
     "@types/react": "^19.0.12",
     "@types/react-dom": "^19.0.4",
     "@vitejs/plugin-react": "^4.3.4",
