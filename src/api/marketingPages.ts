@@ -11,6 +11,10 @@ export interface MarketingPageMeta {
   cta_subtitle?: string;
   cta_price_text?: string;
   increased_price_text?: string;
+  /** Campaign MRP shown struck-through in the inline checkout. */
+  amount?: string;
+  /** Campaign selling price the inline checkout charges (+18% GST). Blank = course price. */
+  sale_price?: string;
   countdown_minutes?: number;
   use_global_faq?: boolean;
   use_course_faq?: boolean;
