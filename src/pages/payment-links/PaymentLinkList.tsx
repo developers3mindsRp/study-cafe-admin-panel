@@ -11,14 +11,30 @@ import { fetchPaymentLinksPaginated, deletePaymentLink, type PaymentLink } from 
 import { getWebsiteUrl } from "../../config/env";
 import { WebsiteViewLink } from "../../components/common/WebsiteLink";
 import { formatDateTimeLong as formatDate } from "../../utils/formatDate";
+import PaymentLinkShareModal from "./PaymentLinkShareModal";
 
 const WEBSITE_URL = getWebsiteUrl();
+
+/** Public URL of a link, or null while it is still a draft. */
+function publicUrlFor(row: PaymentLink): string | null {
+  return row.status === "publish" && row.slug ? `${WEBSITE_URL}/payment-links/${row.slug}` : null;
+}
 
 export default function PaymentLinkList() {
   const [deleteTarget, setDeleteTarget] = useState<PaymentLink | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [shareTarget, setShareTarget] = useState<PaymentLink | null>(null);
   const { isOpen: isDeleteModalOpen, openModal: openDeleteModal, closeModal: closeDeleteModal } = useModal();
+  const { isOpen: isShareModalOpen, openModal: openShareModal, closeModal: closeShareModal } = useModal();
   const dataTableRef = useRef<DataTableRef>(null);
+
+  const handleShareClick = useCallback(
+    (item: PaymentLink) => {
+      setShareTarget(item);
+      openShareModal();
+    },
+    [openShareModal],
+  );
 
   const handleDeleteClick = useCallback(
     (item: PaymentLink) => {
@@ -63,6 +79,27 @@ export default function PaymentLinkList() {
       header: "Slug",
       sortable: true,
       render: (row: PaymentLink) => <span className="text-gray-500 text-theme-sm dark:text-gray-400">{row.slug}</span>,
+    },
+    {
+      key: "sells",
+      header: "Sells",
+      sortable: false,
+      render: (row: PaymentLink) => {
+        const type = row.product_type ?? "custom";
+        if (type === "custom") {
+          return <span className="text-gray-400 text-theme-sm">Payment only</span>;
+        }
+        const label = row.product?.name || `#${row.product_id ?? "?"}`;
+        return (
+          <div className="flex flex-col">
+            <span className="text-gray-800 text-theme-sm dark:text-white/90">{label}</span>
+            <span className="text-theme-xs text-gray-400">
+              {type === "course" ? "Course" : "Membership"}
+              {row.auto_enroll === false ? " · manual grant" : " · auto-enrol"}
+            </span>
+          </div>
+        );
+      },
     },
     {
       key: "prices",
@@ -114,12 +151,19 @@ export default function PaymentLinkList() {
       align: "end" as const,
       sortable: false,
       render: (row: PaymentLink) => {
-        const websiteUrl = row.status === "publish" && row.slug
-          ? `${WEBSITE_URL}/payment-links/${row.slug}`
-          : null;
+        const websiteUrl = publicUrlFor(row);
         return (
           <div className="flex flex-nowrap items-center justify-end gap-2">
             {websiteUrl && <WebsiteViewLink href={websiteUrl} />}
+            {websiteUrl && (
+              <button
+                type="button"
+                onClick={() => handleShareClick(row)}
+                className="inline-flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-2 text-sm text-gray-600 transition hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
+              >
+                Share
+              </button>
+            )}
             <RequirePermission permissions={["payment_links:edit"]} fallback={null}>
               <Link
                 to={`/payment-links/${row.id}/edit`}
@@ -185,6 +229,16 @@ export default function PaymentLinkList() {
         title="Delete payment link"
         itemName={deleteTarget?.title}
         isLoading={deleting}
+      />
+
+      <PaymentLinkShareModal
+        isOpen={isShareModalOpen}
+        onClose={() => {
+          setShareTarget(null);
+          closeShareModal();
+        }}
+        link={shareTarget}
+        url={shareTarget ? publicUrlFor(shareTarget) : null}
       />
     </>
   );

@@ -62,6 +62,15 @@ export default function MarketingPageForm({
   const [courses, setCourses] = useState<{ id: number; title: string; slug?: string | null }[]>([]);
   /** When true, slug was edited manually — course changes no longer overwrite it. */
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(mode === "edit");
+  /**
+   * Buy buttons: quick checkout opens the register+pay overlay on the page itself
+   * (default); redirect sends buyers to a custom URL. Mode is stored implicitly —
+   * a non-empty checkout_url means redirect.
+   */
+  const [redirectCheckout, setRedirectCheckout] = useState(
+    !!defaultValues?.meta?.checkout_url?.trim(),
+  );
+  const [priceError, setPriceError] = useState<string | null>(null);
   const [form, setForm] = useState<MarketingPageFormData>({
     course_id: "",
     slug: "",
@@ -102,7 +111,33 @@ export default function MarketingPageForm({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(form);
+    setPriceError(null);
+
+    const mrp = form.meta.amount?.toString().trim();
+    const sale = form.meta.sale_price?.toString().trim();
+    const mrpNum = mrp ? Number(mrp) : null;
+    const saleNum = sale ? Number(sale) : null;
+    if (mrp && (!Number.isFinite(mrpNum) || (mrpNum as number) < 0)) {
+      setPriceError("MRP must be a valid non-negative number.");
+      return;
+    }
+    if (sale && (!Number.isFinite(saleNum) || (saleNum as number) < 0)) {
+      setPriceError("Selling price must be a valid non-negative number.");
+      return;
+    }
+    if (mrpNum != null && saleNum != null && saleNum > mrpNum) {
+      setPriceError("Selling price cannot be higher than the MRP.");
+      return;
+    }
+
+    onSubmit({
+      ...form,
+      meta: {
+        ...form.meta,
+        // Quick-checkout mode must not leave a stale redirect URL behind.
+        checkout_url: redirectCheckout ? form.meta.checkout_url : "",
+      },
+    });
   };
 
   const cardClass =
@@ -259,13 +294,64 @@ export default function MarketingPageForm({
               onChange={(e) => setMeta({ cta_price_text: e.target.value })}
             />
           </div>
-          <div>
-            <Label>Checkout URL</Label>
-            <Input
-              value={form.meta.checkout_url ?? ""}
-              onChange={(e) => setMeta({ checkout_url: e.target.value })}
-              placeholder="/course/slug or payment link"
-            />
+          <div className="sm:col-span-2 space-y-3 rounded-xl border border-gray-200 p-4 dark:border-gray-800">
+            <Label>Buy button behaviour</Label>
+            <div className="flex flex-wrap gap-4">
+              <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                <input
+                  type="radio"
+                  name="checkout_mode"
+                  checked={!redirectCheckout}
+                  onChange={() => setRedirectCheckout(false)}
+                />
+                Quick checkout on this page (register + pay, no OTP)
+              </label>
+              <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                <input
+                  type="radio"
+                  name="checkout_mode"
+                  checked={redirectCheckout}
+                  onChange={() => setRedirectCheckout(true)}
+                />
+                Redirect to a URL
+              </label>
+            </div>
+            {redirectCheckout ? (
+              <div>
+                <Label>Checkout URL</Label>
+                <Input
+                  value={form.meta.checkout_url ?? ""}
+                  onChange={(e) => setMeta({ checkout_url: e.target.value })}
+                  placeholder="/course/slug or payment link"
+                />
+              </div>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <Label>MRP (₹, struck-through)</Label>
+                  <Input
+                    type="number"
+                    value={form.meta.amount ?? ""}
+                    onChange={(e) => setMeta({ amount: e.target.value })}
+                    placeholder="e.g. 2000"
+                  />
+                </div>
+                <div>
+                  <Label>Selling price (₹, + 18% GST)</Label>
+                  <Input
+                    type="number"
+                    value={form.meta.sale_price ?? ""}
+                    onChange={(e) => setMeta({ sale_price: e.target.value })}
+                    placeholder="Blank = course price"
+                  />
+                </div>
+                <p className="sm:col-span-2 text-xs text-gray-400">
+                  The checkout charges the selling price plus 18% GST. Leave blank to charge
+                  the course&apos;s own price.
+                </p>
+              </div>
+            )}
+            {priceError ? <p className="text-sm text-red-500">{priceError}</p> : null}
           </div>
           <div>
             <Label>Countdown (minutes)</Label>
