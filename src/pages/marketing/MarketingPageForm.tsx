@@ -143,8 +143,27 @@ export default function MarketingPageForm({
   const cardClass =
     "rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] sm:p-6 space-y-4";
 
+  const actionButtons = (
+    <div className="flex flex-wrap items-center gap-3">
+      <Button type="submit" disabled={loading}>
+        {mode === "create" ? "Create marketing page" : "Save changes"}
+      </Button>
+      <Link to="/marketing-pages">
+        <Button type="button" variant="outline">
+          Cancel
+        </Button>
+      </Link>
+      {priceError ? <span className="text-sm text-red-500">{priceError}</span> : null}
+    </div>
+  );
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Sticky so Save is reachable from anywhere in this long form. */}
+      <div className="sticky top-0 z-20 -mx-1 rounded-xl border border-gray-200 bg-white/95 px-4 py-3 backdrop-blur dark:border-gray-800 dark:bg-gray-900/95">
+        {actionButtons}
+      </div>
+
       <div className={cardClass}>
         <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Page & course</h3>
         <p className="text-sm text-gray-500">
@@ -245,14 +264,40 @@ export default function MarketingPageForm({
             placeholder="Leave empty to use course YouTube URL"
           />
         </div>
-        <div>
-          <Label>Bonus banner text</Label>
-          <Input
-            value={form.meta.bonus_banner_text ?? ""}
-            onChange={(e) => setMeta({ bonus_banner_text: e.target.value })}
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={form.meta.show_play_icon !== false}
+            onChange={(e) => setMeta({ show_play_icon: e.target.checked })}
           />
-        </div>
+          Show play icon on banner image (turn off when the banner is a plain image)
+        </label>
         <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <Label>Text above bonus banner</Label>
+            <Input
+              value={form.meta.register_before_text ?? ""}
+              onChange={(e) => setMeta({ register_before_text: e.target.value })}
+              placeholder="Register Before Tonight to"
+            />
+          </div>
+          <div>
+            <Label>Bonus banner text</Label>
+            <Input
+              value={form.meta.bonus_banner_text ?? ""}
+              onChange={(e) => setMeta({ bonus_banner_text: e.target.value })}
+            />
+          </div>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div>
+            <Label>Label above date/time</Label>
+            <Input
+              value={form.meta.masterclass_label ?? ""}
+              onChange={(e) => setMeta({ masterclass_label: e.target.value })}
+              placeholder="Masterclass is Starting on"
+            />
+          </div>
           <div>
             <Label>Masterclass date</Label>
             <Input
@@ -579,16 +624,7 @@ export default function MarketingPageForm({
         . They appear on all course detail and marketing pages.
       </p>
 
-      <div className="flex gap-3">
-        <Button type="submit" disabled={loading}>
-          {mode === "create" ? "Create marketing page" : "Save changes"}
-        </Button>
-        <Link to="/marketing-pages">
-          <Button type="button" variant="outline">
-            Cancel
-          </Button>
-        </Link>
-      </div>
+      {actionButtons}
     </form>
   );
 }
