@@ -5,6 +5,12 @@ import { createPortal } from "react-dom";
 interface Option {
   value: string;
   text: string;
+  /**
+   * Secondary line shown under the label in the menu (e.g. a slug that
+   * distinguishes near-identical titles). Also matched by the search box, but
+   * kept out of the trigger so the closed control stays on one line.
+   */
+  hint?: string;
 }
 
 interface SearchableSelectProps {
@@ -78,7 +84,11 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
   const filteredOptions = useMemo(() => {
     if (!searchQuery.trim()) return options;
     const q = searchQuery.trim().toLowerCase();
-    return options.filter((o) => o.text.toLowerCase().includes(q));
+    return options.filter(
+      (o) =>
+        o.text.toLowerCase().includes(q) ||
+        !!o.hint?.toLowerCase().includes(q),
+    );
   }, [options, searchQuery]);
 
   useEffect(() => {
@@ -211,8 +221,15 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
                 aria-selected={isSelected}
               >
                 <div className="relative flex w-full items-center p-3">
-                  <div className="mx-1 flex-1 text-sm leading-snug text-gray-800 dark:text-white/90">
-                    {option.text}
+                  <div className="mx-1 min-w-0 flex-1">
+                    <div className="truncate text-sm leading-snug text-gray-800 dark:text-white/90">
+                      {option.text}
+                    </div>
+                    {option.hint ? (
+                      <div className="mt-0.5 truncate font-mono text-xs text-gray-400 dark:text-gray-500">
+                        {option.hint}
+                      </div>
+                    ) : null}
                   </div>
                   {isSelected && (
                     <span className="text-xs font-medium text-brand-600 dark:text-brand-400">

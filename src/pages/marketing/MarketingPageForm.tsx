@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
 import Label from "../../components/form/Label";
 import Input from "../../components/form/input/InputField";
 import Button from "../../components/ui/button/Button";
 import ImageUpload from "../../components/form/ImageUpload";
+import SearchableSelect from "../../components/form/SearchableSelect";
 import { ArrayEditor } from "../courses/components/ArrayEditor";
 import { fetchCourses } from "../../api/courses";
 import type { MarketingPageMeta } from "../../api/marketingPages";
@@ -71,6 +72,7 @@ export default function MarketingPageForm({
     !!defaultValues?.meta?.checkout_url?.trim(),
   );
   const [priceError, setPriceError] = useState<string | null>(null);
+  const [courseError, setCourseError] = useState<string | null>(null);
   const [form, setForm] = useState<MarketingPageFormData>({
     course_id: "",
     slug: "",
@@ -96,6 +98,7 @@ export default function MarketingPageForm({
 
   const handleCourseChange = (courseId: string) => {
     const course = courses.find((c) => String(c.id) === courseId);
+    setCourseError(null);
     setForm((prev) => {
       const next = { ...prev, course_id: courseId };
       if (!slugManuallyEdited && course) {
@@ -105,6 +108,17 @@ export default function MarketingPageForm({
     });
   };
 
+  const courseOptions = useMemo(
+    () =>
+      courses.map((c) => ({
+        value: String(c.id),
+        text: c.title?.trim() || `Course #${c.id}`,
+        // Many courses share near-identical titles; the slug is what tells them apart.
+        hint: c.slug ?? undefined,
+      })),
+    [courses],
+  );
+
   const setMeta = (patch: Partial<MarketingPageMeta>) => {
     setForm((prev) => ({ ...prev, meta: { ...prev.meta, ...patch } }));
   };
@@ -112,6 +126,13 @@ export default function MarketingPageForm({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setPriceError(null);
+    setCourseError(null);
+
+    // SearchableSelect is not a native control, so the required course is checked here.
+    if (!form.course_id) {
+      setCourseError("Pick the course this landing page sells.");
+      return;
+    }
 
     const mrp = form.meta.amount?.toString().trim();
     const sale = form.meta.sale_price?.toString().trim();
@@ -178,21 +199,18 @@ export default function MarketingPageForm({
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <Label>Course <span className="text-error-500">*</span></Label>
-            <select
-              className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 text-sm dark:border-gray-700 dark:bg-gray-900"
+            <SearchableSelect
+              options={courseOptions}
               value={form.course_id}
-              onChange={(e) => handleCourseChange(e.target.value)}
-              required
+              onChange={handleCourseChange}
+              placeholder="Select course"
+              searchPlaceholder="Search courses by name or slug…"
+              emptyMessage="No courses match that search."
               disabled={mode === "edit"}
-            >
-              <option value="">Select course</option>
-              {courses.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.title}
-                  {c.slug ? ` (${c.slug})` : ""}
-                </option>
-              ))}
-            </select>
+            />
+            {courseError ? (
+              <p className="mt-1 text-xs text-error-500">{courseError}</p>
+            ) : null}
           </div>
           <div>
             <Label>URL slug <span className="text-error-500">*</span></Label>
