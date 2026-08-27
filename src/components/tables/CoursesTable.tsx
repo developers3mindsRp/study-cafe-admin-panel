@@ -16,91 +16,11 @@ import { formatDateTime } from "../../utils/formatDate";
 import type { TrashScope } from "../trash/TrashScopeTabs";
 import type { DataTableFetchParams, DataTableFetchResult } from "./data-table/DataTable.types";
 import type { CourseSortFilter, PriceRangeFilter, PublicationFilter } from "../../pages/courses/filterTypes";
+import { filterAndSortCourses } from "../../pages/courses/utils/courseListFilters";
 import { getWebsiteUrl } from "../../config/env";
 import { WebsiteViewLink, AdminViewLink } from "../common/WebsiteLink";
 
 const WEBSITE_URL = getWebsiteUrl();
-
-function courseListPrice(c: Course): number {
-  const n = Number(c.price);
-  return Number.isFinite(n) ? n : 0;
-}
-
-function courseEffectivePrice(c: Course): number {
-  if (c.sale_price != null && c.sale_price !== "") {
-    const sale = Number(c.sale_price);
-    if (Number.isFinite(sale)) return sale;
-  }
-  return courseListPrice(c);
-}
-
-function matchesPriceRange(c: Course, range: PriceRangeFilter): boolean {
-  if (!range) return true;
-  const p = courseEffectivePrice(c);
-  switch (range) {
-    case "0-500":
-      return p < 500;
-    case "500-2000":
-      return p >= 500 && p < 2000;
-    case "2000-5000":
-      return p >= 2000 && p < 5000;
-    case "5000+":
-      return p >= 5000;
-    default:
-      return true;
-  }
-}
-
-function matchesCategory(c: Course, categoryId: string): boolean {
-  if (!categoryId) return true;
-  const id = Number(categoryId);
-  if (!Number.isFinite(id)) return true;
-  if (c.course_cat_ids?.includes(id)) return true;
-  return Boolean(c.categories?.some((x) => x.id === id));
-}
-
-function matchesPublication(c: Course, publication: PublicationFilter): boolean {
-  if (!publication) return true;
-  if (publication === "unlisted") return Boolean(c.hide_from_public);
-  if (publication === "published") return Boolean(c.is_published);
-  return !c.is_published;
-}
-
-function matchesStartDateRange(c: Course, from: string, to: string): boolean {
-  if (!from && !to) return true;
-  if (!c.start_date) return false;
-  const t = Date.parse(c.start_date);
-  if (!Number.isFinite(t)) return false;
-  if (from && t < Date.parse(from)) return false;
-  if (to && t > Date.parse(to) + 86399999) return false;
-  return true;
-}
-
-function parseTimeMs(value: string | undefined): number {
-  if (!value) return 0;
-  const t = Date.parse(value);
-  return Number.isFinite(t) ? t : 0;
-}
-
-function sortCoursesList(list: Course[], sort: CourseSortFilter): Course[] {
-  if (!sort) return list;
-  const copy = [...list];
-  const idNum = (c: Course) => Number(c.id) || 0;
-  switch (sort) {
-    case "newest":
-      return copy.sort((a, b) => {
-        const d = parseTimeMs(b.created_at) - parseTimeMs(a.created_at);
-        return d !== 0 ? d : idNum(b) - idNum(a);
-      });
-    case "oldest":
-      return copy.sort((a, b) => {
-        const d = parseTimeMs(a.created_at) - parseTimeMs(b.created_at);
-        return d !== 0 ? d : idNum(a) - idNum(b);
-      });
-    default:
-      return list;
-  }
-}
 
 function toMeta(total: number, page: number, limit: number): DataTableFetchResult<Course>["meta"] {
   const totalPages = Math.max(1, Math.ceil(total / limit));
@@ -292,34 +212,18 @@ export function CoursesTable({
         fetchCourses({ trashed: isTrash }),
         membershipActive ? fetchPlanCoursesMap() : Promise.resolve<Record<number, number[]>>({}),
       ]);
-      const search = filterSearch.trim().toLowerCase();
-      let filtered = all;
-
-      if (search) {
-        filtered = filtered.filter(
-          (c) =>
-            (c.title && c.title.toLowerCase().includes(search)) ||
-            (c.description && c.description.toLowerCase().includes(search)) ||
-            (c.brief_description && c.brief_description.toLowerCase().includes(search))
-        );
-      }
-
-      if (!isTrash) {
-        filtered = filtered.filter(
-          (c) =>
-            matchesCategory(c, filterCategoryId) &&
-            matchesPriceRange(c, filterPriceRange) &&
-            matchesPublication(c, filterPublication) &&
-            matchesStartDateRange(c, filterStartDateFrom, filterStartDateTo)
-        );
-        if (membershipActive) {
-          const planId = Number(filterMembershipId);
-          const courseIds = new Set(planCoursesMap[planId] ?? []);
-          filtered = filtered.filter((c) => courseIds.has(Number(c.id)));
-        }
-      }
-
-      filtered = sortCoursesList(filtered, filterSortBy);
+      const filtered = filterAndSortCourses(all, {
+        search: filterSearch,
+        categoryId: filterCategoryId,
+        membershipId: membershipActive ? filterMembershipId : "",
+        priceRange: filterPriceRange,
+        publication: filterPublication,
+        sortBy: filterSortBy,
+        startDateFrom: filterStartDateFrom,
+        startDateTo: filterStartDateTo,
+        isTrash,
+        planCoursesMap,
+      });
 
       const { page, limit } = params;
       const start = (page - 1) * limit;

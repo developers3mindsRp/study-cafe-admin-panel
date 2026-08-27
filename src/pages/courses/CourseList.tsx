@@ -7,8 +7,19 @@ import { CoursesTable } from "../../components/tables";
 import { FilterBar, FilterSearchInput, useFilterState } from "../../components/filters";
 import type { FilterFieldDef } from "../../components/filters";
 import { TrashScopeTabs, type TrashScope } from "../../components/trash/TrashScopeTabs";
-import { deleteCourse, deleteCoursePermanently, fetchCourseCats, restoreCourse, type Course } from "../../api/courses";
-import { plansApi } from "../../api/plans";
+import { deleteCourse, deleteCoursePermanently, fetchCourseCats, fetchCoursesForExport, restoreCourse, type Course } from "../../api/courses";
+import { fetchPlanCoursesMap, plansApi } from "../../api/plans";
+import Button from "../../components/ui/button/Button";
+import { DownloadIcon } from "../../icons";
+import { ExportProgressBar } from "../../components/export/ExportProgressBar";
+import { useCsvExport } from "../../hooks/useCsvExport";
+import { COURSE_EXPORT_COLUMNS } from "../../utils/courseExportColumns";
+import type { ExportProgressCallback } from "../../utils/exportProgress";
+import {
+  courseListCriteriaAreActive,
+  filterAndSortCourses,
+  type CourseListCriteria,
+} from "./utils/courseListFilters";
 import type { CourseSortFilter, PriceRangeFilter, PublicationFilter } from "./filterTypes";
 
 export default function CourseList() {
@@ -31,6 +42,54 @@ export default function CourseList() {
     reset();
     setDateFilterKey((k) => k + 1);
   }, [reset]);
+
+  const exportCriteria = useMemo<CourseListCriteria>(
+    () => ({
+      search,
+      categoryId: values.categoryId ?? "",
+      membershipId: values.membershipId ?? "",
+      priceRange: (values.priceRange ?? "") as PriceRangeFilter,
+      publication: (values.publication ?? "") as PublicationFilter,
+      sortBy: (values.sortBy ?? "") as CourseSortFilter,
+      startDateFrom: values.startDateFrom ?? "",
+      startDateTo: values.startDateTo ?? "",
+      isTrash,
+    }),
+    [search, values, isTrash],
+  );
+
+  const exportFiltersActive = useMemo(
+    () => courseListCriteriaAreActive(exportCriteria),
+    [exportCriteria],
+  );
+
+  // Export exactly what the table shows — same fetch, same filters, same sort.
+  const fetchCourseRowsForExport = useCallback(
+    async (onProgress: ExportProgressCallback): Promise<Course[]> => {
+      const membershipActive = !exportCriteria.isTrash && Boolean(exportCriteria.membershipId);
+      const [all, planCoursesMap] = await Promise.all([
+        fetchCoursesForExport({ trashed: exportCriteria.isTrash }),
+        membershipActive ? fetchPlanCoursesMap() : Promise.resolve<Record<number, number[]>>({}),
+      ]);
+      const rows = filterAndSortCourses(all, { ...exportCriteria, planCoursesMap });
+      onProgress({ loaded: rows.length, total: rows.length, phase: "fetching" });
+      return rows;
+    },
+    [exportCriteria],
+  );
+
+  const {
+    runExport,
+    progress: exportProgress,
+    isExporting,
+    buttonLabel: exportButtonLabel,
+    buttonTitle: exportButtonTitle,
+  } = useCsvExport<Course>({
+    columns: COURSE_EXPORT_COLUMNS,
+    filename: "courses-export",
+    fetchRows: fetchCourseRowsForExport,
+    idleLabel: exportFiltersActive ? "Export filtered" : "Export CSV",
+  });
 
   const courseFilterFields: FilterFieldDef[] = useMemo(
     () => [
@@ -175,6 +234,7 @@ export default function CourseList() {
         }
       />
       <div className="space-y-6">
+        <ExportProgressBar progress={exportProgress} label="Exporting courses" />
         <TrashScopeTabs value={trashScope} onChange={setTrashScope} />
         <div className="space-y-4">
           <FilterSearchInput
@@ -191,6 +251,20 @@ export default function CourseList() {
               onReset={handleResetFilters}
               hasActive={hasActive}
               resetKey={dateFilterKey}
+              actions={
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={isExporting}
+                  className="h-10 whitespace-nowrap"
+                  startIcon={<DownloadIcon className="size-4 shrink-0" />}
+                  onClick={() => void runExport({ filtered: exportFiltersActive })}
+                  title={exportButtonTitle}
+                >
+                  {exportButtonLabel}
+                </Button>
+              }
             />
           ) : null}
         </div>
