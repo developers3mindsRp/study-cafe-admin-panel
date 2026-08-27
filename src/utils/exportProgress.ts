@@ -43,8 +43,8 @@ export function formatExportProgressMessage(progress: ExportProgress | null): st
   if (!progress) return "";
   if (progress.phase === "writing") {
     return progress.total != null
-      ? `Writing Excel file (${progress.loaded.toLocaleString()} rows)…`
-      : "Writing Excel file…";
+      ? `Writing file (${progress.loaded.toLocaleString()} rows)…`
+      : "Writing file…";
   }
   if (progress.total != null && progress.total > 0) {
     const pct = exportProgressPercent(progress);
@@ -61,8 +61,8 @@ export function formatExportProgressTitle(progress: ExportProgress | null): stri
   if (!progress) return undefined;
   if (progress.phase === "writing") {
     return progress.total != null
-      ? `Building Excel file (${progress.loaded.toLocaleString()} rows)`
-      : "Building Excel file";
+      ? `Building file (${progress.loaded.toLocaleString()} rows)`
+      : "Building file";
   }
   if (progress.total != null && progress.total > 0) {
     return `Fetched ${progress.loaded.toLocaleString()} of ${progress.total.toLocaleString()} rows`;

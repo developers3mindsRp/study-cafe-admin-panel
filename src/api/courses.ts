@@ -74,6 +74,8 @@ export interface Course {
   is_lifetime?: boolean;
   /** JSON string of dynamic description sections for the course detail page. */
   detail_sections?: string | null;
+  /** Derived from curriculum by the API — e.g. "12h 30m". */
+  duration?: string | null;
 }
 
 export interface CourseCat {
@@ -96,6 +98,17 @@ export async function fetchCourses(params?: { trashed?: boolean }): Promise<Cour
   return Array.isArray(res.data) ? res.data : [];
 }
 
+/**
+ * Full course rows for CSV export. The list endpoint (`fetchCourses`) trims
+ * curriculum, description and the SEO columns to keep the admin table light,
+ * so the export has its own endpoint that returns every field.
+ */
+export async function fetchCoursesForExport(params?: { trashed?: boolean }): Promise<Course[]> {
+  const res = await api.get<Course[]>("/admin/courses/export", {
+    params: params?.trashed ? { trashed: "1" } : undefined,
+  });
+  return Array.isArray(res.data) ? res.data : [];
+}
 export async function deleteCourse(id: number): Promise<void> {
   await api.delete(`/admin/courses/${id}`);
 }
