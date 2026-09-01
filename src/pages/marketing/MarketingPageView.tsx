@@ -4,7 +4,10 @@ import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import Button from "../../components/ui/button/Button";
 import { RequirePermission } from "../../components/auth/RequirePermission";
-import { PERM_MARKETING_PAGES_EDIT } from "../../constants/permissions";
+import {
+  PERM_MARKETING_PAGES_CREATE,
+  PERM_MARKETING_PAGES_EDIT,
+} from "../../constants/permissions";
 import { fetchMarketingPage, type MarketingPage } from "../../api/marketingPages";
 
 export default function MarketingPageView() {
@@ -28,11 +31,20 @@ export default function MarketingPageView() {
       <PageBreadcrumb
         pageTitle={row.course_title ?? row.slug}
         actions={
-          <RequirePermission permissions={[PERM_MARKETING_PAGES_EDIT]}>
-            <Link to={`/marketing-pages/${row.id}/edit`}>
-              <Button size="sm">Edit</Button>
-            </Link>
-          </RequirePermission>
+          <div className="flex items-center gap-2">
+            <RequirePermission permissions={[PERM_MARKETING_PAGES_EDIT]}>
+              <Link to={`/marketing-pages/${row.id}/edit`}>
+                <Button size="sm">Edit</Button>
+              </Link>
+            </RequirePermission>
+            <RequirePermission permissions={[PERM_MARKETING_PAGES_CREATE]}>
+              <Link to={`/marketing-pages/create?duplicateFrom=${encodeURIComponent(String(row.id))}`}>
+                <Button size="sm" variant="outline">
+                  Duplicate
+                </Button>
+              </Link>
+            </RequirePermission>
+          </div>
         }
       />
       <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03] space-y-4">

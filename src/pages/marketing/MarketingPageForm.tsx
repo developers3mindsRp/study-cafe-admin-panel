@@ -7,7 +7,7 @@ import ImageUpload from "../../components/form/ImageUpload";
 import SearchableSelect from "../../components/form/SearchableSelect";
 import { ArrayEditor } from "../courses/components/ArrayEditor";
 import { fetchCourses } from "../../api/courses";
-import type { MarketingPageMeta } from "../../api/marketingPages";
+import { fetchMarketingPages, type MarketingPageMeta } from "../../api/marketingPages";
 
 export interface MarketingPageFormData {
   course_id: string;
@@ -34,6 +34,8 @@ const emptyMeta = (): MarketingPageMeta => ({
 interface MarketingPageFormProps {
   mode: "create" | "edit";
   defaultValues?: Partial<MarketingPageFormData>;
+  /** Slug of the page this one was copied from — shown as a banner in duplicate mode. */
+  duplicatedFromSlug?: string;
   loading?: boolean;
   onSubmit: (data: MarketingPageFormData) => void;
 }
@@ -57,10 +59,17 @@ function slugFromCourse(course: { slug?: string | null; title: string }): string
 export default function MarketingPageForm({
   mode,
   defaultValues,
+  duplicatedFromSlug,
   loading = false,
   onSubmit,
 }: MarketingPageFormProps) {
   const [courses, setCourses] = useState<{ id: number; title: string; slug?: string | null }[]>([]);
+  /**
+   * Courses that already own a marketing page. `marketing_pages.course_id` is unique, so
+   * those courses cannot take another page — surfaced in the picker instead of letting the
+   * save fail with a 409.
+   */
+  const [takenCourseIds, setTakenCourseIds] = useState<Set<string>>(new Set());
   /** When true, slug was edited manually — course changes no longer overwrite it. */
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(mode === "edit");
   /**
@@ -88,6 +97,24 @@ export default function MarketingPageForm({
   }, []);
 
   useEffect(() => {
+    // Only the create form has to choose a free course; editing keeps its own course.
+    if (mode !== "create") return;
+    let cancelled = false;
+    fetchMarketingPages()
+      .then((pages) => {
+        if (cancelled) return;
+        setTakenCourseIds(new Set(pages.map((p) => String(p.course_id))));
+      })
+      .catch(() => {
+        // Non-fatal: the API still rejects a taken course on save.
+        if (!cancelled) setTakenCourseIds(new Set());
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [mode]);
+
+  useEffect(() => {
     if (slugManuallyEdited || !form.course_id || courses.length === 0) return;
     const course = courses.find((c) => String(c.id) === form.course_id);
     if (!course) return;
@@ -98,7 +125,11 @@ export default function MarketingPageForm({
 
   const handleCourseChange = (courseId: string) => {
     const course = courses.find((c) => String(c.id) === courseId);
-    setCourseError(null);
+    setCourseError(
+      mode === "create" && takenCourseIds.has(courseId)
+        ? "This course already has a marketing page. Pick a course that doesn't, or edit the existing page."
+        : null,
+    );
     setForm((prev) => {
       const next = { ...prev, course_id: courseId };
       if (!slugManuallyEdited && course) {
@@ -110,13 +141,17 @@ export default function MarketingPageForm({
 
   const courseOptions = useMemo(
     () =>
-      courses.map((c) => ({
-        value: String(c.id),
-        text: c.title?.trim() || `Course #${c.id}`,
+      courses.map((c) => {
         // Many courses share near-identical titles; the slug is what tells them apart.
-        hint: c.slug ?? undefined,
-      })),
-    [courses],
+        const parts = [c.slug ?? ""].filter(Boolean);
+        if (takenCourseIds.has(String(c.id))) parts.push("already has a marketing page");
+        return {
+          value: String(c.id),
+          text: c.title?.trim() || `Course #${c.id}`,
+          hint: parts.length ? parts.join(" · ") : undefined,
+        };
+      }),
+    [courses, takenCourseIds],
   );
 
   const setMeta = (patch: Partial<MarketingPageMeta>) => {
@@ -131,6 +166,12 @@ export default function MarketingPageForm({
     // SearchableSelect is not a native control, so the required course is checked here.
     if (!form.course_id) {
       setCourseError("Pick the course this landing page sells.");
+      return;
+    }
+    if (mode === "create" && takenCourseIds.has(form.course_id)) {
+      setCourseError(
+        "This course already has a marketing page. Pick a course that doesn't, or edit the existing page.",
+      );
       return;
     }
 
@@ -184,6 +225,21 @@ export default function MarketingPageForm({
       <div className="sticky top-0 z-20 -mx-1 rounded-xl border border-gray-200 bg-white/95 px-4 py-3 backdrop-blur dark:border-gray-800 dark:bg-gray-900/95">
         {actionButtons}
       </div>
+
+      {duplicatedFromSlug ? (
+        <div className="rounded-2xl border border-brand-200 bg-brand-50 px-5 py-4 text-sm text-brand-800 dark:border-brand-500/30 dark:bg-brand-500/10 dark:text-brand-200">
+          <p className="font-medium">
+            Copied from <code className="text-theme-sm">/marketing/{duplicatedFromSlug}</code>
+          </p>
+          <p className="mt-1">
+            Every section below is a copy — edit anything you want changed. A course can only
+            have one marketing page, so pick the course this copy is for; the slug fills in
+            from it. Nothing is saved until you press{" "}
+            <span className="font-medium">Create marketing page</span>, and the copy starts as
+            a draft.
+          </p>
+        </div>
+      ) : null}
 
       <div className={cardClass}>
         <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Page & course</h3>

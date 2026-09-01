@@ -4,7 +4,7 @@ import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import { ConfirmDeleteModal } from "../../components/ui/modal/ConfirmDeleteModal";
 import { DataTable, type DataTableRef } from "../../components/tables/data-table/DataTable";
-import { PencilIcon, TrashBinIcon } from "../../icons";
+import { CopyIcon, PencilIcon, TrashBinIcon } from "../../icons";
 import { useModal } from "../../hooks/useModal";
 import { RequirePermission } from "../../components/auth/RequirePermission";
 import {
@@ -117,6 +117,16 @@ export default function MarketingPageList() {
               >
                 <PencilIcon className="size-4 shrink-0 fill-current" />
                 Edit
+              </Link>
+            </RequirePermission>
+            <RequirePermission permissions={[PERM_MARKETING_PAGES_CREATE]}>
+              <Link
+                to={`/marketing-pages/create?duplicateFrom=${encodeURIComponent(String(row.id))}`}
+                className="inline-flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-2 text-sm text-gray-600 transition hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
+                title="Duplicate — opens the create form with a copy of this page's content"
+              >
+                <CopyIcon className="size-4 shrink-0 fill-current" />
+                Duplicate
               </Link>
             </RequirePermission>
             <RequirePermission permissions={[PERM_MARKETING_PAGES_DELETE]}>
