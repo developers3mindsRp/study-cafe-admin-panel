@@ -84,6 +84,17 @@ export const MODULE_LEVELS: ModuleConfig[] = [
     ],
   },
   {
+    key: "products",
+    name: "Our Products",
+    levels: [
+      { value: "none", label: "None", permissions: [] },
+      { value: "view", label: "View only", permissions: ["products:list", "products:view"] },
+      { value: "edit", label: "Edit (includes view)", permissions: ["products:list", "products:view", "products:edit"] },
+      { value: "create", label: "Create (includes view, edit)", permissions: ["products:list", "products:view", "products:edit", "products:create"] },
+      { value: "delete", label: "Delete / Full", permissions: ["products:list", "products:view", "products:edit", "products:create", "products:delete"] },
+    ],
+  },
+  {
     key: "faq",
     name: "FAQ",
     levels: [
@@ -339,6 +350,7 @@ export const PERMISSION_NAV_GROUPS: PermissionNavGroup[] = [
   },
   { name: "Google Reviews", modules: [{ key: "google_reviews" }] },
   { name: "Testimonials", modules: [{ key: "testimonials" }] },
+  { name: "Our Products", modules: [{ key: "products" }] },
   { name: "FAQ", modules: [{ key: "faq" }] },
   { name: "Professions", modules: [{ key: "professions" }] },
   { name: "Contact Inquiries", modules: [{ key: "contact_inquiries" }] },
