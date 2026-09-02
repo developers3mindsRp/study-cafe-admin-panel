@@ -9,6 +9,8 @@ import ArticleEditor from "../../components/article-editor/ArticleEditor";
 import { ArrayEditor } from "./components/ArrayEditor";
 import IncludesInfoEditor, { type IncludesInfoItem } from "./components/IncludesInfoEditor";
 import CourseIncludesEditor, { type CourseIncludeItem } from "./components/CourseIncludesEditor";
+import PostPurchaseLinksEditor from "./components/PostPurchaseLinksEditor";
+import { parsePostPurchaseLinks, type PostPurchaseLink } from "./components/postPurchase";
 import { FilePickerMultiSelect, type CurriculumFile } from "./components/FilePickerMultiSelect";
 import { COURSE_PREVIEW_STATE_KEY, COURSE_RESTORE_STATE_KEY } from "./CoursePreview";
 import { fetchCourseCats, generateCoursePreviewLink, type Course, type CourseCat } from "../../api/courses";
@@ -79,6 +81,12 @@ export interface CourseFormData {
   validity: 'lifetime' | '1year';
   /** Dynamic sections on the public course detail page (JSON array). */
   detail_sections: DetailSection[];
+  /** Join buttons (WhatsApp / Zoom / …) shown on the thank-you page after purchase. */
+  post_purchase_links: PostPurchaseLink[];
+  /** Optional URL the thank-you page redirects to; empty means the default payment-detail page. */
+  post_purchase_redirect_url: string;
+  /** Seconds the thank-you page waits before redirecting; empty means the default (10s). */
+  post_purchase_redirect_delay: string;
 }
 
 export interface DetailSectionCard {
@@ -124,7 +132,7 @@ const DEFAULT_DETAIL_SECTIONS: DetailSection[] = [
   },
 ];
 
-type TabKey = "basic" | "content" | "curriculum" | "faqs" | "author" | "seo";
+type TabKey = "basic" | "content" | "curriculum" | "faqs" | "author" | "post-purchase" | "seo";
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: "basic", label: "Basic Info" },
@@ -132,6 +140,7 @@ const TABS: { key: TabKey; label: string }[] = [
   { key: "curriculum", label: "Curriculum" },
   { key: "faqs", label: "FAQs & Terms" },
   { key: "author", label: "Author & Settings" },
+  { key: "post-purchase", label: "Post Purchase" },
   { key: "seo", label: "SEO & Meta" },
 ];
 
@@ -176,6 +185,11 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
         detail_sections: Array.isArray(restoredData.detail_sections)
           ? restoredData.detail_sections
           : [],
+        post_purchase_links: Array.isArray(restoredData.post_purchase_links)
+          ? restoredData.post_purchase_links
+          : [],
+        post_purchase_redirect_url: restoredData.post_purchase_redirect_url ?? "",
+        post_purchase_redirect_delay: restoredData.post_purchase_redirect_delay ?? "",
       };
     }
     return {
@@ -287,6 +301,12 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
           : "0",
       validity: (initial?.validity === 'lifetime' ? 'lifetime' : '1year') as 'lifetime' | '1year',
       detail_sections: safeJsonParse(initial?.detail_sections, null) ?? (initial ? [] : DEFAULT_DETAIL_SECTIONS),
+      post_purchase_links: parsePostPurchaseLinks(initial?.post_purchase_links),
+      post_purchase_redirect_url: initial?.post_purchase_redirect_url ?? "",
+      post_purchase_redirect_delay:
+        initial?.post_purchase_redirect_delay != null
+          ? String(initial.post_purchase_redirect_delay)
+          : "",
     };
   });
 
@@ -1270,6 +1290,61 @@ export default function CourseForm({ initial, onSubmit, loading = false }: { ini
                   <Label>Gateway</Label>
                   <Input value={form.gateway} onChange={(e) => updateField('gateway', e.target.value)} />
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tab: Post Purchase */}
+      {activeTab === "post-purchase" && (
+        <div className="space-y-4">
+          <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] sm:p-6">
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">Join Links</h3>
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Shown as buttons on the thank-you page once the order is paid. The button text is
+                yours to write. Buyers see <strong>one button per type</strong>: add several rows of
+                the same type (e.g. three WhatsApp groups) and each buyer gets one of them at
+                random, which spreads members across groups as they fill up.
+              </p>
+            </div>
+            <PostPurchaseLinksEditor
+              value={form.post_purchase_links}
+              onChange={(links) => updateField('post_purchase_links', links)}
+            />
+          </div>
+
+          <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] sm:p-6">
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">Redirect After Purchase</h3>
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Leave the URL empty to keep the default behaviour (buyer goes to their payment
+                details). When set, the thank-you page counts down and then sends the buyer there.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <div className="md:col-span-2">
+                <Label>Redirect URL</Label>
+                <Input
+                  type="url"
+                  value={form.post_purchase_redirect_url}
+                  onChange={(e) => updateField('post_purchase_redirect_url', e.target.value)}
+                  placeholder="https://studycafe.in/welcome"
+                />
+                <p className="mt-1 text-xs text-gray-400">Must start with http:// or https://</p>
+              </div>
+              <div>
+                <Label>Redirect Delay (seconds)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  max="600"
+                  value={form.post_purchase_redirect_delay}
+                  onChange={(e) => updateField('post_purchase_redirect_delay', e.target.value)}
+                  placeholder="10"
+                />
+                <p className="mt-1 text-xs text-gray-400">Defaults to 10 seconds.</p>
               </div>
             </div>
           </div>
