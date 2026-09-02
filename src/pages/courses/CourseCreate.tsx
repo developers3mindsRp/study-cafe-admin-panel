@@ -3,6 +3,10 @@ import { useState, useEffect } from "react";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import CourseForm, { type CourseFormData } from "./CourseForm";
+import {
+  serializePostPurchaseDelay,
+  serializePostPurchaseLinks,
+} from "./components/postPurchase";
 import { createCourse, createBatch, fetchCourse, type Course } from "../../api/courses";
 import { updateCoursePlans } from "../../api/plans";
 import { getApiErrorMessage } from "../../lib/apiError";
@@ -110,6 +114,9 @@ export default function CourseCreate() {
         ),
         validity: data.validity ?? '1year',
         detail_sections: data.detail_sections?.length ? JSON.stringify(data.detail_sections) : null,
+        post_purchase_links: serializePostPurchaseLinks(data.post_purchase_links),
+        post_purchase_redirect_url: data.post_purchase_redirect_url?.trim() || null,
+        post_purchase_redirect_delay: serializePostPurchaseDelay(data.post_purchase_redirect_delay),
       });
 
       // Link the new course to the selected memberships (plan_courses).

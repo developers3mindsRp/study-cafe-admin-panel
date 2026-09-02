@@ -74,6 +74,12 @@ export interface Course {
   is_lifetime?: boolean;
   /** JSON string of dynamic description sections for the course detail page. */
   detail_sections?: string | null;
+  /** JSON string of thank-you page join links: [{ type, label, url }]. */
+  post_purchase_links?: string | null;
+  /** Where the thank-you page sends the buyer after the countdown (http/https). */
+  post_purchase_redirect_url?: string | null;
+  /** Countdown before the thank-you page redirect fires, in seconds. */
+  post_purchase_redirect_delay?: number | string | null;
   /** Derived from curriculum by the API — e.g. "12h 30m". */
   duration?: string | null;
 }
