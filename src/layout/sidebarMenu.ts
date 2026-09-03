@@ -303,6 +303,11 @@ export const mainNavItemsConfig: NavItemConfig[] = [
         requiredPermission: ["global_settings:list", "global_settings:view", "global_settings:edit"],
       },
       {
+        name: "Pabbly Webhooks",
+        path: "/settings/global/pabbly-webhooks",
+        requiredPermission: ["global_settings:list", "global_settings:view", "global_settings:edit"],
+      },
+      {
         name: "Display Ads",
         path: "/settings/global/display-ads",
         requiredPermission: [
