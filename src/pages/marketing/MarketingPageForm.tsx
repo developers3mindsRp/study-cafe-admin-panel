@@ -6,6 +6,7 @@ import Button from "../../components/ui/button/Button";
 import ImageUpload from "../../components/form/ImageUpload";
 import SearchableSelect from "../../components/form/SearchableSelect";
 import { ArrayEditor } from "../courses/components/ArrayEditor";
+import { POST_PURCHASE_DELAY_MAX_SECONDS } from "../courses/components/postPurchase";
 import { fetchCourses } from "../../api/courses";
 import { fetchMarketingPages, type MarketingPageMeta } from "../../api/marketingPages";
 
@@ -82,6 +83,7 @@ export default function MarketingPageForm({
   );
   const [priceError, setPriceError] = useState<string | null>(null);
   const [courseError, setCourseError] = useState<string | null>(null);
+  const [redirectError, setRedirectError] = useState<string | null>(null);
   const [form, setForm] = useState<MarketingPageFormData>({
     course_id: "",
     slug: "",
@@ -162,6 +164,7 @@ export default function MarketingPageForm({
     e.preventDefault();
     setPriceError(null);
     setCourseError(null);
+    setRedirectError(null);
 
     // SearchableSelect is not a native control, so the required course is checked here.
     if (!form.course_id) {
@@ -192,12 +195,36 @@ export default function MarketingPageForm({
       return;
     }
 
+    // Post-purchase redirect: an absolute URL is required because the buyer is sent
+    // there with a full page load, and a relative path would resolve against the API host.
+    const purchaseRedirect = form.meta.post_purchase_redirect_url?.toString().trim() ?? "";
+    if (purchaseRedirect && !/^https?:\/\//i.test(purchaseRedirect)) {
+      setRedirectError("The post-purchase redirect URL must start with http:// or https://");
+      return;
+    }
+    const rawRedirectDelay = form.meta.post_purchase_redirect_delay?.toString().trim() ?? "";
+    const redirectDelay = rawRedirectDelay ? Number(rawRedirectDelay) : null;
+    if (
+      rawRedirectDelay &&
+      (!Number.isInteger(redirectDelay) ||
+        (redirectDelay as number) < 0 ||
+        (redirectDelay as number) > POST_PURCHASE_DELAY_MAX_SECONDS)
+    ) {
+      setRedirectError(
+        `The redirect delay must be a whole number of seconds between 0 and ${POST_PURCHASE_DELAY_MAX_SECONDS}.`,
+      );
+      return;
+    }
+
     onSubmit({
       ...form,
       meta: {
         ...form.meta,
         // Quick-checkout mode must not leave a stale redirect URL behind.
         checkout_url: redirectCheckout ? form.meta.checkout_url : "",
+        post_purchase_redirect_url: purchaseRedirect,
+        // Blank means "use the default countdown", which the thank-you page decides.
+        post_purchase_redirect_delay: redirectDelay ?? "",
       },
     });
   };
@@ -519,6 +546,49 @@ export default function MarketingPageForm({
             />
           </div>
         </div>
+      </div>
+
+      <div className={cardClass}>
+        <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
+          Redirect after purchase
+        </h3>
+        <p className="text-sm text-gray-500">
+          Where a buyer lands once the payment for this campaign goes through. Leave the URL
+          empty to keep whatever the course&apos;s own <strong>Post Purchase</strong> tab says
+          (and the default payment-details page when that is empty too). The thank-you page
+          counts down, shows the course&apos;s join links, and then sends the buyer here.
+        </p>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div className="sm:col-span-2">
+            <Label>Redirect URL</Label>
+            <Input
+              type="url"
+              value={form.meta.post_purchase_redirect_url ?? ""}
+              onChange={(e) => setMeta({ post_purchase_redirect_url: e.target.value })}
+              placeholder="https://studycafe.in/welcome"
+            />
+            <p className="mt-1 text-xs text-gray-400">Must start with http:// or https://</p>
+          </div>
+          <div>
+            <Label>Redirect delay (seconds)</Label>
+            <Input
+              type="number"
+              min="0"
+              max={String(POST_PURCHASE_DELAY_MAX_SECONDS)}
+              value={String(form.meta.post_purchase_redirect_delay ?? "")}
+              onChange={(e) => setMeta({ post_purchase_redirect_delay: e.target.value })}
+              placeholder="10"
+            />
+            <p className="mt-1 text-xs text-gray-400">Defaults to 10 seconds.</p>
+          </div>
+        </div>
+        {redirectCheckout ? (
+          <p className="text-xs text-amber-600 dark:text-amber-500">
+            This page&apos;s buy buttons redirect to a custom checkout URL, so buyers do not
+            pay through this page — the course&apos;s own post-purchase settings apply instead.
+          </p>
+        ) : null}
+        {redirectError ? <p className="text-sm text-red-500">{redirectError}</p> : null}
       </div>
 
       <div className={cardClass}>

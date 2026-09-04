@@ -25,6 +25,10 @@ export interface MarketingPageMeta {
   use_global_faq?: boolean;
   use_course_faq?: boolean;
   checkout_url?: string;
+  /** Where the thank-you page sends buyers who paid through this landing page. Blank = the course's own setting. */
+  post_purchase_redirect_url?: string;
+  /** Seconds the thank-you page counts down before that redirect. Blank = default (10s). */
+  post_purchase_redirect_delay?: number | string;
   stats?: {
     people_coached?: string;
     preferred_by?: string;
