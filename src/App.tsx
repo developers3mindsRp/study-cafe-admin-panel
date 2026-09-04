@@ -118,6 +118,7 @@ import PromoCodeCreate from "./pages/promo-codes/PromoCodeCreate";
 import PromoCodeEdit from "./pages/promo-codes/PromoCodeEdit";
 import CouponUsageDetail from "./pages/promo-codes/CouponUsageDetail";
 import CouponUsageReport from "./pages/promo-codes/CouponUsageReport";
+import PabblyWebhookSettings from "./pages/settings/PabblyWebhookSettings";
 import PaymentLinkList from "./pages/payment-links/PaymentLinkList";
 import PaymentLinkCreate from "./pages/payment-links/PaymentLinkCreate";
 import PaymentLinkEdit from "./pages/payment-links/PaymentLinkEdit";
@@ -155,6 +156,10 @@ const router = createBrowserRouter(
           <Route
             path="/settings/global/payment-gateway"
             element={<PaymentGatewaySettings />}
+          />
+          <Route
+            path="/settings/global/pabbly-webhooks"
+            element={<PabblyWebhookSettings />}
           />
           <Route
             path="/settings/global/display-ads"
