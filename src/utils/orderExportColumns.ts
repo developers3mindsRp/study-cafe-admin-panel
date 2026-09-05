@@ -1,6 +1,6 @@
 import type { OrderRecord } from "../api/orders";
 import type { ExcelColumn } from "./exportToExcel";
-import { exportNum, exportStr } from "./exportHelpers";
+import { exportNum, exportPhone, exportStr } from "./exportHelpers";
 import { orderGatewayLabel } from "./orderGateway";
 
 const str = exportStr;
@@ -19,7 +19,7 @@ export const ORDER_EXPORT_COLUMNS: ExcelColumn<OrderRecord>[] = [
   { header: "Status", accessor: (r) => str(r.status) },
   { header: "Buyer name", accessor: (r) => str(r.buyer_name) },
   { header: "Buyer email", accessor: (r) => str(r.buyer_email) },
-  { header: "Buyer mobile", accessor: (r) => str(r.buyer_mobile) },
+  { header: "Buyer mobile", accessor: (r) => exportPhone(r.buyer_mobile) },
   { header: "Buyer GST", accessor: (r) => str(r.buyer_gst) },
   { header: "Affiliate", accessor: (r) => str(r.affiliate) },
   { header: "Coupon code", accessor: (r) => str(r.coupon_code) },
