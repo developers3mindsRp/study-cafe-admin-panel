@@ -27,10 +27,14 @@ const defaultStats = {
   certificatesIssued: "2,356",
   successRate: "1,892",
 };
+const defaultCta = {
+  backgroundImageUrl: "",
+};
 
 export default function HomeContent() {
   const [hero, setHero] = useState(defaultHero);
   const [stats, setStats] = useState(defaultStats);
+  const [cta, setCta] = useState(defaultCta);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -42,6 +46,7 @@ export default function HomeContent() {
         const m = (data.meta || {}) as Record<string, unknown>;
         if (m.hero && typeof m.hero === "object") setHero({ ...defaultHero, ...(m.hero as object) });
         if (m.stats && typeof m.stats === "object") setStats({ ...defaultStats, ...(m.stats as object) });
+        if (m.cta && typeof m.cta === "object") setCta({ ...defaultCta, ...(m.cta as object) });
       })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
@@ -49,7 +54,7 @@ export default function HomeContent() {
 
   const handleSave = () => {
     setSaving(true);
-    updateCmsPage(SLUG, { title: "Home", meta: { hero, stats } })
+    updateCmsPage(SLUG, { title: "Home", meta: { hero, stats, cta } })
       .then(() => { setSaving(false); })
       .catch(() => { setSaving(false); });
   };
@@ -138,6 +143,30 @@ export default function HomeContent() {
                 value={hero.backgroundImageUrl ?? ""}
                 onChange={(backgroundImageUrl) =>
                   setHero((prev) => ({ ...prev, backgroundImageUrl }))
+                }
+                placeholder={CMS_IMAGE_UPLOAD_PLACEHOLDER}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Call-to-action band */}
+        <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] sm:p-6">
+          <h3 className="mb-4 text-lg font-semibold text-gray-800 dark:text-white/90">
+            Call To Action Banner
+          </h3>
+          <div className="grid grid-cols-1 gap-4">
+            <div>
+              <Label>Background image</Label>
+              <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
+                Background for the &ldquo;Ready to Start Learning?&rdquo; band near the
+                bottom of the home page. Leave empty to keep the default. Best results
+                at roughly 1280&times;295.
+              </p>
+              <ImageUpload
+                value={cta.backgroundImageUrl ?? ""}
+                onChange={(backgroundImageUrl) =>
+                  setCta((prev) => ({ ...prev, backgroundImageUrl }))
                 }
                 placeholder={CMS_IMAGE_UPLOAD_PLACEHOLDER}
               />
