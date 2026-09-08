@@ -129,15 +129,28 @@ export function useAssignCoursesState() {
                         preferredBatchId != null
                             ? batches.find((b) => b.id === preferredBatchId)
                             : undefined;
-                    const chosen = (match ? match.id : batches[0]?.id) ?? preferredBatchId;
+                    /**
+                     * Only ever preselect a batch that actually exists on this course.
+                     *
+                     * `preferredBatchId` comes off the order, and an order outlives what it
+                     * points at: a deleted course keeps its order, whose batch id now
+                     * matches nothing. Seeding it made save call set-batch with a dead
+                     * batch, which course-service rejects with "Batch not found for this
+                     * course" — so every save on such a user failed, permanently.
+                     *
+                     * With no batch selected the save simply skips the course (it filters
+                     * on batchId > 0), which is right: there is no batch to assign it to.
+                     * A course with real batches is unaffected.
+                     */
+                    const chosen = match ? match.id : batches[0]?.id;
                     if (chosen != null) {
                         nextSel[courseId] = chosen;
                     }
                 } catch {
+                    // fetchCourseBatches swallows its own errors and returns [], so this is
+                    // unreachable today. Kept deliberately empty for the same reason as
+                    // above: never seed a batch id we have not confirmed exists.
                     nextMap[courseId] = [];
-                    if (preferredBatchId != null) {
-                        nextSel[courseId] = preferredBatchId;
-                    }
                 }
             }),
         );
