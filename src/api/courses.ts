@@ -386,6 +386,21 @@ export async function removeBatchEnrollment(enrollmentId: number): Promise<void>
 }
 
 /**
+ * Deallot a course from a user — the inverse of setUserCourseBatch.
+ *
+ * Clears the batch enrollment, the course enrollment and the access grant together, so
+ * the user genuinely loses access rather than just leaving a batch. The order and
+ * payment records are kept: the course stays in the user's purchase history and only
+ * disappears from their current allotments.
+ */
+export async function removeUserCourseAllotment(
+  userId: number,
+  courseId: number,
+): Promise<void> {
+  await api.delete(`/admin/users/${userId}/courses/${courseId}`);
+}
+
+/**
  * Atomically set a user's single batch for a course. Removes any other batch of the same course
  * the user was in, then ensures the target enrollment — so switching batches never leaves the user
  * enrolled in two batches at once. Use this (not addBatchEnrollment) when editing an existing user.
@@ -424,6 +439,13 @@ export interface UserEnrollmentRecord {
   wp_post_status?: string | null;
   from_purchase?: boolean;
   is_admin_granted?: boolean;
+  /**
+   * Whether the user still holds an access grant (user_courses) for this course.
+   * `false` means an admin deallotted it — the order remains as the revenue record, but
+   * the course is no longer assigned, so it must not be re-offered as a current
+   * allotment. Older API deployments omit this; treat `undefined` as still granted.
+   */
+  has_access_grant?: boolean;
 }
 
 export interface UserEnrollmentsResponse {
