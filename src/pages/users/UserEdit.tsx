@@ -9,7 +9,12 @@ import Button from "../../components/ui/button/Button";
 import { usersApi, fetchUserMemberships, type User } from "../../api/users";
 import { plansApi, type Plan } from "../../api/plans";
 import { api } from "../../api/axios";
-import { fetchCourses, setUserCourseBatch, fetchUserEnrollments } from "../../api/courses";
+import {
+    fetchCourses,
+    setUserCourseBatch,
+    fetchUserEnrollments,
+    removeUserCourseAllotment,
+} from "../../api/courses";
 import { useAssignCoursesState } from "./hooks/useAssignCoursesState";
 import { CourseBatchAssignSection } from "./components/CourseBatchAssignSection";
 import { FREE_MEMBERSHIP_VALUE } from "./constants/userMembershipOptions";
@@ -54,6 +59,7 @@ export default function UserEdit() {
         batchesLoading,
         coursePrices,
         coursePaymentIds,
+        removedCourseIds,
         handleCourseSelectionChange,
         onBatchChange,
         onPriceChange,
@@ -211,9 +217,28 @@ export default function UserEdit() {
         setPlanFields(prev => ({ ...prev, [name]: value }));
     };
 
+    /** Titles for the confirm dialog — ids alone tell the admin nothing about what they're dropping. */
+    const removedCourseTitles = removedCourseIds.map((cId) => {
+        const match = courses.find((c) => c.id === cId);
+        return match?.title || `Course #${cId}`;
+    });
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!id) return;
+
+        // Deallotment deletes the batch enrollment, the course enrollment and the access
+        // grant. There is no undo, so it is the one part of this form that asks first.
+        if (removedCourseIds.length > 0) {
+            const list = removedCourseTitles.map((t) => `  • ${t}`).join("\n");
+            const confirmed = window.confirm(
+                `Remove ${removedCourseIds.length} course${removedCourseIds.length !== 1 ? "s" : ""} from this user?\n\n${list}\n\n` +
+                "This deletes their batch enrollment and access. Any order and payment records are kept, " +
+                "so the purchase still shows in their history.\n\nThis cannot be undone.",
+            );
+            if (!confirmed) return;
+        }
+
         setSubmitting(true);
         setError(null);
         try {
@@ -282,6 +307,20 @@ export default function UserEdit() {
             // Atomically set exactly one batch per selected course. setUserCourseBatch removes any
             // other batch of the same course first, so switching a user's batch never leaves them
             // enrolled in two batches at once (the "2 batches show" bug).
+            const failures: string[] = [];
+
+            // Deallot first. Running removals before the set-batch calls means a course the
+            // admin removed and re-added in the same edit ends up enrolled, not dropped.
+            for (const cId of removedCourseIds) {
+                try {
+                    await removeUserCourseAllotment(userId, cId);
+                } catch (err) {
+                    const title = courses.find((c) => c.id === cId)?.title || `course ${cId}`;
+                    console.error(`Failed to remove course ${cId}:`, err);
+                    failures.push(`Could not remove ${title}`);
+                }
+            }
+
             const enrollPromises = Object.entries(selectedBatches)
                 .filter(([, batchId]) => Number(batchId) > 0)
                 .map(([courseIdStr, batchId]) => {
@@ -289,12 +328,35 @@ export default function UserEdit() {
                     return setUserCourseBatch(cId, Number(batchId), userId, {
                         price: coursePrices[cId]?.trim() || undefined,
                         paymentId: coursePaymentIds[cId]?.trim() || undefined,
-                    }).catch((err) =>
-                        console.error(`Failed to set batch ${batchId} for course ${cId}:`, err),
-                    );
+                    }).catch((err) => {
+                        const title = courses.find((c) => c.id === cId)?.title || `course ${cId}`;
+                        console.error(`Failed to set batch ${batchId} for course ${cId}:`, err);
+                        failures.push(`Could not assign ${title}`);
+                    });
                 });
             await Promise.all(enrollPromises);
-            toast.success("User updated successfully!");
+
+            // Re-read the server's view so the chips reflect what was actually saved —
+            // a removal that failed reappears instead of looking as though it worked.
+            try {
+                const refreshed = await fetchUserEnrollments(userId);
+                await hydrateFromEnrollments([
+                    ...refreshed.active_courses,
+                    ...refreshed.expired_courses,
+                ]);
+            } catch (err) {
+                console.error("Failed to refresh enrollments after save", err);
+            }
+
+            // Course changes are applied per course, so a failure here does not undo the
+            // profile update that already succeeded — say what worked and what didn't
+            // rather than reporting a clean save.
+            if (failures.length > 0) {
+                setError(`${failures.join(". ")}. Other changes were saved.`);
+                toast.error(`Saved with ${failures.length} course error${failures.length !== 1 ? "s" : ""}`);
+            } else {
+                toast.success("User updated successfully!");
+            }
         } catch (err: any) {
             console.error("Update failed", err);
             setError(err.response?.data?.error || "Failed to update user");

@@ -10,6 +10,16 @@ export function useAssignCoursesState() {
     // Per-course order details entered by the admin. Keyed by courseId.
     const [coursePrices, setCoursePrices] = useState<Record<number, string>>({});
     const [coursePaymentIds, setCoursePaymentIds] = useState<Record<number, string>>({});
+    /**
+     * Courses the user already had that the admin has deselected. Removing a chip only
+     * marks the course here — nothing is deallotted until save, so the change can still
+     * be undone by re-selecting it (which drops it back out of this set).
+     *
+     * Only courses that were loaded from the server belong here: deselecting a course
+     * that was added in this same editing session has nothing to undo on the server.
+     */
+    const [removedCourseIds, setRemovedCourseIds] = useState<number[]>([]);
+    const persistedCourseIdsRef = useRef<Set<number>>(new Set());
 
     const selectedCourseIdsRef = useRef(selectedCourseIds);
     useEffect(() => {
@@ -29,6 +39,18 @@ export function useAssignCoursesState() {
         const added = newIds.filter((id) => !prev.includes(id));
 
         setSelectedCourseIds(newIds);
+
+        // Deselecting a course the user actually holds is a deallotment request; re-adding
+        // it before saving cancels that request. Courses added in this session were never
+        // persisted, so they never enter the set.
+        setRemovedCourseIds((prev) => {
+            const next = new Set(prev);
+            removed.forEach((id) => {
+                if (persistedCourseIdsRef.current.has(id)) next.add(id);
+            });
+            added.forEach((id) => next.delete(id));
+            return [...next];
+        });
 
         if (removed.length) {
             setSelectedBatches((prevB) => {
@@ -74,6 +96,11 @@ export function useAssignCoursesState() {
         const seenCourse = new Set<number>();
         for (const e of enrollments) {
             if (e.course_id == null) continue;
+            // A purchase whose access grant was removed is a past order, not a current
+            // allotment. Listing it here would re-add the chip after every deallot — and
+            // saving would silently re-enroll the user. Older APIs omit the flag, so only
+            // an explicit `false` excludes the course.
+            if (e.has_access_grant === false) continue;
             if (!seenCourse.has(e.course_id)) {
                 seenCourse.add(e.course_id);
                 courseIds.push(e.course_id);
@@ -82,9 +109,12 @@ export function useAssignCoursesState() {
                 preferredBatchByCourse.set(e.course_id, e.batch_id);
             }
         }
-        if (courseIds.length === 0) return;
-
+        // Rebuilt on every hydrate (including the refresh after a save) so the set always
+        // reflects what the server currently holds, never a stale pre-removal list.
+        persistedCourseIdsRef.current = new Set(courseIds);
+        setRemovedCourseIds([]);
         setSelectedCourseIds(courseIds);
+        if (courseIds.length === 0) return;
 
         const nextMap: Record<number, { id: number; name: string }[]> = {};
         const nextSel: Record<number, number> = {};
@@ -140,6 +170,7 @@ export function useAssignCoursesState() {
         batchesLoading,
         coursePrices,
         coursePaymentIds,
+        removedCourseIds,
         handleCourseSelectionChange,
         hydrateFromEnrollments,
         onBatchChange,
