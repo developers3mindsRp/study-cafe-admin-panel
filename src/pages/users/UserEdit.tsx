@@ -60,6 +60,7 @@ export default function UserEdit() {
         coursePrices,
         coursePaymentIds,
         removedCourseIds,
+        isBatchAssignmentChanged,
         handleCourseSelectionChange,
         onBatchChange,
         onPriceChange,
@@ -321,8 +322,16 @@ export default function UserEdit() {
                 }
             }
 
+            // Only courses the admin actually added or moved to a different batch. A
+            // course that is unchanged since load is not re-sent: re-asserting it is at
+            // best a no-op and at worst — if its enrollment rows are missing — reads as a
+            // first enrollment, which mints a ₹0 order and emails the learner. A deallot
+            // save must therefore touch nothing but the removed course.
             const enrollPromises = Object.entries(selectedBatches)
                 .filter(([, batchId]) => Number(batchId) > 0)
+                .filter(([courseIdStr, batchId]) =>
+                    isBatchAssignmentChanged(Number(courseIdStr), Number(batchId)),
+                )
                 .map(([courseIdStr, batchId]) => {
                     const cId = Number(courseIdStr);
                     return setUserCourseBatch(cId, Number(batchId), userId, {

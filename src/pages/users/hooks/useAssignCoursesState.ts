@@ -20,6 +20,14 @@ export function useAssignCoursesState() {
      */
     const [removedCourseIds, setRemovedCourseIds] = useState<number[]>([]);
     const persistedCourseIdsRef = useRef<Set<number>>(new Set());
+    /**
+     * Batch per course exactly as the server reported it on load, so save can send only
+     * what the admin actually changed. Re-asserting every selected course on every save
+     * is not free: for any course whose enrollment rows are missing, course-service
+     * reports a first enrollment and admin-service mints a ₹0 order and emails the
+     * learner. A deallot save must touch nothing but the removed course.
+     */
+    const persistedBatchesRef = useRef<Record<number, number>>({});
 
     const selectedCourseIdsRef = useRef(selectedCourseIds);
     useEffect(() => {
@@ -156,7 +164,19 @@ export function useAssignCoursesState() {
         );
 
         setBatchesMap((prev) => ({ ...prev, ...nextMap }));
+        // Snapshot the server's view before merging it into the editable selection, so
+        // "changed" is always measured against what was actually loaded.
+        persistedBatchesRef.current = { ...nextSel };
         setSelectedBatches((prev) => ({ ...prev, ...nextSel }));
+    }, []);
+
+    /**
+     * True when saving this course would change something on the server: it was added
+     * in this session, or its batch differs from the one loaded. Unchanged courses are
+     * skipped by save entirely.
+     */
+    const isBatchAssignmentChanged = useCallback((courseId: number, batchId: number) => {
+        return persistedBatchesRef.current[courseId] !== batchId;
     }, []);
 
     const onBatchChange = useCallback((courseId: number, batchId: number) => {
@@ -184,6 +204,7 @@ export function useAssignCoursesState() {
         coursePrices,
         coursePaymentIds,
         removedCourseIds,
+        isBatchAssignmentChanged,
         handleCourseSelectionChange,
         hydrateFromEnrollments,
         onBatchChange,
