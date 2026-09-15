@@ -363,7 +363,7 @@ export default function AboutContent() {
 
         <Section
           title="Our Journey"
-          description="The first 7 milestones sit on the illustrated timeline; anything beyond that is listed in a grid underneath it."
+          description="Up to 7 milestones use the illustrated timeline. Add an 8th and the section switches to a vertical timeline that fits any number of them."
         >
           <div>
             <Label>Section title</Label>
