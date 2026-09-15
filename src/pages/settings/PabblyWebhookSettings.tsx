@@ -210,11 +210,10 @@ export default function PabblyWebhookSettings() {
           <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center mb-6">
             <div>
               <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">Pabbly Webhook Rules</h3>
-              {/* <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                On every successful course purchase, rules are checked in priority order (lowest first) — the first
-                rule whose categories match the purchased course fires its webhook. A rule with no categories
-                selected is a catch-all and matches any course.
-              </p> */}
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                On every successful course purchase, every active rule whose categories match the purchased course
+                fires its webhook. A rule with no categories selected matches every course.
+              </p>
             </div>
             {canEdit && (
               <Button type="button" size="sm" onClick={openAddModal}>

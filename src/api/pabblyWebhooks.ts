@@ -7,9 +7,9 @@ export interface PabblyWebhook {
   id: number;
   name: string;
   webhook_url: string;
-  /** Course category ids this rule matches. Empty = catch-all (fires for any course no more specific rule already claimed). */
+  /** Course category ids this rule matches. Empty = catch-all (fires for every course). Every matching rule fires. */
   category_ids: number[];
-  /** Server-derived ordering (category rules always run before a catch-all) — not admin-editable. */
+  /** Server-derived ordering (category rules listed before a catch-all) — not admin-editable. */
   priority: number;
   is_active: boolean;
   created_at: string;
