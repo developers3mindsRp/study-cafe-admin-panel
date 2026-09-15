@@ -105,6 +105,8 @@ export default function AboutContent() {
   );
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [status, setStatus] = useState<"idle" | "saved" | "error">("idle");
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -112,6 +114,9 @@ export default function AboutContent() {
       .then((row) => {
         if (cancelled) return;
         setData(mergeAboutPageFromCmsRecord(row));
+      })
+      .catch(() => {
+        if (!cancelled) setLoadError(true);
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -123,13 +128,15 @@ export default function AboutContent() {
 
   const handleSave = () => {
     setSaving(true);
+    setStatus("idle");
     updateCmsPage(SLUG, {
       title: data.pageTitle,
       content: data.description.bodyHtml,
       meta: aboutPageDataToMetaPayload(data),
     })
-      .then(() => setSaving(false))
-      .catch(() => setSaving(false));
+      .then(() => setStatus("saved"))
+      .catch(() => setStatus("error"))
+      .finally(() => setSaving(false));
   };
 
   /**
@@ -214,6 +221,12 @@ export default function AboutContent() {
       <PageMeta title="About Page Content | StudyCafe Admin" description="Update About page for studycafe.in" />
       <PageBreadcrumb pageTitle="About Page Content" />
       <div className="space-y-6">
+        {loadError ? (
+          <div className="rounded-2xl border border-error-500 bg-error-50 p-4 text-sm text-error-600 dark:bg-error-500/10">
+            Could not load the saved About page — the form below is showing the built-in defaults, so
+            saving now would overwrite the live content. Reload the page before editing.
+          </div>
+        ) : null}
         <Section title="Page & hero">
           <div>
             <Label>Browser / SEO title</Label>
@@ -844,8 +857,16 @@ export default function AboutContent() {
           </div>
         </Section>
 
-        <div className="flex justify-end">
-          <Button onClick={handleSave} size="sm" disabled={loading || saving}>
+        <div className="flex items-center justify-end gap-4">
+          {status === "saved" ? (
+            <span className="text-sm text-success-600">
+              Saved. The live About page picks the change up within a minute.
+            </span>
+          ) : null}
+          {status === "error" ? (
+            <span className="text-sm text-error-500">Could not save. Please try again.</span>
+          ) : null}
+          <Button onClick={handleSave} size="sm" disabled={loading || saving || loadError}>
             {saving ? "Saving…" : "Save Changes"}
           </Button>
         </div>
