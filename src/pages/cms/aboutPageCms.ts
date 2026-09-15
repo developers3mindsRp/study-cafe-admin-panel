@@ -210,6 +210,16 @@ export const DEFAULT_ABOUT_PAGE_DATA: AboutPageData = {
   },
 };
 
+/* ── Blank items + caps for the admin editor ───────────────────────── */
+
+/** Awards block on the public site renders the first 2 certificates only. */
+export const MAX_AWARD_IMAGES = 4;
+
+export const EMPTY_STAT: StatItem = { title: "", value: "", icon: "" };
+export const EMPTY_MILESTONE: Milestone = { year: "", title: "", description: "" };
+export const EMPTY_LEADER: LeaderPerson = { name: "", role: "", image: "", linkedin: "" };
+export const EMPTY_TEAM_MEMBER: TeamMember = { name: "", role: "", image: "", social: {} };
+
 function isRecord(v: unknown): v is Record<string, unknown> {
   return v != null && typeof v === "object" && !Array.isArray(v);
 }
