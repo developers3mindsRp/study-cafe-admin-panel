@@ -46,6 +46,11 @@ export default function PabblyWebhookSettings() {
   const [name, setName] = useState("");
   const [webhookUrl, setWebhookUrl] = useState("");
   const [categoryIds, setCategoryIds] = useState<number[]>([]);
+  // Catch-all vs. specific categories is an explicit choice. Ticking every category is
+  // NOT the same rule: order-service intersects the course's own category ids, so an
+  // explicit list misses courses with no category set and categories added later. Only
+  // an empty list matches every course.
+  const [matchAll, setMatchAll] = useState(true);
   const [isActive, setIsActive] = useState(true);
   const [testingRowId, setTestingRowId] = useState<number | null>(null);
   const [testingModal, setTestingModal] = useState(false);
@@ -78,6 +83,7 @@ export default function PabblyWebhookSettings() {
     setName("");
     setWebhookUrl("");
     setCategoryIds([]);
+    setMatchAll(true);
     setIsActive(true);
     setIsOpen(true);
   };
@@ -88,6 +94,7 @@ export default function PabblyWebhookSettings() {
     setName(item.name);
     setWebhookUrl(item.webhook_url);
     setCategoryIds(item.category_ids);
+    setMatchAll(item.category_ids.length === 0);
     setIsActive(item.is_active);
     setIsOpen(true);
   };
@@ -98,11 +105,14 @@ export default function PabblyWebhookSettings() {
 
     if (!name.trim()) return alert("Name is required");
     if (!webhookUrl.trim()) return alert("Webhook URL is required");
+    if (!matchAll && categoryIds.length === 0) {
+      return alert("Pick at least one category, or choose All courses.");
+    }
 
     const payload = {
       name: name.trim(),
       webhook_url: webhookUrl.trim(),
-      category_ids: categoryIds,
+      category_ids: matchAll ? [] : categoryIds,
       is_active: isActive,
     };
 
@@ -347,16 +357,51 @@ export default function PabblyWebhookSettings() {
           </div>
 
           <div>
-            <Label>Course Categories</Label>
-            <CourseCatMultiSelect
-              categories={categories}
-              value={categoryIds}
-              onChange={setCategoryIds}
-              placeholder="Leave empty for catch-all…"
-            />
-            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              Leave empty to make this a catch-all rule that matches any course.
-            </p>
+            <Label>Which course purchases fire this?</Label>
+            <div className="mt-1 space-y-2">
+              <label className="flex cursor-pointer items-start gap-2">
+                <input
+                  type="radio"
+                  name="pw-match"
+                  className="mt-0.5 h-4 w-4 border-gray-300 text-brand-600 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-900"
+                  checked={matchAll}
+                  onChange={() => setMatchAll(true)}
+                />
+                <span className="select-none text-sm text-gray-700 dark:text-white/80">
+                  All courses
+                  <span className="block text-xs text-gray-500 dark:text-gray-400">
+                    Catch-all — also covers courses with no category set, and categories added later.
+                  </span>
+                </span>
+              </label>
+              <label className="flex cursor-pointer items-start gap-2">
+                <input
+                  type="radio"
+                  name="pw-match"
+                  className="mt-0.5 h-4 w-4 border-gray-300 text-brand-600 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-900"
+                  checked={!matchAll}
+                  onChange={() => setMatchAll(false)}
+                />
+                <span className="select-none text-sm text-gray-700 dark:text-white/80">
+                  Only these categories
+                </span>
+              </label>
+            </div>
+
+            {!matchAll && (
+              <div className="mt-2">
+                <CourseCatMultiSelect
+                  categories={categories}
+                  value={categoryIds}
+                  onChange={setCategoryIds}
+                  placeholder="Select categories…"
+                />
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  Only courses linked to one of these categories fire this webhook. A course with no
+                  category set will not match — pick All courses for that.
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-2 pt-2">
