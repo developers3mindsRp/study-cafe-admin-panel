@@ -2,6 +2,7 @@ import type { OrderRecord } from "../api/orders";
 import type { ExcelColumn } from "./exportToExcel";
 import { exportNum, exportPhone, exportStr } from "./exportHelpers";
 import { orderGatewayLabel } from "./orderGateway";
+import { formatDateTimeExport } from "./formatDate";
 
 const str = exportStr;
 const num = exportNum;
@@ -27,7 +28,7 @@ export const ORDER_EXPORT_COLUMNS: ExcelColumn<OrderRecord>[] = [
   { header: "Original amount", accessor: (r) => num(r.original_amount) },
   { header: "Gateway", accessor: (r) => orderGatewayLabel(r.gateway) },
   { header: "Batch ID", accessor: (r) => (r.batch_id != null ? r.batch_id : "") },
-  { header: "Created at", accessor: (r) => str(r.created_at) },
+  { header: "Created at", accessor: (r) => formatDateTimeExport(r.created_at) },
   { header: "Payment ID", accessor: (r) => str(r.payment_id) },
   { header: "Refund amount", accessor: (r) => num(r.refund_amount) },
   { header: "Refund remarks", accessor: (r) => str(r.refund_remarks) },

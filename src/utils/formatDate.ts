@@ -87,3 +87,23 @@ export function istCalendarYmd(iso?: string | null): string {
   if (Number.isNaN(d.getTime())) return "";
   return d.toLocaleDateString("en-CA", { timeZone: IST });
 }
+
+/**
+ * Format a datetime string as "2026-09-21 17:29" (IST) for spreadsheet exports.
+ * Sortable, unambiguous, and matches the IST wall-clock shown in the admin tables —
+ * the raw API value is an instant (UTC-suffixed), so it must not be written as-is.
+ * Returns "" (not "—") because export cells are blank when a value is missing.
+ */
+export function formatDateTimeExport(iso?: string | null): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const date = d.toLocaleDateString("en-CA", { timeZone: IST });
+  const time = d.toLocaleTimeString("en-GB", {
+    timeZone: IST,
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  });
+  return `${date} ${time}`;
+}
