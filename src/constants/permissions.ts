@@ -123,6 +123,13 @@ export const PERM_PAYMENT_LINKS_CREATE = "payment_links:create";
 export const PERM_PAYMENT_LINKS_EDIT = "payment_links:edit";
 export const PERM_PAYMENT_LINKS_DELETE = "payment_links:delete";
 
+// Certificate Links (public certificate download links)
+export const PERM_CERTIFICATE_LINKS_LIST = "certificate_links:list";
+export const PERM_CERTIFICATE_LINKS_VIEW = "certificate_links:view";
+export const PERM_CERTIFICATE_LINKS_CREATE = "certificate_links:create";
+export const PERM_CERTIFICATE_LINKS_EDIT = "certificate_links:edit";
+export const PERM_CERTIFICATE_LINKS_DELETE = "certificate_links:delete";
+
 // Live Sessions
 export const PERM_LIVE_SESSIONS_LIST = "live_sessions:list";
 export const PERM_LIVE_SESSIONS_VIEW = "live_sessions:view";
