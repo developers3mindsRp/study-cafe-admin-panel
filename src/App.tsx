@@ -122,6 +122,10 @@ import PabblyWebhookSettings from "./pages/settings/PabblyWebhookSettings";
 import PaymentLinkList from "./pages/payment-links/PaymentLinkList";
 import PaymentLinkCreate from "./pages/payment-links/PaymentLinkCreate";
 import PaymentLinkEdit from "./pages/payment-links/PaymentLinkEdit";
+import CertificateLinkList from "./pages/certificate-links/CertificateLinkList";
+import CertificateLinkCreate from "./pages/certificate-links/CertificateLinkCreate";
+import CertificateLinkEdit from "./pages/certificate-links/CertificateLinkEdit";
+import CertificateLinkClaims from "./pages/certificate-links/CertificateLinkClaims";
 import ContactInquiryList from "./pages/contact-inquiries/ContactInquiryList";
 import ContactInquiryView from "./pages/contact-inquiries/ContactInquiryView";
 import AffiliateHistory from "./pages/affiliate/AffiliateHistory";
@@ -334,6 +338,20 @@ const router = createBrowserRouter(
           </Route>
           <Route path="/payment-links/:id/edit" element={<RequirePermissionRoute permissions={["payment_links:edit"]} />}>
             <Route index element={<PaymentLinkEdit />} />
+          </Route>
+
+          {/* Certificate Links — public certificate download links */}
+          <Route path="/certificate-links" element={<RequirePermissionRoute permissions={["certificate_links:list"]} />}>
+            <Route index element={<CertificateLinkList />} />
+          </Route>
+          <Route path="/certificate-links/create" element={<RequirePermissionRoute permissions={["certificate_links:create"]} />}>
+            <Route index element={<CertificateLinkCreate />} />
+          </Route>
+          <Route path="/certificate-links/:id/edit" element={<RequirePermissionRoute permissions={["certificate_links:edit"]} />}>
+            <Route index element={<CertificateLinkEdit />} />
+          </Route>
+          <Route path="/certificate-links/:id/claims" element={<RequirePermissionRoute permissions={["certificate_links:view"]} />}>
+            <Route index element={<CertificateLinkClaims />} />
           </Route>
 
           {/* Memberships */}

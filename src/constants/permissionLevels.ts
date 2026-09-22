@@ -237,6 +237,17 @@ export const MODULE_LEVELS: ModuleConfig[] = [
     ],
   },
   {
+    key: "certificate_links",
+    name: "Certificate Links",
+    levels: [
+      { value: "none", label: "None", permissions: [] },
+      { value: "view", label: "View only", permissions: ["certificate_links:list", "certificate_links:view"] },
+      { value: "edit", label: "Edit (includes view)", permissions: ["certificate_links:list", "certificate_links:view", "certificate_links:edit"] },
+      { value: "create", label: "Create (includes view, edit)", permissions: ["certificate_links:list", "certificate_links:view", "certificate_links:edit", "certificate_links:create"] },
+      { value: "delete", label: "Delete / Full", permissions: ["certificate_links:list", "certificate_links:view", "certificate_links:edit", "certificate_links:create", "certificate_links:delete"] },
+    ],
+  },
+  {
     key: "payment_links",
     name: "Payment Links",
     levels: [
@@ -339,6 +350,7 @@ export const PERMISSION_NAV_GROUPS: PermissionNavGroup[] = [
   { name: "Orders", modules: [{ key: "orders" }] },
   { name: "Coupons", modules: [{ key: "coupons" }] },
   { name: "Payment Links", modules: [{ key: "payment_links" }] },
+  { name: "Certificate Links", modules: [{ key: "certificate_links" }] },
   { name: "Memberships", modules: [{ key: "memberships" }] },
   { name: "Media", modules: [{ key: "media" }] },
   {
