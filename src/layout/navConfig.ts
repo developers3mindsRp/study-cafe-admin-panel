@@ -92,21 +92,22 @@ export const mainNavItemsConfig: NavItemConfig[] = [
       "payment_links:delete",
     ],
   },
-  {
-    iconKey: "docs",
-    name: "Certificate Links",
-    subItems: [
-      { name: "All Links", path: "/certificate-links", requiredPermission: ["certificate_links:list", "certificate_links:view"] },
-      { name: "Create", path: "/certificate-links/create", requiredPermission: ["certificate_links:create"] },
-    ],
-    requiredPermission: [
-      "certificate_links:list",
-      "certificate_links:view",
-      "certificate_links:create",
-      "certificate_links:edit",
-      "certificate_links:delete",
-    ],
-  },
+  // Certificate Links hidden for now — uncomment to re-enable
+//   {
+//     iconKey: "docs",
+//     name: "Certificate Links",
+//     subItems: [
+//       { name: "All Links", path: "/certificate-links", requiredPermission: ["certificate_links:list", "certificate_links:view"] },
+//       { name: "Create", path: "/certificate-links/create", requiredPermission: ["certificate_links:create"] },
+//     ],
+//     requiredPermission: [
+//       "certificate_links:list",
+//       "certificate_links:view",
+//       "certificate_links:create",
+//       "certificate_links:edit",
+//       "certificate_links:delete",
+//     ],
+//   },
   {
     iconKey: "group",
     name: "Memberships",
