@@ -129,6 +129,10 @@ export default function UserCreate() {
         setPlanFields(prev => ({ ...prev, [name]: value }));
     };
 
+    // A membership and the courses allotted with it are normally one payment, so a course
+    // row left blank is recorded against the membership's payment ID (shown on the row).
+    const membershipPaymentId = formData.membership ? planFields.payment_id.trim() : "";
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
@@ -162,6 +166,7 @@ export default function UserCreate() {
             const createdUser = await usersApi.create(payload);
             const userId = Number(createdUser.id);
 
+            const unrecordedOrders: string[] = [];
             const enrollPromises = Object.entries(selectedBatches)
                 .filter(([, batchId]) => Number(batchId) > 0)
                 .map(([courseIdStr, batchId]) => {
@@ -169,12 +174,25 @@ export default function UserCreate() {
                     return addBatchEnrollment(Number(batchId), userId, {
                         courseId: cId,
                         price: coursePrices[cId]?.trim() || undefined,
-                        paymentId: coursePaymentIds[cId]?.trim() || undefined,
+                        paymentId: coursePaymentIds[cId]?.trim() || membershipPaymentId || undefined,
+                    }).then((res) => {
+                        if (res.orderCreated === false) {
+                            const title = courses.find((c) => c.id === cId)?.title || `course ${cId}`;
+                            unrecordedOrders.push(`${title}: ${res.orderError || "unknown error"}`);
+                        }
                     }).catch((err) =>
                         console.error(`Failed to enroll in batch ${batchId}:`, err),
                     );
                 });
             await Promise.all(enrollPromises);
+
+            // The user and enrollments exist either way; only the order record is missing.
+            if (unrecordedOrders.length > 0) {
+                alert(
+                    "User created, but these courses were assigned without an order or payment record:\n\n" +
+                        unrecordedOrders.join("\n"),
+                );
+            }
 
             navigate("/users");
         } catch (err: unknown) {
@@ -544,6 +562,7 @@ export default function UserCreate() {
                         coursePaymentIds={coursePaymentIds}
                         onPriceChange={onPriceChange}
                         onPaymentIdChange={onPaymentIdChange}
+                        fallbackPaymentId={membershipPaymentId}
                         description="Search and pick one or more courses, choose a batch for each, then create the user — enrollments run right after the account is created."
                     />
 
