@@ -367,12 +367,22 @@ export async function fetchBatchEnrollments(batchId: number): Promise<BatchEnrol
   }
 }
 
+/**
+ * Present when the call booked a course order (a first enrollment). The enrollment
+ * stands either way; `orderCreated: false` means access was granted but no order or
+ * payment was recorded, which the admin needs to hear about.
+ */
+export interface AllotmentOrderOutcome {
+  orderCreated?: boolean;
+  orderError?: string | null;
+}
+
 export async function addBatchEnrollment(
   batchId: number,
   userId: number,
   opts?: { price?: string; paymentId?: string; courseId?: number },
-): Promise<BatchEnrollmentRecord> {
-  const res = await api.post<BatchEnrollmentRecord>(`/admin/batches/${batchId}/enrollments`, {
+): Promise<BatchEnrollmentRecord & AllotmentOrderOutcome> {
+  const res = await api.post<BatchEnrollmentRecord & AllotmentOrderOutcome>(`/admin/batches/${batchId}/enrollments`, {
     user_id: userId,
     ...(opts?.price ? { price: opts.price } : {}),
     ...(opts?.paymentId ? { paymentId: opts.paymentId } : {}),
@@ -410,7 +420,7 @@ export async function setUserCourseBatch(
   batchId: number,
   userId: number,
   opts?: { price?: string; paymentId?: string },
-): Promise<{ batch_id: number; user_id: number; created: boolean; firstEnrollment: boolean }> {
+): Promise<{ batch_id: number; user_id: number; created: boolean; firstEnrollment: boolean } & AllotmentOrderOutcome> {
   const res = await api.post(`/admin/courses/${courseId}/set-batch`, {
     user_id: userId,
     batch_id: batchId,

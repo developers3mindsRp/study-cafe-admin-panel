@@ -14,6 +14,12 @@ export interface CourseBatchAssignSectionProps {
     coursePaymentIds: Record<number, string>;
     onPriceChange: (courseId: number, price: string) => void;
     onPaymentIdChange: (courseId: number, paymentId: string) => void;
+    /**
+     * The membership payment ID entered on the same form. A course row left blank is
+     * recorded against it, because a membership and the courses allotted with it are
+     * normally one payment. Shown on each blank row so the admin can see and override it.
+     */
+    fallbackPaymentId?: string;
     title?: string;
     description?: string;
     multiselectLabel?: string;
@@ -31,6 +37,7 @@ export function CourseBatchAssignSection({
     coursePaymentIds,
     onPriceChange,
     onPaymentIdChange,
+    fallbackPaymentId,
     title = "Assign Courses",
     description,
     multiselectLabel = "Courses",
@@ -119,7 +126,7 @@ export function CourseBatchAssignSection({
                                             <div>
                                                 <Label>Price</Label>
                                                 <p className="mb-1 text-xs text-brand-500 italic">
-                                                    Only if different from the course selling price.
+                                                    Amount paid for this course. Blank records ₹0 (e.g. included in the membership).
                                                 </p>
                                                 <input
                                                     type="number"
@@ -136,9 +143,16 @@ export function CourseBatchAssignSection({
                                                     type="text"
                                                     value={coursePaymentIds[courseId] ?? ""}
                                                     onChange={(e) => onPaymentIdChange(courseId, e.target.value)}
-                                                    placeholder="Payment ID"
+                                                    placeholder={fallbackPaymentId || "Payment ID"}
                                                     className="mt-[22px] w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-brand-500 focus:outline-none dark:border-gray-700 dark:text-white dark:placeholder:text-gray-500"
                                                 />
+                                                {fallbackPaymentId && !coursePaymentIds[courseId]?.trim() && (
+                                                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                                        Blank — will use the membership payment ID{" "}
+                                                        <span className="font-mono">{fallbackPaymentId}</span>. Type
+                                                        another ID if this course was paid separately.
+                                                    </p>
+                                                )}
                                             </div>
                                         </div>
                                     </div>

@@ -224,6 +224,13 @@ export default function UserEdit() {
         return match?.title || `Course #${cId}`;
     });
 
+    // A membership and the courses allotted with it are normally one payment, so a course
+    // row left blank is recorded against the membership's payment ID (shown on the row).
+    const membershipPaymentId =
+        formData.membership && formData.membership !== FREE_MEMBERSHIP_VALUE
+            ? planFields.payment_id.trim()
+            : "";
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!id) return;
@@ -245,6 +252,7 @@ export default function UserEdit() {
         try {
             await usersApi.update(id, formData);
             const userId = Number(id);
+            const failures: string[] = [];
 
             const newMembership = formData.membership || "";
             const membershipChanged = newMembership && newMembership !== originalMembership;
@@ -282,7 +290,7 @@ export default function UserEdit() {
 
                 if (membershipChanged) {
                     // Full re-grant: creates a new user_memberships row + updates users.plan
-                    await api.post(`/admin/users/${id}/membership`, {
+                    const grant = await api.post<{ orderCreated?: boolean; orderError?: string | null }>(`/admin/users/${id}/membership`, {
                         membershipType: newMembership,
                         startsAt: from.toISOString(),
                         expiresAt: expiryDate.toISOString(),
@@ -292,6 +300,11 @@ export default function UserEdit() {
                         planPurchasedFormatted: planFields.plan_purchased || undefined,
                         planExpiryFormatted: planFields.plan_expiry || toDatetimeLocal(expiryDate),
                     });
+                    if (grant.data?.orderCreated === false) {
+                        failures.push(
+                            `Membership was granted but its order was not recorded (${grant.data.orderError || "unknown error"})`,
+                        );
+                    }
                 } else {
                     // Same plan — only update the plan JSON on users.plan (payment details changed)
                     const planJson = {
@@ -308,7 +321,6 @@ export default function UserEdit() {
             // Atomically set exactly one batch per selected course. setUserCourseBatch removes any
             // other batch of the same course first, so switching a user's batch never leaves them
             // enrolled in two batches at once (the "2 batches show" bug).
-            const failures: string[] = [];
 
             // Deallot first. Running removals before the set-batch calls means a course the
             // admin removed and re-added in the same edit ends up enrolled, not dropped.
@@ -334,11 +346,17 @@ export default function UserEdit() {
                 )
                 .map(([courseIdStr, batchId]) => {
                     const cId = Number(courseIdStr);
+                    const title = courses.find((c) => c.id === cId)?.title || `course ${cId}`;
                     return setUserCourseBatch(cId, Number(batchId), userId, {
                         price: coursePrices[cId]?.trim() || undefined,
-                        paymentId: coursePaymentIds[cId]?.trim() || undefined,
+                        paymentId: coursePaymentIds[cId]?.trim() || membershipPaymentId || undefined,
+                    }).then((res) => {
+                        if (res.orderCreated === false) {
+                            failures.push(
+                                `${title} was assigned but its order was not recorded (${res.orderError || "unknown error"})`,
+                            );
+                        }
                     }).catch((err) => {
-                        const title = courses.find((c) => c.id === cId)?.title || `course ${cId}`;
                         console.error(`Failed to set batch ${batchId} for course ${cId}:`, err);
                         failures.push(`Could not assign ${title}`);
                     });
@@ -362,7 +380,7 @@ export default function UserEdit() {
             // rather than reporting a clean save.
             if (failures.length > 0) {
                 setError(`${failures.join(". ")}. Other changes were saved.`);
-                toast.error(`Saved with ${failures.length} course error${failures.length !== 1 ? "s" : ""}`);
+                toast.error(`Saved with ${failures.length} error${failures.length !== 1 ? "s" : ""}`);
             } else {
                 toast.success("User updated successfully!");
             }
@@ -732,6 +750,7 @@ export default function UserEdit() {
                         coursePaymentIds={coursePaymentIds}
                         onPriceChange={onPriceChange}
                         onPaymentIdChange={onPaymentIdChange}
+                        fallbackPaymentId={membershipPaymentId}
                         description="Search and select courses, pick a batch for each, then save — new or updated batch enrollments are applied after the profile is saved."
                     />
 
