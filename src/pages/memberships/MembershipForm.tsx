@@ -6,7 +6,7 @@ import TextArea from "../../components/form/input/TextArea";
 import { ChipMultiSelect } from "../../components/form/ChipMultiSelect";
 import Button from "../../components/ui/button/Button";
 import { api } from "../../api/axios";
-import { planIsLifetime } from "./membershipUtils";
+import { planIsLifetime, planWebsiteUrl } from "./membershipUtils";
 import { slugifyForSeo, shouldResyncSlugFromSource } from "../../lib/slug";
 
 export interface CourseOption {
@@ -49,6 +49,7 @@ export interface MembershipFormData {
   is_lifetime: boolean;
   features_included: string;
   is_active: boolean;
+  hide_from_public: boolean;
   is_popular: boolean;
   sort_order: number;
   tier_rank: number;
@@ -76,6 +77,7 @@ const emptyFormData: MembershipFormData = {
   is_lifetime: false,
   features_included: "",
   is_active: true,
+  hide_from_public: false,
   is_popular: false,
   sort_order: 0,
   tier_rank: 0,
@@ -404,6 +406,25 @@ export default function MembershipForm({
               className="rounded border-gray-300"
             />
             <Label htmlFor="is_popular" className="!mb-0">Mark as Most Popular</Label>
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="hide_from_public"
+                checked={formData.hide_from_public}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, hide_from_public: e.target.checked }))
+                }
+                className="rounded border-gray-300"
+              />
+              <Label htmlFor="hide_from_public" className="!mb-0">Hide from Public (Unlisted)</Label>
+            </div>
+            <p className="mt-1 text-theme-xs text-gray-500 dark:text-gray-400">
+              Not shown on the Plans page or home page. Still opens and can be bought via the direct link
+              {planWebsiteUrl(formData) ? `: ${planWebsiteUrl(formData)}` : ""} (copy it from the Memberships list
+              or the membership's View page).
+            </p>
           </div>
         </div>
       </div>

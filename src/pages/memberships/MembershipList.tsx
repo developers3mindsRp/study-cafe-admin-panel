@@ -12,7 +12,9 @@ import { RequirePermission } from "../../components/auth/RequirePermission";
 import { PERM_MEMBERSHIPS_CREATE, PERM_MEMBERSHIPS_EDIT, PERM_MEMBERSHIPS_DELETE } from "../../constants/permissions";
 import { plansApi, type Plan } from "../../api/plans";
 import { withClientPagination } from "../../utils/dataTableUtils";
-import { planIsLifetime } from "./membershipUtils";
+import { planIsLifetime, planWebsiteUrl } from "./membershipUtils";
+import { WebsiteViewLink } from "../../components/common/WebsiteLink";
+import { CopyUrlButton } from "../../components/media/CopyUrlButton";
 
 function PopularToggle({ plan, onChanged }: { plan: Plan; onChanged: () => void }) {
   const [toggling, setToggling] = useState(false);
@@ -135,9 +137,21 @@ export default function MembershipList() {
       header: "Status",
       sortable: true,
       render: (row: Plan) => (
-        <Badge size="sm" color={row.is_active ? "success" : "error"}>
-          {row.is_active ? "Active" : "Inactive"}
-        </Badge>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <Badge size="sm" color={row.is_active ? "success" : "error"}>
+            {row.is_active ? "Active" : "Inactive"}
+          </Badge>
+          {row.hide_from_public ? (
+            <span
+              title="Not shown on the public Plans page or home page. Still open and purchasable via its direct link."
+              className="inline-flex"
+            >
+              <Badge size="sm" color="warning">
+                Unlisted
+              </Badge>
+            </span>
+          ) : null}
+        </div>
       ),
     },
     {
@@ -164,8 +178,16 @@ export default function MembershipList() {
       header: "Actions",
       align: "end" as const,
       sortable: false,
-      render: (row: Plan) => (
+      render: (row: Plan) => {
+        const websiteUrl = planWebsiteUrl(row);
+        return (
         <div className="flex items-center justify-end gap-2">
+          {websiteUrl ? (
+            <>
+              <WebsiteViewLink href={websiteUrl} label="Website" />
+              <CopyUrlButton url={websiteUrl} className="whitespace-nowrap px-2.5 py-2 text-sm" />
+            </>
+          ) : null}
           <Link
             to={`/memberships/${row.id}`}
             className="inline-flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-2 text-sm text-gray-600 transition hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
@@ -196,7 +218,8 @@ export default function MembershipList() {
             </button>
           </RequirePermission>
         </div>
-      ),
+        );
+      },
     },
   ];
 
