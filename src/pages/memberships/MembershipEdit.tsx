@@ -49,6 +49,7 @@ export default function MembershipEdit() {
         is_lifetime: planIsLifetime(plan),
         features_included: featuresIncludedHtml,
         is_active: plan.is_active,
+        hide_from_public: Boolean(plan.hide_from_public),
         is_popular: plan.is_popular ?? false,
         sort_order: plan.sort_order ?? 0,
         tier_rank: plan.tier_rank ?? 0,

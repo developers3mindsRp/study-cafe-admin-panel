@@ -20,6 +20,8 @@ export interface Plan {
     sort_order: number;
     tier_rank: number;
     is_active: boolean;
+    /** Unlisted: hidden from the public plans page/home, still open and buyable via /plans/<slug>. */
+    hide_from_public?: boolean;
     is_popular?: boolean;
     course_ids?: number[];
     course_cat_ids?: number[];

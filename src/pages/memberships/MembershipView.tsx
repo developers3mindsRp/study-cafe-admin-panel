@@ -12,7 +12,8 @@ import {
 } from "../../constants/permissions";
 import { plansApi, type Plan, type MembershipFeatures } from "../../api/plans";
 import { usersApi, type User } from "../../api/users";
-import { planIsLifetime } from "./membershipUtils";
+import { planIsLifetime, planWebsiteUrl } from "./membershipUtils";
+import { CopyUrlButton } from "../../components/media/CopyUrlButton";
 import { MembershipUpgradeModal } from "../../components/membership/MembershipUpgradeModal";
 
 function FeaturesDisplay({ features }: { features: Plan["features"] }) {
@@ -204,6 +205,8 @@ export default function MembershipView() {
   if (!membership)
     return <div className="p-6 text-center">Membership not found</div>;
 
+  const websiteUrl = planWebsiteUrl(membership);
+
   return (
     <>
       <PageMeta
@@ -248,12 +251,19 @@ export default function MembershipView() {
               <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">
                 Membership Details
               </h3>
-              <Badge
-                size="sm"
-                color={membership.is_active ? "success" : "error"}
-              >
-                {membership.is_active ? "Active" : "Inactive"}
-              </Badge>
+              <div className="flex flex-wrap items-center gap-1.5">
+                <Badge
+                  size="sm"
+                  color={membership.is_active ? "success" : "error"}
+                >
+                  {membership.is_active ? "Active" : "Inactive"}
+                </Badge>
+                {membership.hide_from_public ? (
+                  <Badge size="sm" color="warning">
+                    Unlisted
+                  </Badge>
+                ) : null}
+              </div>
             </div>
             <div>
               <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
@@ -270,6 +280,31 @@ export default function MembershipView() {
               <p className="text-gray-800 dark:text-white/90 font-mono text-sm">
                 {membership.slug}
               </p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                Website Link
+              </p>
+              {websiteUrl ? (
+                <div className="flex flex-wrap items-center gap-2">
+                  <a
+                    href={websiteUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="break-all font-mono text-sm text-brand-500 hover:underline"
+                  >
+                    {websiteUrl}
+                  </a>
+                  <CopyUrlButton url={websiteUrl} />
+                </div>
+              ) : (
+                <p className="text-sm text-gray-400">Inactive — no public link</p>
+              )}
+              {membership.hide_from_public && websiteUrl ? (
+                <p className="mt-1 text-theme-xs text-gray-500 dark:text-gray-400">
+                  Unlisted: not shown on the Plans page, only reachable through this link.
+                </p>
+              ) : null}
             </div>
             <div>
               <p className="text-sm font-medium text-gray-500 dark:text-gray-400">

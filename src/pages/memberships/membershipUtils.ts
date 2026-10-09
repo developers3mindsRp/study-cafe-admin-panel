@@ -1,3 +1,14 @@
+import { getWebsiteUrl } from "../../config/env";
+
+/**
+ * Public website link for a plan (/plans/<slug>), shareable even when the plan is
+ * unlisted (hide_from_public). Null for inactive plans — the website shows "Plan not found".
+ */
+export function planWebsiteUrl(plan: { is_active?: boolean | number | null; slug?: string | null }): string | null {
+  if (!plan.is_active || !plan.slug) return null;
+  return `${getWebsiteUrl()}/plans/${encodeURIComponent(plan.slug)}`;
+}
+
 /**
  * Whether a membership plan should be shown as "Lifetime" in the admin UI.
  * Handles MySQL booleans as 0/1, string values, and legacy rows that used a long
