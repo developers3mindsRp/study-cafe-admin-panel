@@ -6,6 +6,7 @@ import TextArea from "../../components/form/input/TextArea";
 import { ChipMultiSelect } from "../../components/form/ChipMultiSelect";
 import Button from "../../components/ui/button/Button";
 import { api } from "../../api/axios";
+import type { MembershipFeatures, Plan } from "../../api/plans";
 import { planIsLifetime, planWebsiteUrl } from "./membershipUtils";
 import { slugifyForSeo, shouldResyncSlugFromSource } from "../../lib/slug";
 
@@ -57,6 +58,52 @@ export interface MembershipFormData {
   course_cat_ids: number[];
   /** Percent of paid order for affiliate (0–100). */
   affiliate_commission: number;
+}
+
+/** Map a plan fetched from the API into form values (shared by Edit and Duplicate). */
+export function planToFormData(plan: Plan): Partial<MembershipFormData> {
+  // Deserialize features: can be { mrp, included, excluded } object or legacy string[]
+  let mrp = 0;
+  let featuresIncludedHtml = "";
+
+  if (plan.features && !Array.isArray(plan.features) && typeof plan.features === "object") {
+    const feat = plan.features as MembershipFeatures;
+    mrp = feat.mrp ?? 0;
+    featuresIncludedHtml = arrayToFeaturesHtml(feat.included ?? []);
+  } else if (Array.isArray(plan.features) && plan.features.length > 0) {
+    // Legacy flat string[] — treat all as included
+    featuresIncludedHtml = arrayToFeaturesHtml(plan.features as string[]);
+  }
+
+  return {
+    name: plan.name,
+    slug: plan.slug,
+    description: plan.description,
+    price: Number(plan.price),
+    mrp,
+    currency: plan.currency,
+    duration_days: plan.duration_days ?? 365,
+    is_lifetime: planIsLifetime(plan),
+    features_included: featuresIncludedHtml,
+    is_active: plan.is_active,
+    hide_from_public: Boolean(plan.hide_from_public),
+    is_popular: plan.is_popular ?? false,
+    sort_order: plan.sort_order ?? 0,
+    tier_rank: plan.tier_rank ?? 0,
+    course_ids: Array.isArray(plan.course_ids) ? plan.course_ids : [],
+    course_cat_ids: Array.isArray(plan.course_cat_ids) ? plan.course_cat_ids : [],
+    affiliate_commission: Math.min(
+      100,
+      Math.max(
+        0,
+        Number(
+          plan.affiliate_commission != null && plan.affiliate_commission !== ""
+            ? plan.affiliate_commission
+            : 0,
+        ) || 0,
+      ),
+    ),
+  };
 }
 
 interface MembershipFormProps {
