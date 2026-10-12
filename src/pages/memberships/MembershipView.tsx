@@ -7,6 +7,7 @@ import { ConfirmDeleteModal } from "../../components/ui/modal/ConfirmDeleteModal
 import { useModal } from "../../hooks/useModal";
 import { RequirePermission } from "../../components/auth/RequirePermission";
 import {
+  PERM_MEMBERSHIPS_CREATE,
   PERM_MEMBERSHIPS_EDIT,
   PERM_MEMBERSHIPS_DELETE,
 } from "../../constants/permissions";
@@ -226,6 +227,17 @@ export default function MembershipView() {
                 className="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-medium text-white transition bg-brand-500 shadow-theme-xs hover:bg-brand-600"
               >
                 Edit
+              </Link>
+            </RequirePermission>
+            <RequirePermission
+              permissions={[PERM_MEMBERSHIPS_CREATE]}
+              fallback={null}
+            >
+              <Link
+                to={`/memberships/create?duplicateFrom=${encodeURIComponent(String(id))}`}
+                className="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-medium text-gray-700 transition bg-white ring-1 ring-inset ring-gray-300 shadow-theme-xs hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:ring-gray-700 dark:hover:bg-white/[0.03] dark:hover:text-gray-300"
+              >
+                Duplicate
               </Link>
             </RequirePermission>
             <RequirePermission
