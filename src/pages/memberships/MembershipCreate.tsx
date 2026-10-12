@@ -1,14 +1,55 @@
-import { useNavigate } from "react-router";
+import { useNavigate, useSearchParams } from "react-router";
 import MembershipForm, { type MembershipFormData, parseFeaturesToArray } from "./MembershipForm";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
 import { plansApi } from "../../api/plans";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { getApiErrorMessage } from "../../lib/apiError";
+import { buildMembershipDuplicateInitial } from "../../lib/membershipDuplicate";
 
 export default function MembershipCreate() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const duplicateFrom = searchParams.get("duplicateFrom")?.trim() || "";
   const [loading, setLoading] = useState(false);
+  const [duplicateInitial, setDuplicateInitial] = useState<Partial<MembershipFormData> | null>(null);
+  const [duplicateLoadError, setDuplicateLoadError] = useState<string | null>(null);
+  const [duplicateLoading, setDuplicateLoading] = useState(Boolean(duplicateFrom));
+
+  useEffect(() => {
+    if (!duplicateFrom) {
+      setDuplicateInitial(null);
+      setDuplicateLoadError(null);
+      setDuplicateLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setDuplicateLoading(true);
+    setDuplicateLoadError(null);
+    plansApi
+      .get(duplicateFrom)
+      .then((plan) => {
+        if (cancelled) return;
+        if (!plan) {
+          setDuplicateLoadError("Membership not found.");
+          setDuplicateInitial(null);
+          return;
+        }
+        setDuplicateInitial(buildMembershipDuplicateInitial(plan));
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setDuplicateLoadError("Could not load membership to duplicate.");
+          setDuplicateInitial(null);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setDuplicateLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [duplicateFrom]);
 
   const handleSubmit = async (formData: MembershipFormData) => {
     try {
@@ -47,14 +88,51 @@ export default function MembershipCreate() {
     }
   };
 
+  if (duplicateFrom && duplicateLoading) {
+    return (
+      <>
+        <PageMeta title="Duplicate Membership | StudyCafe Admin" description="Create a membership from an existing one" />
+        <PageBreadcrumb pageTitle="Duplicate Membership" />
+        <div className="py-12 text-center text-gray-500 dark:text-gray-400">Loading membership…</div>
+      </>
+    );
+  }
+
+  if (duplicateFrom && duplicateLoadError) {
+    return (
+      <>
+        <PageMeta title="Duplicate Membership | StudyCafe Admin" description="Create a membership from an existing one" />
+        <PageBreadcrumb pageTitle="Duplicate Membership" />
+        <div className="rounded-xl border border-error-200 bg-error-50 px-4 py-6 text-center text-error-800 dark:border-error-900/50 dark:bg-error-950/30 dark:text-error-200">
+          <p className="mb-4">{duplicateLoadError}</p>
+          <button
+            type="button"
+            className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600"
+            onClick={() => navigate("/memberships/create", { replace: true })}
+          >
+            Start blank membership instead
+          </button>
+        </div>
+      </>
+    );
+  }
+
+  const isDuplicate = Boolean(duplicateFrom && duplicateInitial);
+
   return (
     <>
       <PageMeta
-        title="Create Membership | StudyCafe Admin"
-        description="Create a new membership plan"
+        title={isDuplicate ? "Duplicate Membership | StudyCafe Admin" : "Create Membership | StudyCafe Admin"}
+        description={isDuplicate ? "Review copied fields and save as a new membership" : "Create a new membership plan"}
       />
-      <PageBreadcrumb pageTitle="Create Membership" />
-      <MembershipForm mode="create" onSubmit={handleSubmit} loading={loading} />
+      <PageBreadcrumb pageTitle={isDuplicate ? "Duplicate Membership" : "Create Membership"} />
+      <MembershipForm
+        key={duplicateFrom || "new"}
+        mode="create"
+        defaultValues={duplicateInitial ?? undefined}
+        onSubmit={handleSubmit}
+        loading={loading}
+      />
     </>
   );
 }

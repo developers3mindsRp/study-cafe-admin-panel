@@ -2,9 +2,8 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
-import MembershipForm, { type MembershipFormData, parseFeaturesToArray, arrayToFeaturesHtml } from "./MembershipForm";
-import { plansApi, type MembershipFeatures } from "../../api/plans";
-import { planIsLifetime } from "./membershipUtils";
+import MembershipForm, { type MembershipFormData, parseFeaturesToArray, planToFormData } from "./MembershipForm";
+import { plansApi } from "../../api/plans";
 import { getApiErrorMessage } from "../../lib/apiError";
 
 export default function MembershipEdit() {
@@ -24,49 +23,7 @@ export default function MembershipEdit() {
     try {
       setLoading(true);
       const plan = await plansApi.get(planId);
-
-      // Deserialize features: can be { mrp, included, excluded } object or legacy string[]
-      let mrp = 0;
-      let featuresIncludedHtml = "";
-
-      if (plan.features && !Array.isArray(plan.features) && typeof plan.features === "object") {
-        const feat = plan.features as MembershipFeatures;
-        mrp = feat.mrp ?? 0;
-        featuresIncludedHtml = arrayToFeaturesHtml(feat.included ?? []);
-      } else if (Array.isArray(plan.features) && plan.features.length > 0) {
-        // Legacy flat string[] — treat all as included
-        featuresIncludedHtml = arrayToFeaturesHtml(plan.features as string[]);
-      }
-
-      setInitialData({
-        name: plan.name,
-        slug: plan.slug,
-        description: plan.description,
-        price: Number(plan.price),
-        mrp,
-        currency: plan.currency,
-        duration_days: plan.duration_days ?? 365,
-        is_lifetime: planIsLifetime(plan),
-        features_included: featuresIncludedHtml,
-        is_active: plan.is_active,
-        hide_from_public: Boolean(plan.hide_from_public),
-        is_popular: plan.is_popular ?? false,
-        sort_order: plan.sort_order ?? 0,
-        tier_rank: plan.tier_rank ?? 0,
-        course_ids: Array.isArray(plan.course_ids) ? plan.course_ids : [],
-        course_cat_ids: Array.isArray(plan.course_cat_ids) ? plan.course_cat_ids : [],
-        affiliate_commission: Math.min(
-          100,
-          Math.max(
-            0,
-            Number(
-              plan.affiliate_commission != null && plan.affiliate_commission !== ""
-                ? plan.affiliate_commission
-                : 0,
-            ) || 0,
-          ),
-        ),
-      });
+      setInitialData(planToFormData(plan));
     } catch (err) {
       console.error("Failed to load plan", err);
       navigate("/memberships");
